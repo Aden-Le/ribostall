@@ -84,40 +84,31 @@ def consensus_stalls_across_reps(
     *,
     min_support: int = 2,
     tol: int = 0,
-    min_sep: int = 7
+    min_sep: int = 0,
+    conflict_resolution: str = "keep_both"  # "keep_both" removes downstream preference
 ):
     """
     Compute consensus stall indices per transcript across replicate experiments,
-    allowing a tolerance window and preferring the downstream site when two
-    candidates are closer than `min_sep`.
+    allowing a tolerance window. When two candidates are closer than `min_sep`,
+    resolve with `conflict_resolution`:
+        - "keep_both": keep both close sites (ignores min_sep)
+        - "downstream": keep downstream (your original behavior)
+        - "upstream": keep upstream
+        - "merge_median": replace close pair with median index
+        - "drop_both": remove both close sites
     """
 
     def _indices_from_stalls(stalls_for_tx: Any) -> List[int]:
-        """
-        Accepts multiple shapes:
-          - list[int]
-          - list[tuple]            -> take first element as index
-          - list[dict]             -> try common keys for index
-          - dict with "indices"    -> use that list
-        Returns sorted unique indices.
-        """
         if not stalls_for_tx:
             return []
-
-        # Case: dict with "indices"
         if isinstance(stalls_for_tx, dict) and "indices" in stalls_for_tx:
-            idxs = stalls_for_tx["indices"]
-            return sorted(set(int(i) for i in idxs))
-
-        # Case: iterable (list/tuple) of elements
+            return sorted(set(int(i) for i in stalls_for_tx["indices"]))
         if isinstance(stalls_for_tx, Iterable) and not isinstance(stalls_for_tx, (str, bytes, dict)):
-            first = next(iter(stalls_for_tx), None)
+            it = iter(stalls_for_tx)
+            first = next(it, None)
             if first is None:
                 return []
-
-            # list of dicts
             if isinstance(first, dict):
-                # try common field names for the codon index
                 candidate_keys = ["idx", "index", "pos", "position", "codon", "codon_idx", "codon_index"]
                 key = next((k for k in candidate_keys if k in first), None)
                 if key is None:
@@ -127,39 +118,25 @@ def consensus_stalls_across_reps(
                     )
                 idxs = [int(d[key]) for d in stalls_for_tx if d is not None]
                 return sorted(set(idxs))
-
-            # list of tuples -> take first element
             if isinstance(first, (list, tuple)):
-                idxs = [int(x[0]) for x in stalls_for_tx]
-                return sorted(set(idxs))
-
-            # list of ints
+                return sorted(set(int(x[0]) for x in stalls_for_tx))
             if isinstance(first, (int, np.integer)):
                 return sorted(set(int(x) for x in stalls_for_tx))
-
-            # list of strings (just in case)
             if isinstance(first, str):
                 return sorted(set(int(x) for x in stalls_for_tx))
-
-        # Fallback: single int
         if isinstance(stalls_for_tx, (int, np.integer)):
             return [int(stalls_for_tx)]
-
         raise TypeError(f"Unsupported stalls_for_tx shape/type: {type(stalls_for_tx)}")
 
-    # transcripts present in all requested replicates
     common_txs = set.intersection(*(set(stalls_by_exp[r].keys()) for r in reps))
     out: Dict[str, List[int]] = {}
 
     for tx in common_txs:
         per_rep_idx = {r: _indices_from_stalls(stalls_by_exp[r][tx]) for r in reps}
-
-        # union of all candidate positions
         candidates = sorted(set().union(*per_rep_idx.values()))
         consensus: List[int] = []
 
         for c in candidates:
-            # count support within ±tol, and collect the actual hits
             support = 0
             supporting_hits: List[int] = []
             for r in reps:
@@ -174,21 +151,33 @@ def consensus_stalls_across_reps(
                     supporting_hits.append(hit)
 
             if support >= min_support:
-                # representative index across reps (merge with median if tol>0)
                 rep_idx = int(np.median(supporting_hits)) if (tol > 0 and supporting_hits) else int(c)
 
-                if consensus:
-                    # downstream preference: if too close to last kept site, replace it
-                    if rep_idx - consensus[-1] < min_sep:
+                if not consensus:
+                    consensus.append(rep_idx)
+                    continue
+
+                # handle close-by conflicts
+                if rep_idx - consensus[-1] < min_sep:
+                    if conflict_resolution == "downstream":
                         consensus[-1] = rep_idx
+                    elif conflict_resolution == "upstream":
+                        pass  # keep previous; skip new
+                    elif conflict_resolution == "merge_median":
+                        consensus[-1] = int(np.round(np.median([consensus[-1], rep_idx])))
+                    elif conflict_resolution == "drop_both":
+                        consensus.pop()  # drop previous and skip new
+                    elif conflict_resolution == "keep_both":
+                        consensus.append(rep_idx)  # ignore min_sep
                     else:
-                        consensus.append(rep_idx)
+                        raise ValueError(f"Unknown conflict_resolution: {conflict_resolution}")
                 else:
                     consensus.append(rep_idx)
 
-        out[tx] = sorted(consensus)
+        out[tx] = sorted(set(consensus))
 
     return out
+
 
 def parse_key(k: str):
     s = str(k)
@@ -211,3 +200,55 @@ def consensus_to_long_df(consensus: dict) -> pd.DataFrame:
                     "pos_codon": int(p),
                 })
     return pd.DataFrame(rows).sort_values(["group","gene","tx_id","pos_codon"])
+
+
+def stalls_to_long_df(stalls_by_exp: dict, rep_to_group: Dict[str, str] | None = None) -> pd.DataFrame:
+    """
+    Flatten per-replicate stall calls into a long dataframe.
+
+    Columns:
+      group, replicate, transcript, tx_id, gene, pos_codon, obs (optional), z (optional)
+    """
+    rows = []
+    for rep, tx_map in stalls_by_exp.items():
+        grp = rep_to_group.get(rep) if rep_to_group else None
+        for tx_key, stall_list in tx_map.items():
+            tx_str, tx_id, gene = parse_key(tx_key)
+
+            # Common case: list of dicts from call_stalls()
+            if isinstance(stall_list, list) and stall_list and isinstance(stall_list[0], dict):
+                # accept any alias for the index key
+                idx_keys = ["index", "idx", "pos", "position", "codon", "codon_idx", "codon_index"]
+                for d in stall_list:
+                    if d is None:
+                        continue
+                    # find the index
+                    idx_key = next((k for k in idx_keys if k in d), None)
+                    if idx_key is None:
+                        continue
+                    rows.append({
+                        "group": grp,
+                        "replicate": rep,
+                        "transcript": tx_str,
+                        "tx_id": tx_id,
+                        "gene": gene,
+                        "pos_codon": int(d[idx_key]),
+                        "obs": float(d.get("obs")) if "obs" in d else None,
+                        "z": float(d.get("z")) if "z" in d else None,
+                    })
+            else:
+                # Fallback: use indices only
+                for p in _indices_from_stalls(stall_list):
+                    rows.append({
+                        "group": grp,
+                        "replicate": rep,
+                        "transcript": tx_str,
+                        "tx_id": tx_id,
+                        "gene": gene,
+                        "pos_codon": int(p),
+                        "obs": None,
+                        "z": None,
+                    })
+
+    cols = ["group","replicate","gene","tx_id","transcript","pos_codon","obs","z"]
+    return pd.DataFrame(rows)[cols].sort_values(["group","replicate","gene","tx_id","pos_codon"])

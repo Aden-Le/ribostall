@@ -13,7 +13,7 @@ import ribopy
 from ribopy import Ribo
 
 # --- import your helpers ---
-from functions import get_cds_range_lookup, get_psite_offset
+from functions import get_cds_range_lookup, get_offset, apris_human_alias
 
 # =========================
 # Logging
@@ -53,11 +53,12 @@ def _init_worker(ribo_path: str, use_alias: bool,
     global _RIBO, _CDS_RANGE, _TRANSCRIPTS
     if use_alias:
         _RIBO = Ribo(ribo_path, alias=ribopy.api.alias.apris_human_alias)
+        _TRANSCRIPTS = [apris_human_alias(t) for t in _RIBO.transcript_names]
     else:
         _RIBO = Ribo(ribo_path)
+        _TRANSCRIPTS = list(transcripts)
     # cast CDS ranges to signed ints defensively
     _CDS_RANGE = {t: (int(s), int(e)) for t, (s, e) in cds_range.items()}
-    _TRANSCRIPTS = list(transcripts)
 
 def _preallocate_output(transcripts: Iterable[str]) -> Dict[str, np.ndarray]:
     """Pre-allocate a zero array per transcript sized to its CDS window."""
@@ -134,7 +135,14 @@ def parse_args():
     p.add_argument("--ribo", required=True, help="Path to .ribo file")
     p.add_argument("--min-len", type=int, required=True, help="Minimum read length (inclusive)")
     p.add_argument("--max-len", type=int, required=True, help="Maximum read length (inclusive)")
-    p.add_argument("--site-type", help="Site type for p-site offset")
+    p.add_argument("--site-type", help="Site type for offset")
+    p.add_argument("--search-window",
+                    nargs=2,
+                    type=int,
+                    metavar=("LO", "HI"),
+                    help="Position window relative to landmark (e.g., --search-window -60 -30)"
+                )
+    p.add_argument("--return-site", required=True, help="Adjust coverage to P- or A-site")
     p.add_argument("--alias", action="store_true",
                    help="Use apris_human_alias (set if your .ribo uses mouse/human aliasing)")
     p.add_argument("--procs", type=int, default=1, help="Number of parallel worker processes (experiments run in parallel)")
@@ -152,6 +160,7 @@ def main():
     experiments = list(ribo0.experiments)
     transcripts = list(ribo0.transcript_names)
 
+
     logging.info(f"Experiments: {experiments}")
     logging.info(f"Transcripts: {len(transcripts)} total")
     logging.info(f"Lengths: {args.min_len}..{args.max_len}")
@@ -164,7 +173,8 @@ def main():
     # Precompute per-experiment offsets (dict of dict: exp -> {L -> offset})
     exp_offsets: Dict[str, Dict[int, int]] = {}
     for exp in experiments:
-        od = get_psite_offset(ribo0, exp, args.min_len, args.max_len, args.site_type)  # user-provided
+        od = get_offset(ribo0, exp, args.min_len, args.max_len, args.site_type, args.search_window, args.return_site)  # user-provided
+        logging.info(F"Experiment {exp} offsets: {od}")
         # cast keys/values to plain ints to avoid uint overflows later
         exp_offsets[exp] = {int(L): int(o) for L, o in od.items()}
 

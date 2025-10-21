@@ -179,9 +179,14 @@ def main():
         for ax, g in zip(axes, groups.keys()):
             plt.sca(ax)
             plot_logo(W_by_group[g],
-                    title=f"{g.capitalize()}: EPA-centered AA motif",
+                    title=f"{g.capitalize()}",
                     aa_class=AA_CLASS)
             ax.set_ylim(-ymin, ymax)   # same scale across panels
+        
+        for ax in axes[1:]:
+            ax.set_ylabel("")
+            ax.tick_params(axis="y", left=False, labelleft=False)
+            ax.spines["left"].set_visible(False)
 
         patches = [mpatches.Patch(color=c, label=cls) for cls, c in CLASS_COLORS.items()]
         fig.legend(handles=patches, loc="lower center", ncol=len(patches))

@@ -22,7 +22,7 @@
 #SBATCH -t 02:00:00           # Run time (hh:mm:ss) - adjust if needed
 #SBATCH --mail-type=all       # Send email at begin and end of job
 #SBATCH -A myproject          # Project/Allocation name (req'd if you have more than 1)
-#SBATCH --mail-user=username@tacc.utexas.edu
+#SBATCH --mail-user=adenl56@utexas.edu  # email address to send notifications to
 
 # ============== CONFIG: edit these ==============
 # Path to directory containing .ribo files (absolute or relative to $SLURM_SUBMIT_DIR)

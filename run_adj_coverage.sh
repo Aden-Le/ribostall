@@ -41,8 +41,9 @@ for RIBO in "$RIBO_DIR"/*.ribo; do
 
   CMD="python3 adj_coverage.py --ribo $RIBO --min-len $MIN_LEN --max-len $MAX_LEN --return-site $RETURN_SITE --out $OUT --procs $PROCS"
   [ "$USE_ALIAS" = "yes" ] && CMD="$CMD --alias"
-  # Uncomment if using custom site type / search window:
-  # CMD="$CMD --site-type $SITE_TYPE --search-window $SEARCH_WINDOW"
+  CMD="$CMD --site-type $SITE_TYPE"
+  # Uncomment if using custom search window:
+  # CMD="$CMD --search-window $SEARCH_WINDOW"
 
   echo "Running: $CMD"
   eval $CMD

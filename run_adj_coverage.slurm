@@ -21,7 +21,7 @@
 #SBATCH -n 1                  # Total # of mpi tasks (should be 1 for serial)
 #SBATCH -t 02:00:00           # Run time (hh:mm:ss) - adjust if needed
 #SBATCH --mail-type=all       # Send email at begin and end of job
-#SBATCH -A myproject          # Project/Allocation name (req'd if you have more than 1)
+#SBATCH -A Ceniklab-CPRI          # Project/Allocation name (req'd if you have more than 1)
 #SBATCH --mail-user=adenl56@utexas.edu  # email address to send notifications to
 
 # ============== CONFIG: edit these ==============

@@ -13,7 +13,7 @@ MAX_LEN=37
 RETURN_SITE="P"    # P-site or A-site
 
 # Optional: site type and search window for offset (uncomment and set if needed)
-SITE_TYPE="stop"
+SITE_TYPE="start"
 # SEARCH_WINDOW="-60 -30"
 
 # Optional: use human/mouse alias (set to "yes" if your .ribo uses apris_human_alias)

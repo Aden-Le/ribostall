@@ -10,7 +10,7 @@ RIBO_DIR="./ribo_all_26_38"
 # stall_sites.py arguments (required)
 # Format: "group1:rep1,rep2,rep3;group2:rep1,rep2,rep3"
 # IMPORTANT: replace rep names with actual replicate names from your .ribo file
-GROUPS="control_day_0:control_day0_rep1,control_day0_rep2,control_day0_rep3;control_day_5:control_day5_rep1,control_day5_rep2,control_day5_rep3;control_day_10:control_day10_rep1,control_day10_rep2,control_day10_rep3;BWM_day_0:BWM_day0_rep1,BWM_day0_rep2,BWM_day0_rep3;BWM_day_5:BWM_day5_rep1,BWM_day5_rep2,BWM_day5_rep3;BWM_day_10:BWM_day10_rep1,BWM_day10_rep2,BWM_day10_rep3"
+GROUPS="control_day_0:control_day0_rep1,control_day0_rep2,control_day0_rep3;control_day_5:control_day5_rep1,control_day5_rep2,control_day5_rep3;control_day_10:control_day10_rep1,control_day10_rep2,control_day10_rep3;BWM_day_0:BWM_day0_rep1,BWM_day0_rep2,BWM_day0_rep3;BWM_dayG_5:BWM_day5_rep1,BWM_day5_rep2,BWM_day5_rep3;BWM_day_10:BWM_day10_rep1,BWM_day10_rep2,BWM_day10_rep3"
 
 # Optional: transcript filtering thresholds
 TX_THRESHOLD=1.0
@@ -56,8 +56,8 @@ fi
 
 echo "Using coverage pickle: $PICKLE"
 
-# Build base command
-CMD="python3 stall_sites.py --pickle $PICKLE --ribo $RIBO_DIR --groups \"$GROUPS\" --tx_threshold $TX_THRESHOLD --tx_min_reps $TX_MIN_REPS --min_z $MIN_Z --min_reads $MIN_READS --stall_min_reps $STALL_MIN_REPS --trim_edges $TRIM_EDGES --min_sep $MIN_SEP --pseudocount $PSEUDOCOUNT --out-json $OUT_JSON --out-csv $OUT_CSV"
+# Build command array
+CMD=(python3 stall_sites.py --pickle "$PICKLE" --ribo "$RIBO_DIR" --groups "$GROUPS" --tx_threshold "$TX_THRESHOLD" --tx_min_reps "$TX_MIN_REPS" --min_z "$MIN_Z" --min_reads "$MIN_READS" --stall_min_reps "$STALL_MIN_REPS" --trim_edges "$TRIM_EDGES" --min_sep "$MIN_SEP" --pseudocount "$PSEUDOCOUNT" --out-json "$OUT_JSON" --out-csv "$OUT_CSV")
 
 # Add motif analysis if enabled
 if [ "$RUN_MOTIF" = "yes" ]; then
@@ -65,11 +65,11 @@ if [ "$RUN_MOTIF" = "yes" ]; then
     echo "Error: RUN_MOTIF is yes but REFERENCE_FILE is not set"
     exit 1
   fi
-  CMD="$CMD --motif --reference $REFERENCE_FILE --flank-left $FLANK_LEFT --flank-right $FLANK_RIGHT --out-png $OUT_PNG"
+  CMD+=(--motif --reference "$REFERENCE_FILE" --flank-left "$FLANK_LEFT" --flank-right "$FLANK_RIGHT" --out-png "$OUT_PNG")
 fi
 
-echo "Running: $CMD"
-eval $CMD
+echo "Running: ${CMD[@]}"
+"${CMD[@]}"
 
 echo "Done."
 date

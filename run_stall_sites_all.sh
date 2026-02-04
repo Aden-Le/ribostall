@@ -10,7 +10,7 @@ RIBO_DIR="./ribo_all_26_38"
 # stall_sites.py arguments (required)
 # Format: "group1:rep1,rep2,rep3;group2:rep1,rep2,rep3"
 # IMPORTANT: replace rep names with actual replicate names from your .ribo file
-GROUPS="control_day_0:control_day0_rep1,control_day0_rep2,control_day0_rep3;control_day_5:control_day5_rep1,control_day5_rep2,control_day5_rep3;control_day_10:control_day10_rep1,control_day10_rep2,control_day10_rep3;BWM_day_0:BWM_day0_rep1,BWM_day0_rep2,BWM_day0_rep3;BWM_dayG_5:BWM_day5_rep1,BWM_day5_rep2,BWM_day5_rep3;BWM_day_10:BWM_day10_rep1,BWM_day10_rep2,BWM_day10_rep3"
+GROUPS='control_day_0:control_day0_rep1,control_day0_rep2,control_day0_rep3;control_day_5:control_day5_rep1,control_day5_rep2,control_day5_rep3;control_day_10:control_day10_rep1,control_day10_rep2,control_day10_rep3;BWM_day_0:BWM_day0_rep1,BWM_day0_rep2,BWM_day0_rep3;BWM_day_5:BWM_day5_rep1,BWM_day5_rep2,BWM_day5_rep3;BWM_day_10:BWM_day10_rep1,BWM_day10_rep2,BWM_day10_rep3'
 
 # Optional: transcript filtering thresholds
 TX_THRESHOLD=1.0

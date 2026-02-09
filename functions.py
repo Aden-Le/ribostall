@@ -71,8 +71,11 @@ def get_offset(
     Calibrate offsets (from 5' end) per read length using metagene profiles.
 
     landmark: which reference to align metagene to ("start" or "stop").
+              This will align the genes on that specific codon, start or stop
               Using "start" typically yields P-site offsets,
               using "stop" typically yields A-site offsets.
+    search_window:
+               Nucleotide position relative to the landmark in which the offset can be determined
     return_site: which site you want the final offsets for ("P" or "A").
                  We'll convert between A and P by ±3 nt as needed.
     """
@@ -88,6 +91,7 @@ def get_offset(
         sum_lengths=False,
         sum_references=True,
     )
+    print(mg)
 
     def _all_intlike(vals):
         try:

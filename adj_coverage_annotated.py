@@ -181,9 +181,11 @@ def main():
     print(f"[main] Computing CDS ranges...")
     cds_range = get_cds_range_lookup(ribo0)
     cds_range = {t: (int(s), int(e)) for t, (s, e) in cds_range.items()}
-    for transcript, (start, stop) in list(cds_range.items())[:5]:  # print first 5 for sanity check
-        print(f"[main] CDS range for {transcript}: start={start}, stop={stop}")
 
+    # Example Output:
+    # CDS range for Y110A7A.10.1|cdna|chromosome:WBcel235:I:5107833:5110183:1|gene:WBGene00000001.1|gene_biotype:protein_coding|transcript_biotype:protein_coding|gene_symbol:aap-1: start=11, stop=1577
+    # for transcript, (start, stop) in list(cds_range.items())[:5]:  # print first 5 for sanity check
+    #    print(f"[main] CDS range for {transcript}: start={start}, stop={stop}")
 
 
     # Precompute per-experiment offsets (dict of dict: exp -> {L -> offset})
@@ -199,14 +201,16 @@ def main():
 
     all_coverage_dict: Dict[str, Dict[str, np.ndarray]] = {}
 
+    # Error Handling, not Important
     if len(experiments) == 0:
         print(f"[main] ERROR: No experiments found in the .ribo file.")
         logging.warning("No experiments found in the .ribo file.")
         with gzip.open(args.out, "wb") as f:
             pickle.dump(all_coverage_dict, f)
         return 0
-
+    
     exit()
+
     # Parallelize by experiment
     print(f"[main] Starting parallel processing with {args.procs} workers...")
     with mp.Pool(

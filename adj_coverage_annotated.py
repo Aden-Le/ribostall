@@ -177,19 +177,15 @@ def main():
     print(f"[main] Found {len(experiments)} experiments: {experiments}")
     print(f"[main] Found {len(transcripts)} transcripts")
 
-    logging.info(f"Experiments: {experiments}")
-    logging.info(f"Transcripts: {len(transcripts)} total")
-    logging.info(f"Lengths: {args.min_len}..{args.max_len}")
-    logging.info(f"Processes: {args.procs}, batch_size: {args.batch_size}")
-
     # CDS ranges (dict: transcript -> (start, stop)), cast to signed ints
     print(f"[main] Computing CDS ranges...")
     cds_range = get_cds_range_lookup(ribo0)
     cds_range = {t: (int(s), int(e)) for t, (s, e) in cds_range.items()}
-    print(f"[main] CDS ranges computed for {len(cds_range)} transcripts")
+    print(f"[main] CDS ranges computed for {cds_range}")
 
     # Precompute per-experiment offsets (dict of dict: exp -> {L -> offset})
     print(f"[main] Computing P-site offsets for each experiment...")
+    # Set experiment offset dictionary
     exp_offsets: Dict[str, Dict[int, int]] = {}
     for exp in experiments:
         od = get_offset(ribo0, exp, args.min_len, args.max_len, args.site_type, args.search_window, args.return_site)  # user-provided
@@ -207,6 +203,7 @@ def main():
             pickle.dump(all_coverage_dict, f)
         return 0
 
+    exit()
     # Parallelize by experiment
     print(f"[main] Starting parallel processing with {args.procs} workers...")
     with mp.Pool(

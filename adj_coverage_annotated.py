@@ -181,7 +181,10 @@ def main():
     print(f"[main] Computing CDS ranges...")
     cds_range = get_cds_range_lookup(ribo0)
     cds_range = {t: (int(s), int(e)) for t, (s, e) in cds_range.items()}
-    print(f"[main] CDS ranges computed for {cds_range}")
+    for transcript, (start, stop) in list(cds_range.items())[:5]:  # print first 5 for sanity check
+        print(f"[main] CDS range for {transcript}: start={start}, stop={stop}")
+
+
 
     # Precompute per-experiment offsets (dict of dict: exp -> {L -> offset})
     print(f"[main] Computing P-site offsets for each experiment...")

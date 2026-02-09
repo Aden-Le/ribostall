@@ -33,7 +33,31 @@ conda activate ribostall_env
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+# Check if RIBO_DIR exists
+if [ ! -d "$RIBO_DIR" ]; then
+  echo "ERROR: Directory not found: $RIBO_DIR"
+  exit 1
+fi
+
+# Check if adj_coverage.py exists
+if [ ! -f "adj_coverage.py" ]; then
+  echo "ERROR: Script not found: adj_coverage.py"
+  exit 1
+fi
+
+# Count .ribo files
+RIBO_COUNT=$(find "$RIBO_DIR" -maxdepth 1 -name "*.ribo" -type f | wc -l)
+if [ $RIBO_COUNT -eq 0 ]; then
+  echo "ERROR: No .ribo files found in $RIBO_DIR"
+  exit 1
+fi
+
+echo "Found $RIBO_COUNT .ribo file(s) in $RIBO_DIR"
+
 # Process all .ribo files
+PROCESSED=0
+FAILED=0
+
 for RIBO in "$RIBO_DIR"/*.ribo; do
   [ -f "$RIBO" ] || continue
   BASENAME=$(basename "$RIBO" .ribo)
@@ -46,8 +70,21 @@ for RIBO in "$RIBO_DIR"/*.ribo; do
   # CMD="$CMD --search-window $SEARCH_WINDOW"
 
   echo "Running: $CMD"
-  eval $CMD
+  if eval $CMD; then
+    echo "✓ Successfully processed: $BASENAME"
+    ((PROCESSED++))
+  else
+    echo "✗ FAILED to process: $BASENAME (exit code: $?)"
+    ((FAILED++))
+  fi
 done
+
+echo ""
+echo "Summary: Processed $PROCESSED/$RIBO_COUNT files successfully"
+if [ $FAILED -gt 0 ]; then
+  echo "WARNING: $FAILED file(s) failed"
+  exit 1
+fi
 
 echo "Done."
 date

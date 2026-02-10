@@ -38,8 +38,11 @@ def _safe_window(arr: np.ndarray, lo: int, hi: int) -> np.ndarray:
     if n <= 0:
         return np.zeros(0, dtype=arr.dtype)
     left = max(0, -lo)
+    print(f"[_safe_window] Left padding: {left} zeros")
     right = max(0, hi - int(len(arr)))
+    print(f"[_safe_window] Right padding: {right} zeros")
     lo_c, hi_c = max(0, lo), min(int(len(arr)), hi)
+    print(f"[_safe_window] Core window indices: {lo_c} to {hi_c} (exclusive)")
     core = arr[lo_c:hi_c]
     if left or right:
         return np.concatenate(

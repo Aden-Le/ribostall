@@ -153,6 +153,7 @@ def get_offset(
     # The index represents read lengths (e.g., 26, 27, 28, ..., 32)
     # We'll process each length independently to calculate its specific offset
     if isinstance(mg.index, pd.MultiIndex):
+        print(f"[get_offset] Metagene index is a MultiIndex with levels: {mg.index}")
         # Find which level contains read length information
         length_level = mg.index.nlevels - 1
         if not _all_intlike(mg.index.get_level_values(length_level)):
@@ -161,12 +162,14 @@ def get_offset(
                     length_level = lvl
                     break
         grouped = mg.groupby(level=length_level)
+        print(f"[get_offset] Grouped metagene by read length using MultiIndex level {grouped}.")
     else:
         # Simple index: assume it's already read lengths
         if not _all_intlike(mg.index):
             raise ValueError("Metagene rows are not indexed by read length.")
         mg.index = mg.index.astype(int)
         grouped = ((int(L), mg.loc[[L]]) for L in mg.index.unique())
+        print(f"[get_offset] Grouped metagene by read length using simple index. {grouped}")
 
     # Extract search window bounds
     lo, hi = search_window

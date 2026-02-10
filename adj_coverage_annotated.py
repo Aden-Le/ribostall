@@ -113,10 +113,12 @@ def _add_length_into_out(exp: str, L: int, ps: int,
             f.write(f"{'='*80}\n\n")
             
             f.write(f"RAW COVERAGE (5' end aligned, length={len(raw)}):\n")
-            f.write(f"{raw}\n\n")
+            f.write(str(raw.tolist()))
+            f.write(f"\n\n")
             
             f.write(f"EXTRACTED SEGMENT (P-site aligned, length={len(seg)}):\n")
-            f.write(f"{seg}\n\n")
+            f.write(str(seg.tolist()))
+            f.write(f"\n\n")
         
         # Defensive: enforce exact length match
         if seg.shape[0] != out[t].shape[0]:

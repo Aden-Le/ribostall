@@ -92,13 +92,13 @@ def _add_length_into_out(exp: str, L: int, ps: int,
     for t in to_iter:
         if test_num == 5:
             exit()
-        test_num += 1
         # raw is an array of 0's for each transcript
         raw = cov_all.get(t)
         print(f"[_add_length_into_out] Raw coverage for transcript {t}: {raw}")
         if raw is None:
             continue
         start, stop = _CDS_RANGE[t]
+        print(f"[_add_length_into_out] CDS range for transcript {t}: start={start}, stop={stop}")
         start_i, stop_i = int(start), int(stop)
         if stop_i <= start_i:
             continue
@@ -108,20 +108,22 @@ def _add_length_into_out(exp: str, L: int, ps: int,
 
         print(f"[_add_length_into_out] Seg for transcript {t}: {seg}")
         
-        # Write raw and seg to file for inspection (no truncation)
-        with open("coverage_debug.txt", "a") as f:
-            f.write(f"\n{'='*80}\n")
-            f.write(f"Experiment: {exp}, Length: {L}, Transcript: {t}\n")
-            f.write(f"P-site offset: {ps_i}, Window: [{lo}, {hi}]\n")
-            f.write(f"{'='*80}\n\n")
-            
-            f.write(f"RAW COVERAGE (5' end aligned, length={len(raw)}):\n")
-            np.savetxt(f, raw.reshape(1, -1), fmt='%d', delimiter=', ')
-            f.write(f"\n")
-            
-            f.write(f"EXTRACTED SEGMENT (P-site aligned, length={len(seg)}):\n")
-            np.savetxt(f, seg.reshape(1, -1), fmt='%d', delimiter=', ')
-            f.write(f"\n")
+        # Write raw and seg to file for inspection (no truncation) - only for transcripts < 200 nt
+        if seg.shape[0] < 200:
+            with open("coverage_debug.txt", "a") as f:
+                f.write(f"\n{'='*80}\n")
+                f.write(f"Experiment: {exp}, Length: {L}, Transcript: {t}\n")
+                f.write(f"P-site offset: {ps_i}, Window: [{lo}, {hi}]\n")
+                f.write(f"{'='*80}\n\n")
+                
+                f.write(f"RAW COVERAGE (5' end aligned, length={len(raw)}):\n")
+                np.savetxt(f, raw.reshape(1, -1), fmt='%d', delimiter=', ')
+                f.write(f"\n")
+                
+                f.write(f"EXTRACTED SEGMENT (P-site aligned, length={len(seg)}):\n")
+                np.savetxt(f, seg.reshape(1, -1), fmt='%d', delimiter=', ')
+                f.write(f"\n")
+            test_num += 1
         
         # Defensive: enforce exact length match
         if seg.shape[0] != out[t].shape[0]:

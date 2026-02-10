@@ -103,7 +103,21 @@ def _add_length_into_out(exp: str, L: int, ps: int,
         hi = stop_i - ps_i
         seg = _safe_window(raw, lo, hi)
 
-        print(seg)
+        print(f"[_add_length_into_out] Seg for transcript {t}: {seg}")
+        
+        # Write raw and seg to file for inspection (no truncation)
+        with open("coverage_debug.txt", "a") as f:
+            f.write(f"\n{'='*80}\n")
+            f.write(f"Experiment: {exp}, Length: {L}, Transcript: {t}\n")
+            f.write(f"P-site offset: {ps_i}, Window: [{lo}, {hi}]\n")
+            f.write(f"{'='*80}\n\n")
+            
+            f.write(f"RAW COVERAGE (5' end aligned, length={len(raw)}):\n")
+            f.write(f"{raw}\n\n")
+            
+            f.write(f"EXTRACTED SEGMENT (P-site aligned, length={len(seg)}):\n")
+            f.write(f"{seg}\n\n")
+        
         # Defensive: enforce exact length match
         if seg.shape[0] != out[t].shape[0]:
             fix = np.zeros_like(out[t])

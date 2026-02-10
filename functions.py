@@ -113,8 +113,10 @@ def get_offset(
         sum_references=True,
     )
     # Save metagene profile to a text file for inspection (better than printing to console)
-    with open("metagene_profile.txt", "w") as f:
-        f.write(str(mg))
+    # Temporarily disable pandas truncation to show all columns and rows
+    with pd.option_context('display.max_columns', None, 'display.max_rows', None, 'display.width', None):
+        with open("metagene_profile.txt", "w") as f:
+            f.write(str(mg))
     print(f"[get_offset] Metagene profile saved to metagene_profile.txt")
 
     def _all_intlike(vals):

@@ -81,10 +81,16 @@ def _add_length_into_out(exp: str, L: int, ps: int,
                          batch: Iterable[str] = None) -> None:
     """Read coverage for a single length L once, then accumulate into 'out'."""
     print(f"[_add_length_into_out] Reading coverage for experiment={exp}, length={L}, P-site offset={ps}")
+    # Assuming this is the coverage of the 5' end of reads
     cov_all = _RIBO.get_coverage(experiment=exp, range_lower=int(L), range_upper=int(L))
     to_iter = _TRANSCRIPTS if batch is None else batch
     ps_i = int(ps)
+    test_num = 0
     for t in to_iter:
+        if test_num == 5:
+            exit()
+        test_num += 1
+        # raw is an array of 0's for each transcript
         raw = cov_all.get(t)
         print(f"[_add_length_into_out] Raw coverage for transcript {t}: {raw}")
         if raw is None:
@@ -96,6 +102,8 @@ def _add_length_into_out(exp: str, L: int, ps: int,
         lo = start_i - ps_i
         hi = stop_i - ps_i
         seg = _safe_window(raw, lo, hi)
+
+        print(seg)
         # Defensive: enforce exact length match
         if seg.shape[0] != out[t].shape[0]:
             fix = np.zeros_like(out[t])

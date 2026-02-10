@@ -190,7 +190,8 @@ def main():
 
     # Precompute per-experiment offsets (dict of dict: exp -> {L -> offset})
     print(f"[main] Computing P-site offsets for each experiment...")
-    # Set experiment offset dictionary
+    # Set experiment offset dictionar
+    # Runs each experiment though get_offiset to compute offsets for each read length, then stores in exp_offsets
     exp_offsets: Dict[str, Dict[int, int]] = {}
     for exp in experiments:
         od = get_offset(ribo0, exp, args.min_len, args.max_len, args.site_type, args.search_window, args.return_site)  # user-provided
@@ -208,8 +209,6 @@ def main():
         with gzip.open(args.out, "wb") as f:
             pickle.dump(all_coverage_dict, f)
         return 0
-    
-    exit()
 
     # Parallelize by experiment
     print(f"[main] Starting parallel processing with {args.procs} workers...")

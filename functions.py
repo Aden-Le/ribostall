@@ -176,10 +176,16 @@ def get_offset(
     
     # Calculate offset for each read length
     offsets = {}
+    # L is read length, block is the corresponding metagene data for that length
     for L, block in grouped:
+        print(f"[get_offset] Processing read length L={L}")
+        print(f"[get_offset]   block shape: {block.shape}, columns: {list(block.columns[:10])}...")  # Show first 10 columns
+        
         # Sum coverage across all references/experiments to get 1D profile
         # This shows the aggregate ribosome density at each position
+        # Basically, we want to find the position with the highest ribosome density (the peak) in our search window
         prof = block.sum(axis=0)  # 1D profile across positions
+        print(f"[get_offset]   prof shape: {prof.shape}, head: {prof.head()}")  # Print first few values of the profile for sanity check
         
         # Extract only the portion of the profile within our search window
         windowed = prof.loc[(prof.index >= lo) & (prof.index <= hi)]
@@ -191,6 +197,7 @@ def get_offset(
         # Find the position with maximum ribosome density (the peak)
         # This peak position is relative to the landmark (start or stop codon)
         peak_pos = int(windowed.idxmax())
+        print(f"[get_offset]   Peak position for L={L} is at {peak_pos} with coverage {windowed.max()}")
         
         # Convert peak position to offset from 5' end
         # Negative peak_pos means upstream of landmark, so we need to add 1 to get the 5' offset

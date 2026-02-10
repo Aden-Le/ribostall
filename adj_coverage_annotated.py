@@ -63,8 +63,11 @@ def _init_worker(ribo_path: str, use_alias: bool,
     # cast CDS ranges to signed ints defensively
     _CDS_RANGE = {t: (int(s), int(e)) for t, (s, e) in cds_range.items()}
 
+# Creates output array for each transcript sized to its CDS window, then iteratively adds coverage for each read length and experiment
+# Takes the stop codon - start codon position to get length and make array of that size
 def _preallocate_output(transcripts: Iterable[str]) -> Dict[str, np.ndarray]:
     """Pre-allocate a zero array per transcript sized to its CDS window."""
+    # Transcript then array of 0s of size length
     print(f"[_preallocate_output] Allocating output arrays for {len(list(transcripts))} transcripts")
     out: Dict[str, np.ndarray] = {}
     for t in transcripts:
@@ -83,6 +86,7 @@ def _add_length_into_out(exp: str, L: int, ps: int,
     ps_i = int(ps)
     for t in to_iter:
         raw = cov_all.get(t)
+        print(f"[_add_length_into_out] Raw coverage for transcript {t}: {raw}")
         if raw is None:
             continue
         start, stop = _CDS_RANGE[t]
@@ -113,7 +117,6 @@ def _process_experiment(exp: str, min_len: int, max_len: int,
     """
     t0 = time.time()
     print(f"[_process_experiment] Processing {exp}: lengths {min_len}..{max_len}, batch_size={batch_size}")
-    logging.info(f"[{exp}] start: lengths {min_len}..{max_len}")
 
     out = _preallocate_output(_TRANSCRIPTS)
     lengths = list(range(int(min_len), int(max_len) + 1))

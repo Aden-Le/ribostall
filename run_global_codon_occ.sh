@@ -5,13 +5,13 @@
 
 # ============== CONFIG: edit these ==============
 # Path to .ribo file (required)
-RIBO_FILE="./ribo_files_29/ribo_29.ribo"
+RIBO_FILE="./ribo_files_29/control_day0_rep3.ribo"
 
 # Path to pickled coverage dict (from adj_coverage.py output, required)
-COVERAGE_PICKLE="./ribo_files_29/ribo_29_coverage.pkl.gz"
+COVERAGE_PICKLE="./ribo_files_29/control_day0_rep3_coverage.pkl.gz"
 
 # Path to reference FASTA/2bit (required)
-REFERENCE="/path/to/reference.fasta"
+REFERENCE="./C_elegan_reference/GCF_000002985.6_WBcel235_genomic.fna"
 
 # Offset applied to coverage (P or A, required)
 OFFSET="P"

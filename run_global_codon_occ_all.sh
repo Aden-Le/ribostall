@@ -11,7 +11,7 @@ RIBO_FILE="./ribo_all_26_38/C_elegan_all_02_04_2026.ribo"
 COVERAGE_PICKLE="./ribo_all_26_38/C_elegan_all_02_04_2026_coverage.pkl.gz"
 
 # Path to reference FASTA/2bit (required)
-REFERENCE="./C_elegan_reference/GCF_000002985.6_WBcel235_genomic.fna"
+REFERENCE="./C_elegan_reference/appris_celegans_v1_selected_new.fa"
 
 # Offset applied to coverage (P or A, required)
 OFFSET="P"

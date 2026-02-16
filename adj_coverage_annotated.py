@@ -108,8 +108,8 @@ def _add_length_into_out(exp: str, L: int, ps: int,
 
         print(f"[_add_length_into_out] Seg for transcript {t}: {seg}")
         
-        # Write raw and seg to file for inspection (no truncation) - only for transcripts < 200 nt
-        if raw.shape[0] < 200:
+        # Write raw and seg to file for inspection (no truncation) - only for transcripts < 200 nt AND with coverage
+        if raw.shape[0] < 200 and seg.sum() >= 1:
             with open("coverage_debug.txt", "a") as f:
                 f.write(f"\n{'='*80}\n")
                 f.write(f"Experiment: {exp}, Length: {L}, Transcript: {t}\n")

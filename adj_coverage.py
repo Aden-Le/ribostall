@@ -40,7 +40,7 @@ def _safe_window(arr: np.ndarray, lo: int, hi: int) -> np.ndarray:
     right = max(0, hi - int(len(arr)))
     lo_c, hi_c = max(0, lo), min(int(len(arr)), hi)
     core = arr[lo_c:hi_c]
-    if left or right:
+    if left or right:   
         return np.concatenate(
             (np.zeros(left, dtype=arr.dtype), core, np.zeros(right, dtype=arr.dtype))
         )

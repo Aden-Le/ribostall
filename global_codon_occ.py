@@ -32,19 +32,23 @@ def parse_args():
                    help="Use ribopy.api.alias.apris_human_alias when opening the Ribo file")
     return p.parse_args()
 
-
+# Takes a sequence and the trim arguments
 def iter_trimmed_codons(seq: str, trim_start_codons: int, trim_stop_codons: int):
     """yield (codon_str, cds_nt_idx) for trimmed cds sequence"""
+    # Lenght of the seqeunce
     n = len(seq)
+    # Trimming if necessary
     start_nt = trim_start_codons * 3
     end_nt = n - (trim_stop_codons * 3)
+    # If trimming gets rid of seq then return
     if start_nt >= end_nt:
         return
-    last_full = end_nt - ((end_nt - start_nt) % 3)
+    # Ensures that slicing maintains codon frame in 3's
+    last_full = end_nt - ((end_nt - start_nt) % 3) # adjust end_nt to last full codon, if 101, then ((end_nt - start_nt) % 3) is 2, so last_full is 99
     for i in range(start_nt, last_full, 3):
-        codon = seq[i:i+3]
-        if len(codon) == 3 and "N" not in codon.upper():
-            yield codon, i
+        codon = seq[i:i+3] # Looks at the sequence in windows of 3 (codons)
+        if len(codon) == 3 and "N" not in codon.upper(): # Quality checks codons for full length and no ambiguous bases
+            yield codon, i # yields the codon and the index of the first nt of the codon in the original sequence (not trimmed), ("ATG", 0), ("GAA", 3), ("TTT", 6)
 
 
 def main():
@@ -57,6 +61,9 @@ def main():
     # coverage dict
     with gzip.open(args.pickle, "rb") as f:
         coverage_dict = pickle.load(f)
+    
+    # Get the start and stop positions of the CDS for each transcript, and the sequences of each transcript
+    # Retunrs a dictionary of the cds ranges (transcript -> (start, stop)) and a dictionary of sequences (transcript -> sequence)
     cds_range = get_cds_range_lookup(ribo_object)
     sequence = get_sequence(ribo_object, args.reference,
                             alias=bool(args.use_human_alias))
@@ -64,33 +71,43 @@ def main():
     codon_occ_by_exp = {exp: defaultdict(int) for exp in coverage_dict}
     transcriptome_codon_counts = defaultdict(int)
 
-    # iterate once over transcripts for background
+    # iterate once over transcripts for background / Overall codon counts in the transcriptome (not weighted by coverage)
     for tx in cds_range:
+        # Get the start and stop in for each of the transcript
         start, stop = cds_range[tx]
+        # Extracts only the cds sequence
         cds_seq = sequence[tx][start:stop]
         for codon, _ in iter_trimmed_codons(cds_seq, args.trim_start, args.trim_stop):
-            transcriptome_codon_counts[codon] += 1
+            transcriptome_codon_counts[codon] += 1 # Adds one to the codon in the transcriptome counts for each codon in the cds sequence of each transcript
 
-    # per-experiment counts
+    # per-experiment
     for exp, tx_map in coverage_dict.items():
+        # For transcript and coverage in the experiment
         for tx, cov in tx_map.items():
+            # No coverage or not in cds_range, dictionary, skip
             if cov is None or tx not in cds_range:
                 continue
+            # Gets the start and stop indexes
             start, stop = cds_range[tx]
+            # Returns the cds sequence for the transcript
             cds_seq = sequence[tx][start:stop]
+            # The codon and the index of the first nt of the codon in the original sequence ("ATG", 0), ("GAA", 3), ("TTT", 6)
             for codon, cds_nt_idx in iter_trimmed_codons(cds_seq, args.trim_start, args.trim_stop):
-                cov_start = cds_nt_idx
-                cov_end = cov_start + 3
-                if cov_end <= len(cov):
-                    count = cov[cov_start:cov_end].sum()
+                # Start of the coverage
+                cov_start = cds_nt_idx # 0, 3, 6
+                # End o f the coverage
+                cov_end = cov_start + 3 # 3, 6, 9
+                # Check if the coverage window is within the bounds of the coverage array for the transcript,
+                if cov_end <= len(cov): # If the end of the coverage window is within the bounds of the coverage array for the transcript cov_end = 9, len(cov) = 99 (Still within CDS)
+                    count = cov[cov_start:cov_end].sum() # Sums the coverage counts in the window of the codon (3 nt)
                     if count > 0:
-                        codon_occ_by_exp[exp][codon] += float(count)
+                        codon_occ_by_exp[exp][codon] += float(count) # Adds the count to the codon occupancy for the experiment, weighted by coverage (not just presence/absence)
 
     # build output dataframe
-    all_codons = set(transcriptome_codon_counts)
+    all_codons = set(transcriptome_codon_counts) # All codons in the transcriptome
     for exp in codon_occ_by_exp:
-        all_codons.update(codon_occ_by_exp[exp].keys())
-    ordered_codons = sorted(all_codons)
+        all_codons.update(codon_occ_by_exp[exp].keys()) # Rare chance that theres a codon in the coverage that isn't in the transcriptome counts
+    ordered_codons = sorted(all_codons) # Sort codons alphabetically for consistent output order
 
     rows = []
     for codon in ordered_codons:

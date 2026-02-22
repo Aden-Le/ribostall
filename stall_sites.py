@@ -60,14 +60,14 @@ def main():
 
     # Rep groups
     def parse_groups(groups_arg):
-        groups = {}
-        for block in groups_arg.split(";"):
+        groups = {} # Makes empty dictionary
+        for block in groups_arg.split(";"): 
             name, reps = block.split(":")
-            groups[name] = reps.split(",")
+            groups[name] = reps.split(",") # Creates Dictionary that stores {Condition [rep1, rep2, rep3]}
         return groups
     groups = parse_groups(args.groups)
 
-    # Load coverage
+    # Load coverage file
     with gzip.open(args.pickle, "rb") as f:
         cov = pickle.load(f)
 
@@ -80,26 +80,43 @@ def main():
         print("Warning: the following replicates are missing from coverage:", ", ".join(missing))
 
     # Filter transcripts
+    # For each group, applies the filter_tx function to get a list of transcripts that have sufficient coverage in at least tx_min_reps replicates. 
+    # Stores these lists in a dictionary where the keys are the group names and the values are the lists of filtered transcripts.
     filt_tx_dict = {
         group: filter_tx(cov, reps, min_reps=args.tx_min_reps, threshold=args.tx_threshold)
         for group, reps in groups.items()
     }
-    # Intersection across tissues
+    # Intersection across tissues/conditions
+    # Gives a set of transcripts that passed filtering in each group
     filt_tx_set = set.intersection(*(set(v) for v in filt_tx_dict.values())) if filt_tx_dict else set()
 
-    # Keep only filtered transcripts in coverage
+    # Keep only filtered transcripts coverage that passed in all groups
+    # This means each replicate in the coverage file will be filtered to only include the transcripts that are in the filt_tx_set. This ensures that downstream analyses are only performed on transcripts that have sufficient coverage across all groups/conditions.
+    # It will look like {exp: {tx: arr, tx2: arr2, ...}, exp2: {tx: arr, ...}, ...} but only for transcripts that passed the filter in all groups
     cov_filt = {
         exp: {tx: arr for tx, arr in tx_dict.items() if tx in filt_tx_set}
         for exp, tx_dict in cov.items()
     }
 
     # Codonize counts
+    # For each replicate in the cov_filt dictionary, go through each transcript and apply the codonize_counts_cds function to convert the coverage 
+    # from nucleotide-level to codon-level. The result is stored in a new dictionary codon_cov that has the same structure as cov_filt but with 
+    # codon-level coverage arrays instead of nucleotide-level.
+    # So for the 1D array per transcript, it is the sum of the codon coverage across the 3 nucleotides in that codon. The length of the resulting array 
+    # is the number of full codons in the CDS after trimming according to the specified frame.
+    # In my case it's the lenght of the CDS divided by 3
+    # Example Output: {exp: {tx: codon_arr, tx2: codon_arr2, ...}, exp2: {tx: codon_arr, ...}, ...} 
     codon_cov = {
         exp: {tx: codonize_counts_cds(arr) for tx, arr in tx_dict.items()}
         for exp, tx_dict in cov_filt.items()
     }
 
     # Identify stall sites per experiment
+    # For each experiment and each transcript, apply the call_stalls function to identify stall sites based on the codon-level coverage. 
+    # The call_stalls function uses the specified parameters (min_z, min_obs, trim_edges, pseudocount) to determine which codons are considered 
+    # stall sites. 
+    # The result is stored in a new dictionary stalls that has the same structure as codon_cov but with lists of stall site indices instead of 
+    # coverage arrays.
     stalls = {
         exp: {
             tx: call_stalls(
@@ -113,6 +130,8 @@ def main():
         }
         for exp, tx_dict in codon_cov.items()
     }
+    # Will look like {exp: {tx: [site1, site2, ...], tx2: [...], ...}, exp2: {...}, ...} where site1, site2 are dicts with keys 
+    # "index", "obs", "z" for each stall site called in that transcript for that experiment
 
     # Consensus stalls per tissue group
     consensus = {

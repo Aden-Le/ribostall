@@ -8,12 +8,17 @@ def filter_tx(cov_by_exp: dict, reps: list[str], min_reps: int = 2, threshold: f
     Keep transcripts where at least `min_reps` of the given replicates
     have mean coverage per-nt > threshold.
     """
-    common = set.intersection(*(set(cov_by_exp[r].keys()) for r in reps))
+    # Only keeps transcripts present in all replicates
+    common = set.intersection(*(set(cov_by_exp[r].keys()) for r in reps)) # Takes all the replicates and finds the common keys (transcripts) across them
     keep = []
     for tx in common:
-        n_pass = sum(np.asarray(cov_by_exp[r][tx], float).mean() > threshold for r in reps)
+        # Calculates the mean coverage for this transcript in each replicate and counts how many replicates pass the threshold
+        # True value = 1, False value = 0, so summing gives the count of replicates that pass the threshold
+        n_pass = sum(np.asarray(cov_by_exp[r][tx], float).mean() > threshold for r in reps) 
+        # If the count of replicates that pass the threshold is at least min_reps, keep this transcript
         if n_pass >= min_reps:
             keep.append(tx)
+    # Returns a list of transcripts that have sufficient coverage in at least min_reps replicates
     return keep
 
 def codonize_counts_cds(x_nt: np.ndarray, frame: int = 0):
@@ -27,26 +32,42 @@ def codonize_counts_cds(x_nt: np.ndarray, frame: int = 0):
       x_codon: float array of length = number of full codons
       map_codon_to_nt: list of (lo, hi) nt index slices in the original x_nt
     """
+    # Confirm 1D input
     assert x_nt.ndim == 1, "x_nt must be 1D"
+    # Normalize frame to [0, 2]
     frame = int(frame) % 3
     # Align start by frame and trim tail to multiple of 3
     start = frame
+    # Example: if len(x_nt) = 99 and frame = 0, usable_len = 99; if frame = 1, usable_len = 98; if frame = 2, usable_len = 97. 
+    # Then we trim to the nearest multiple of 3. which gives us 99, 96, and 96 respectively. This ensures that we only consider full codons starting 
+    # from the specified frame.
     usable_len = ((len(x_nt) - start) // 3) * 3
+    # Return nothing if no full codons are available after trimming
     if usable_len <= 0:
         return np.zeros(0, dtype=float), []
+    # Gives stop
     stop = start + usable_len
+    # Slices CDS into usable array
     cds_slice = x_nt[start:stop]                # length is multiple of 3
+    # Reshapes the array into a 2D array where each row corresponds to a codon (3 nts). Then sums across the columns to get the total coverage 
+    # for each codon. The result is a 1D array where each element corresponds to the total coverage for a codon.
     x3 = cds_slice.reshape(-1, 3)               # (codons, 3)
+    # 1d Array where each element is the sum of the 3 nts in the corresponding codon. This gives us the codon-level coverage.
     x_codon = x3.sum(axis=1).astype(float)
     return x_codon
 
 def global_z_log(x: np.ndarray, pseudocount: float = 0.5) -> np.ndarray:
     """Transcript-wide z on log2(x+pc)."""
+    # Ensure numeric array
     x = np.asarray(x, dtype=float)
+    # The psuedocount is added to avoid taking log of zero, which would be undefined. By adding a small pseudocount, we ensure that all values are positive
+    # Applies a log2 transformation to the input array for each value
     v = np.log2(x + pseudocount)
+    # Calculates the standard deviation
     sd = v.std()
     if sd == 0:
         return np.zeros_like(v)
+    # Computes a Z score for each codon
     return (v - v.mean()) / (sd + 1e-12)
 
 def call_stalls(
@@ -60,15 +81,44 @@ def call_stalls(
     Keep any codon with global z >= min_z and obs >= min_obs (no local filters).
     Returns list of dicts: {index, obs, z}.
     """
+    # Ensure that the array is numeric and 1D
+    # Each array is from one replicate's transcript 
+    # It is a codon level coverage array
     x = np.asarray(x_codon, dtype=float)
+    # Gets the length
     n = x.size
+    # If empty return empty list
     if n == 0:
         return []
+    # Calculates the Z score for each codon
     z = global_z_log(x, pseudocount=pseudocount)
+    # Trim edges by "trim_edges" (int) codons on each side. This is to avoid edge effects where coverage 
+    # might be artificially low or high due to the start and stop codons. The "lo" variable represents the 
+    # index of the first codon to consider after trimming the 5' end, and "hi" represents the index of the last codon 
+    # to consider before trimming the 3' end. If "hi" is less than or equal to "lo", it means that there are no codons left to consider after trimming, 
+    # and an empty list is returned.
     lo, hi = trim_edges, n - trim_edges
     if hi <= lo:
         return []
-    cand = np.flatnonzero((z >= min_z) & (x >= min_obs) & (np.arange(n) >= lo) & (np.arange(n) < hi))
+
+    # Goes through each codon and checks if it meets the criteria for being a stall site. The conditions are:
+    # z >= min_z: the Z-score for the codon must be greater than or equal to the specified minimum Z-score threshold.
+    # x >= min_obs: the observed coverage for the codon must be greater than or equal to the specified minimum observed coverage threshold.
+    # np.arange(n) >= lo: the index of the codon must be greater than or equal to the lower bound defined by "lo" (trimming the 5' end).
+    # np.arange(n) < hi: the index of the codon must be less than the upper bound defined by "hi" (trimming the 3' end).
+    cand = np.flatnonzero((z >= min_z) & 
+                          (x >= min_obs) & 
+                          (np.arange(n) >= lo) & 
+                          (np.arange(n) < hi))
+    #cand is an array of indices where the conditions are met
+    # [2, 3, 5] codon indices that are called as stalls
+
+    # Returns a list of dictionaries, where each dictionary corresponds to a codon that meets the criteria for being a stall site. Each dictionary contains the following
+    # keys:
+    # "index": the index of the codon in the original array (the position of the codon within the transcript).
+    # "obs": the observed coverage for that codon (the value from the x array at the corresponding index).
+    # "z": the Z-score for that codon (the value from the z array at the corresponding index).
+    # Example: {'index': 2, 'obs': 10.0, 'z': 1.8}
     return [dict(index=int(i), obs=float(x[i]), z=float(z[i])) for i in cand]
 
 def _indices_from_stalls(stalls):
@@ -85,7 +135,7 @@ def consensus_stalls_across_reps(
     min_support: int = 2,
     tol: int = 0,
     min_sep: int = 0,
-    conflict_resolution: str = "keep_both"  # "keep_both" removes downstream preference
+    conflict_resolution: str = "keep_both"  # "keep_both" removes downstream preference | confict resolution is predefined here
 ):
     """
     Compute consensus stall indices per transcript across replicate experiments,
@@ -99,6 +149,7 @@ def consensus_stalls_across_reps(
     """
 
     def _indices_from_stalls(stalls_for_tx: Any) -> List[int]:
+        # If empty return nothing
         if not stalls_for_tx:
             return []
         if isinstance(stalls_for_tx, dict) and "indices" in stalls_for_tx:
@@ -128,19 +179,33 @@ def consensus_stalls_across_reps(
             return [int(stalls_for_tx)]
         raise TypeError(f"Unsupported stalls_for_tx shape/type: {type(stalls_for_tx)}")
 
+    # Find common transcripts across replicates that have stall sites for each condition
     common_txs = set.intersection(*(set(stalls_by_exp[r].keys()) for r in reps))
     out: Dict[str, List[int]] = {}
 
+    # For each common trnascript in a condition
     for tx in common_txs:
+        # Run each transcript for each replicate through indices_from_stalls
+        # Example input {"tx1": [{"index": 2, "obs": 10.0, "z": 1.8}, {"index": 5, "obs": 8.0, "z": 1.5}]}
+        # Returns a dictionary of the form {rep1: [2, 5], rep2: [3, 5], rep3: [2, 4]} where the lists are the stall indices for that transcript in each replicate. 
+        # This allows us to compare the stall sites across replicates for the same transcript.
         per_rep_idx = {r: _indices_from_stalls(stalls_by_exp[r][tx]) for r in reps}
+        # Makes set of unique stall sites across all replicates
         candidates = sorted(set().union(*per_rep_idx.values()))
         consensus: List[int] = []
 
+        # For each stall site
         for c in candidates:
             support = 0
             supporting_hits: List[int] = []
             for r in reps:
-                arr = per_rep_idx[r]
+                # Goes through each replicate's list of stall sites
+                arr = per_rep_idx[r] 
+                # Find where c - tol will fit in the sorted list of stall sites for this replicate. 
+                # This gives us the index of the first stall site that is greater than or equal to c - tol. 
+                # We then check if this stall site is within c + tol. If it is, we consider it a supporting hit for candidate c.
+
+                # Moves to the lower bound (c - tol)
                 j = bisect.bisect_left(arr, c - tol)
                 hit = None
                 while j < len(arr) and arr[j] <= c + tol:

@@ -113,7 +113,7 @@ def get_offset(
         sum_references=True,
     )
     # Save metagene profile to a CSV file for inspection
-    mg.to_csv("metagene_profile.csv")
+    mg.to_csv("metagene_profile_grace.csv")
     print(f"[get_offset] Metagene profile saved to metagene_profile.csv")
 
     def _all_intlike(vals):

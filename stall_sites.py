@@ -72,7 +72,7 @@ def main():
         cov = pickle.load(f)
 
     # Load ribo object (adjust alias to your organism as needed)
-    ribo_object = Ribo(args.ribo, alias=None)
+    ribo_object = Ribo(args.ribo, alias=ribopy.api.alias.apris_human_alias)
 
     # (Optional) quick sanity check that all reps exist in coverage
     missing = [r for rs in groups.values() for r in rs if r not in cov]
@@ -147,7 +147,7 @@ def main():
     if args.motif:
         reference_file_path = args.reference
         cds_range = get_cds_range_lookup(ribo_object)
-        sequence = get_sequence(ribo_object, reference_file_path, alias=None)   
+        sequence = get_sequence(ribo_object, reference_file_path, alias = ribopy.api.alias.apris_human_alias)   
         def compute_W_for_group(g):
             stalls = consensus[g]
             win = windows_aa(consensus[g], cds_range, sequence,

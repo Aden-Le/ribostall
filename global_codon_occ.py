@@ -70,15 +70,19 @@ def main():
 
     codon_occ_by_exp = {exp: defaultdict(int) for exp in coverage_dict}
     transcriptome_codon_counts = defaultdict(int)
+    transcripts_added = 0
 
     # iterate once over transcripts for background / Overall codon counts in the transcriptome (not weighted by coverage)
     for tx in cds_range:
+        transcripts_added += 1
         # Get the start and stop in for each of the transcript
         start, stop = cds_range[tx]
         # Extracts only the cds sequence
         cds_seq = sequence[tx][start:stop]
         for codon, _ in iter_trimmed_codons(cds_seq, args.trim_start, args.trim_stop):
             transcriptome_codon_counts[codon] += 1 # Adds one to the codon in the transcriptome counts for each codon in the cds sequence of each transcript
+    
+    print(f"Counted codons in {transcripts_added} transcripts for transcriptome background counts.")
 
     # per-experiment
     for exp, tx_map in coverage_dict.items():

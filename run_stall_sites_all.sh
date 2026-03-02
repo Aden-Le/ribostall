@@ -6,6 +6,7 @@
 # ============== CONFIG: edit these ==============
 # Path to directory containing _coverage.pkl.gz files
 RIBO_DIR="./all_ribo_file"
+RIBO_FILE="$RIBO_DIR/C_elegan_all_02_04_2026.ribo"  # Path to one .ribo file for loading metadata (adjust as needed)
 
 # stall_sites.py arguments (required)
 # Format: "group1:rep1,rep2,rep3;group2:rep1,rep2,rep3"
@@ -57,7 +58,7 @@ fi
 echo "Using coverage pickle: $PICKLE"
 echo "Groups: $GROUPS"
 # Build command array
-CMD=(python3 stall_sites.py --pickle "$PICKLE" --ribo "$RIBO_DIR" --groups "$EXP_GROUPS" --tx_threshold "$TX_THRESHOLD" --tx_min_reps "$TX_MIN_REPS" --min_z "$MIN_Z" --min_reads "$MIN_READS" --stall_min_reps "$STALL_MIN_REPS" --trim_edges "$TRIM_EDGES" --min_sep "$MIN_SEP" --pseudocount "$PSEUDOCOUNT" --out-json "$OUT_JSON" --out-csv "$RIBO_DIR/$OUT_CSV")
+CMD=(python3 stall_sites.py --pickle "$PICKLE" --ribo "$RIBO_FILE" --groups "$EXP_GROUPS" --tx_threshold "$TX_THRESHOLD" --tx_min_reps "$TX_MIN_REPS" --min_z "$MIN_Z" --min_reads "$MIN_READS" --stall_min_reps "$STALL_MIN_REPS" --trim_edges "$TRIM_EDGES" --min_sep "$MIN_SEP" --pseudocount "$PSEUDOCOUNT" --out-json "$OUT_JSON" --out-csv "$RIBO_DIR/$OUT_CSV")
 
 # Add motif analysis if enabled
 if [ "$RUN_MOTIF" = "yes" ]; then

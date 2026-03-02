@@ -67,12 +67,14 @@ def main():
         return groups
     groups = parse_groups(args.groups)
 
-    # Load coverage
+        # Load coverage
     with gzip.open(args.pickle, "rb") as f:
         cov = pickle.load(f)
     
-    for key, value in cov.items():
-        logging.info(f"Coverage key: {key}, number of transcripts: {len(value)}")
+    remove_coverage_list = ["BWM_day0_rep1", "BWM_day5_rep1", "BWM_day10_rep1", "control_day0_rep1", "control_day5_rep1", "control_day10_rep1"]
+    for key in remove_coverage_list:
+        if key in cov:
+            del cov[key]
 
     # Load ribo object (adjust alias to your organism as needed)
     ribo_object = Ribo(args.ribo, alias=ribopy.api.alias.apris_human_alias)

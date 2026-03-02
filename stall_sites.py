@@ -77,7 +77,7 @@ def main():
             del cov[key]
 
     # Load ribo object (adjust alias to your organism as needed)
-    ribo_object = Ribo(args.ribo, alias=ribopy.api.alias.apris_human_alias)
+    ribo_object = Ribo(args.ribo, alias=None)
 
     # (Optional) quick sanity check that all reps exist in coverage
     missing = [r for rs in groups.values() for r in rs if r not in cov]

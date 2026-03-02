@@ -10,7 +10,7 @@ RIBO_DIR="./all_ribo_file"
 # stall_sites.py arguments (required)
 # Format: "group1:rep1,rep2,rep3;group2:rep1,rep2,rep3"
 # IMPORTANT: replace rep names with actual replicate names from your .ribo file
-GROUPS='control_day_0:control_day0_rep2,control_day0_rep3;control_day_5:control_day5_rep2,control_day5_rep3;control_day_10:control_day10_rep2,control_day10_rep3;BWM_day_0:BWM_day0_rep2,BWM_day0_rep3;BWM_day_5:BWM_day5_rep2,BWM_day5_rep3;BWM_day_10:BWM_day10_rep2,BWM_day10_rep3'
+EXP_GROUPS='control_day_0:control_day0_rep2,control_day0_rep3;control_day_5:control_day5_rep2,control_day5_rep3;control_day_10:control_day10_rep2,control_day10_rep3;BWM_day_0:BWM_day0_rep2,BWM_day0_rep3;BWM_day_5:BWM_day5_rep2,BWM_day5_rep3;BWM_day_10:BWM_day10_rep2,BWM_day10_rep3'
 
 # Optional: transcript filtering thresholds
 TX_THRESHOLD=1.0
@@ -57,7 +57,7 @@ fi
 echo "Using coverage pickle: $PICKLE"
 echo "Groups: $GROUPS"
 # Build command array
-CMD=(python3 stall_sites.py --pickle "$PICKLE" --ribo "$RIBO_DIR" --groups "$GROUPS" --tx_threshold "$TX_THRESHOLD" --tx_min_reps "$TX_MIN_REPS" --min_z "$MIN_Z" --min_reads "$MIN_READS" --stall_min_reps "$STALL_MIN_REPS" --trim_edges "$TRIM_EDGES" --min_sep "$MIN_SEP" --pseudocount "$PSEUDOCOUNT" --out-json "$OUT_JSON" --out-csv "$RIBO_DIR/$OUT_CSV")
+CMD=(python3 stall_sites.py --pickle "$PICKLE" --ribo "$RIBO_DIR" --groups "$EXP_GROUPS" --tx_threshold "$TX_THRESHOLD" --tx_min_reps "$TX_MIN_REPS" --min_z "$MIN_Z" --min_reads "$MIN_READS" --stall_min_reps "$STALL_MIN_REPS" --trim_edges "$TRIM_EDGES" --min_sep "$MIN_SEP" --pseudocount "$PSEUDOCOUNT" --out-json "$OUT_JSON" --out-csv "$RIBO_DIR/$OUT_CSV")
 
 # Add motif analysis if enabled
 if [ "$RUN_MOTIF" = "yes" ]; then

@@ -5,7 +5,7 @@
 
 # ============== CONFIG: edit these ==============
 # Path to directory containing .ribo files (absolute or relative to current directory)
-RIBO_DIR="./ribo_all_26_38"
+RIBO_DIR="./all_ribo_file"
 
 # adj_coverage.py arguments (required)
 MIN_LEN=26

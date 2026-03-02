@@ -5,7 +5,7 @@
 
 # ============== CONFIG: edit these ==============
 # Path to directory containing _coverage.pkl.gz files
-RIBO_DIR="./ribo_all_26_38"
+RIBO_DIR="./all_ribo_file"
 
 # stall_sites.py arguments (required)
 # Format: "group1:rep1,rep2,rep3;group2:rep1,rep2,rep3"

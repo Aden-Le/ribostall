@@ -57,7 +57,7 @@ fi
 echo "Using coverage pickle: $PICKLE"
 
 # Build command array
-CMD=(python3 stall_sites.py --pickle "$PICKLE" --ribo "$RIBO_DIR" --groups "$GROUPS" --tx_threshold "$TX_THRESHOLD" --tx_min_reps "$TX_MIN_REPS" --min_z "$MIN_Z" --min_reads "$MIN_READS" --stall_min_reps "$STALL_MIN_REPS" --trim_edges "$TRIM_EDGES" --min_sep "$MIN_SEP" --pseudocount "$PSEUDOCOUNT" --out-json "$OUT_JSON" --out-csv "$OUT_CSV")
+CMD=(python3 stall_sites.py --pickle "$PICKLE" --ribo "$RIBO_DIR" --groups "$GROUPS" --tx_threshold "$TX_THRESHOLD" --tx_min_reps "$TX_MIN_REPS" --min_z "$MIN_Z" --min_reads "$MIN_READS" --stall_min_reps "$STALL_MIN_REPS" --trim_edges "$TRIM_EDGES" --min_sep "$MIN_SEP" --pseudocount "$PSEUDOCOUNT" --out-json "$OUT_JSON" --out-csv "$RIBO_DIR/$OUT_CSV")
 
 # Add motif analysis if enabled
 if [ "$RUN_MOTIF" = "yes" ]; then

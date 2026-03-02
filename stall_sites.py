@@ -70,6 +70,9 @@ def main():
     # Load coverage
     with gzip.open(args.pickle, "rb") as f:
         cov = pickle.load(f)
+    
+    for key, value in cov.items():
+        logging.info(f"Coverage key: {key}, number of transcripts: {len(value)}")
 
     # Load ribo object (adjust alias to your organism as needed)
     ribo_object = Ribo(args.ribo, alias=ribopy.api.alias.apris_human_alias)

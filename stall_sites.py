@@ -134,6 +134,10 @@ def main():
     # "index", "obs", "z" for each stall site called in that transcript for that experiment
 
     # Consensus stalls per tissue group
+    # Consensus will look like {group: {tx: [site1, site2, ...], tx2: [...], ...}, group2: {...}, ...} where site1, site2 are dicts with keys
+    # So site1 will look like {"index": codon_index, "obs": observed_reads_at_site, "z": z_score_at_site} for each consensus stall site that 
+    # is supported by at least stall_min_reps replicates in that group
+    
     consensus = {
         group: consensus_stalls_across_reps(
             stalls,
@@ -168,17 +172,22 @@ def main():
         cds_range = get_cds_range_lookup(ribo_object)
         sequence = get_sequence(ribo_object, reference_file_path, alias=None)   
         def compute_W_for_group(g):
+            # Get the stall sites for each condition in the consesnus dictionary
             stalls = consensus[g]
+            # Get the amino acid window for each of these stall sites
             win = windows_aa(consensus[g], cds_range, sequence,
                         flank_left=args.flank_left, flank_right=args.flank_right, psite_offset_codons=args.psite_offset)
+            # Create a matrix of counts for each AA at each relative position across all windows
             counts = count_matrix(win, AA_ORDER, flank_left=args.flank_left, flank_right=args.flank_right)
+            # Compute the background AA frequencies across all CDS regions in the dataset
             bg = background_aa_freq(consensus[g].keys(), cds_range, sequence, AA_ORDER)
+            #
             return pwm_position_weighted_log2(counts, bg, pseudocount=args.pseudocount)
 
-        # compute all, then unify y-limits for fair visual comparison
+        # compute all
         W_by_group = {g: compute_W_for_group(g) for g in groups.keys()}
 
-        # per-position heights (sum over amino acids)
+        # per-position heights (sum over amino acids) (Graphing Code)
         ymax = max(
             W.loc[:, pos][W.loc[:, pos] > 0].sum()
             for g, W in W_by_group.items()

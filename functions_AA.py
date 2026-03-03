@@ -56,26 +56,35 @@ def windows_aa(consensus_group: dict, cds_range: dict, sequence: dict,
     aligned at the P-site index (i + psite_offset_codons).
     Returns: list of AA lists, each length = window_len.
     """
-    W = flank_left + 1 + flank_right
+    # Flank left default is 10 and flank right default is 6 
+    W = flank_left + 1 + flank_right # Default is 17
     win_list = []
     for tx, idx_list in consensus_group.items():
-        # harmonize key for cds_range
+        # Gets the transcript key for cds_range, with robust alias fallback
         key = tx if tx in cds_range else tx.split("|")[4]
         start, stop = cds_range[key]
+        # Gets the cds sequence for this transcript
         cds_nt = sequence[tx][start:stop]
+        # Translate into amino acids
         aa_seq = translate_cds_nt_to_aa(cds_nt)
+        # Gets the length of the amino acid sequence
         Lcod = len(aa_seq)
         for i in idx_list:
+            # By default psite_offset_codons=0, so center is just i, but can be shifted if needed
             center = i + psite_offset_codons  # codon index for P-site
+            # lo = center - 10
             lo = center - flank_left
+            # hi = center + 6 + 1
             hi = center + flank_right + 1
             if lo < 0 or hi > Lcod:
                 continue
             win = list(aa_seq[lo:hi])
+            # The window drops stalls because stall sites are normal termination events, not elongation stalls
             if "*" in win:    # optional: drop windows containing stop
                 continue
             if "X" in win:    # drop ambiguous
                 continue
+            # win is a list of AAs of length W, centered at P-site
             win_list.append(win)
     return win_list  # list of lists
 
@@ -84,18 +93,23 @@ def count_matrix(win_list, aa_order=AA_ORDER, flank_left=10, flank_right=10):
     if not win_list:
         return pd.DataFrame(0, index=aa_order,
                             columns=list(range(-flank_left, flank_right+1)))
+    # Builds the same window length as in windows_aa for consistency check
     W = flank_left + 1 + flank_right
     # ensure all windows consistent
     for w in win_list:
         assert len(w) == W, f"Window length {len(w)} != {W}"
+    # Creates column labels from -flank_left to +flank_right [-10..0..+6]
     cols = list(range(-flank_left, flank_right + 1))
+    # Create 0's matrix with AAs as index and relative positions as columns
     counts = pd.DataFrame(0, index=aa_order, columns=cols, dtype=int)
+    # Creates a matrix of counts for each AA at each relative position across all windows
     for win in win_list:
         for j, aa in enumerate(win):
             pos = j - flank_left  # -L..0..+R
             if aa in counts.index:
                 counts.loc[aa, pos] += 1
     return counts
+    
 
 def background_aa_freq(transcripts: dict, cds_range: dict, sequence: dict,
                        aa_order=AA_ORDER):
@@ -110,13 +124,18 @@ def background_aa_freq(transcripts: dict, cds_range: dict, sequence: dict,
         if key not in cds_range or tx not in sequence:
             continue  # skip missing entries gracefully
         start, stop = cds_range[key]
+        # Get the cds region
         cds_nt = sequence[tx][start:stop]
+        # Get the AA sequence
         aa_seq = translate_cds_nt_to_aa(cds_nt)  # assumes in-frame, stop excluded
         for aa in aa_seq:
             if aa in aa_order:
                 bg_counts[aa] += 1
+        # Counts how many time that amino acid appears in the sequence and adds to the bg_counts counter
+    # Creates a vector example: A: 100, C: 50, D: 30, E: 20, ... for all AAs in aa_order
     bg = pd.Series({aa: bg_counts.get(aa, 0) for aa in aa_order}, dtype=float)
-    # pseudocount to avoid zeros
+    # pseudocount to avoid zeros and normalize to frequencies
+    # So the sum of the frequencies will be 1, and each frequency will be > 0 due to the pseudocount
     bg = (bg + 1e-6) / (bg.sum() + 1e-6 * len(bg))
     return bg
 
@@ -125,6 +144,8 @@ def pwm_position_weighted_log2(counts_pos, bg_freq, pseudocount=0.5):
     # columns with any counts
     has = counts.sum(axis=0) > 0
     # compute probs only where data exists
+    # Normalize down each column to get p(i,AA) for that position, with pseudocount smoothing
+    # So each amino acid gets a probability at each position, and the probabilities sum to 1 across amino acids for that position
     probs = pd.DataFrame(0.0, index=counts.index, columns=counts.columns)
     tmp = (counts.loc[:, has] + pseudocount)
     tmp = tmp.div(tmp.sum(axis=0), axis=1)
@@ -135,8 +156,9 @@ def pwm_position_weighted_log2(counts_pos, bg_freq, pseudocount=0.5):
     # avoid division by zero (shouldn't happen with your bg)
     bg = bg.clip(lower=1e-12)
 
-    lo = np.log2(probs.div(bg, axis=0))  # log ratio
-    W = probs * lo                       # p * log2(p/bg)
+    # Take the log ratio
+    lo = np.log2(probs.div(bg, axis=0))  # log ratio (probability of AA at position / background frequency of that AA)
+W = probs * lo                       # p * log2(p/bg) # This weight is neccesary because
     return W
 
 def plot_logo(weight_mat, title: str = "", aa_class=None, ax=None, ylim=None):

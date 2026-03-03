@@ -28,7 +28,7 @@ PSEUDOCOUNT=0.5
 # Optional: motif analysis (set to "yes" to enable)
 RUN_MOTIF="yes"
 # If using motif, set reference file path:
-REFERENCE_FILE=""  # e.g., "./reference_files/appris_mouse_v2_selected.fa.gz"
+REFERENCE_FILE="./C_elegan_reference/appris_celegans_v1_selected_new.fa"  # e.g., "./reference_files/appris_mouse_v2_selected.fa.gz"
 FLANK_LEFT=10
 FLANK_RIGHT=6
 

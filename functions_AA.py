@@ -56,6 +56,7 @@ def windows_aa(consensus_group: dict, cds_range: dict, sequence: dict,
     aligned at the P-site index (i + psite_offset_codons).
     Returns: list of AA lists, each length = window_len.
     """
+    print(f"Building AA windows with flank_left={flank_left}, flank_right={flank_right}, psite_offset_codons={psite_offset_codons}")
     W = flank_left + 1 + flank_right
     win_list = []
     for tx, idx_list in consensus_group.items():

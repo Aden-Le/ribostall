@@ -26,7 +26,7 @@ MIN_SEP=7
 PSEUDOCOUNT=0.5
 
 # Optional: motif analysis (set to "yes" to enable)
-RUN_MOTIF="no"
+RUN_MOTIF="yes"
 # If using motif, set reference file path:
 REFERENCE_FILE=""  # e.g., "./reference_files/appris_mouse_v2_selected.fa.gz"
 FLANK_LEFT=10

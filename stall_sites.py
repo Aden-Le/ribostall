@@ -159,10 +159,18 @@ def main():
                         flank_left=args.flank_left, flank_right=args.flank_right, psite_offset_codons=args.psite_offset)
             counts = count_matrix(win, AA_ORDER, flank_left=args.flank_left, flank_right=args.flank_right)
             bg = background_aa_freq(consensus[g].keys(), cds_range, sequence, AA_ORDER)
-            return pwm_position_weighted_log2(counts, bg, pseudocount=args.pseudocount)
+            W = pwm_position_weighted_log2(counts, bg, pseudocount=args.pseudocount)
+            return W, counts, bg
 
         # compute all, then unify y-limits for fair visual comparison
-        W_by_group = {g: compute_W_for_group(g) for g in groups.keys()}
+        W_by_group = {}
+        counts_by_group = {}
+        bg_by_group = {}
+        for g in groups.keys():
+            W, counts, bg = compute_W_for_group(g)
+            W_by_group[g] = W
+            counts_by_group[g] = counts
+            bg_by_group[g] = bg
 
         # per-position heights (sum over amino acids)
         ymax = max(
@@ -206,6 +214,12 @@ def main():
             # Save PWM (AA x position)
             pwm_csv = os.path.join(args.out_csv, f"{g}_pwm_log2_enrichment.csv")
             W.to_csv(pwm_csv)
+            # Save counts
+            counts_csv = os.path.join(args.out_csv, f"{g}_counts.csv")
+            counts_by_group[g].to_csv(counts_csv)
+            # Save background
+            bg_csv = os.path.join(args.out_csv, f"{g}_background.csv")
+            bg_by_group[g].to_csv(bg_csv)
         logging.info(f"Saved csv to {pwm_csv}")
 
 if __name__ == "__main__":

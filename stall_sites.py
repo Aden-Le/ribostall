@@ -184,30 +184,27 @@ def main():
             for pos in W.columns
         )
 
-        # plot side-by-side
-        fig, axes = plt.subplots(1, len(groups.keys()), figsize=(5*len(groups.keys()), 5), sharey=True)
-        if len(groups.keys()) == 1:
-            axes = [axes]
-
-        for ax, g in zip(axes, groups.keys()):
-            plt.sca(ax)
+        # plot each group separately
+        out_dir = os.path.dirname(args.out_png)
+        for g in groups.keys():
+            fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+            
             plot_logo(W_by_group[g],
                     title=f"{g.capitalize()}",
                     aa_class=AA_CLASS)
-            ax.set_ylim(-ymin, ymax)   # same scale across panels
-        
-        for ax in axes[1:]:
-            ax.set_ylabel("")
-            ax.tick_params(axis="y", left=False, labelleft=False)
-            ax.spines["left"].set_visible(False)
-
-        patches = [mpatches.Patch(color=c, label=cls) for cls, c in CLASS_COLORS.items()]
-        fig.legend(handles=patches, loc="lower center", ncol=len(patches))
-
-        plt.tight_layout()
-        plt.subplots_adjust(bottom=0.17)
-        fig.savefig(args.out_png, dpi=600)
-        logging.info(f"Saved image to {args.out_png}")
+            ax.set_ylim(-ymin, ymax)   # same scale across groups
+            
+            patches = [mpatches.Patch(color=c, label=cls) for cls, c in CLASS_COLORS.items()]
+            fig.legend(handles=patches, loc="lower center", ncol=len(patches))
+            
+            plt.tight_layout()
+            plt.subplots_adjust(bottom=0.17)
+            
+            # Save with group name in filename
+            group_png = os.path.join(out_dir, f"{g}_motif.png")
+            fig.savefig(group_png, dpi=600)
+            logging.info(f"Saved image to {group_png}")
+            plt.close(fig)
         
         os.makedirs(args.out_csv, exist_ok=True)
         for g, W in W_by_group.items():

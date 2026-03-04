@@ -201,7 +201,7 @@ def main():
             plt.subplots_adjust(bottom=0.17)
             
             # Save with group name in filename
-            group_png = os.path.join(out_dir, f"{g}_motif.png")
+            group_png = os.path.join(args.out_csv, f"{g}_motif.png")
             fig.savefig(group_png, dpi=600)
             logging.info(f"Saved image to {group_png}")
             plt.close(fig)

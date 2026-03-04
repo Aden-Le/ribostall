@@ -186,6 +186,8 @@ def main():
 
         # plot each group separately
         out_dir = os.path.dirname(args.out_png)
+        os.makedirs(args.out_csv, exist_ok=True)
+        
         for g in groups.keys():
             fig, ax = plt.subplots(1, 1, figsize=(5, 5))
             

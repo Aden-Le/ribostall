@@ -168,10 +168,11 @@ def main():
         bg_by_group = {}
         bg_counts_by_group = {}
         for g in groups.keys():
-            W, counts, bg = compute_W_for_group(g)
+            W, counts, bg, bg_counts = compute_W_for_group(g)
             W_by_group[g] = W
             counts_by_group[g] = counts
             bg_by_group[g] = bg
+            bg_counts_by_group[g] = bg_counts
 
         # per-position heights (sum over amino acids)
         ymax = max(

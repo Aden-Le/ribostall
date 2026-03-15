@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 import numpy as np
 from collections import Counter, defaultdict
@@ -117,6 +119,8 @@ def background_aa_freq(transcripts: dict, cds_range: dict, sequence: dict,
             if aa in aa_order:
                 bg_counts[aa] += 1
     bg = pd.Series({aa: bg_counts.get(aa, 0) for aa in aa_order}, dtype=float)
+    bg_counts_csv = os.path.join("./motif_csv", f"{g}_background_counts.csv")
+    bg.to_csv(bg_counts_csv)
     # pseudocount to avoid zeros
     bg = (bg + 1e-6) / (bg.sum() + 1e-6 * len(bg))
     return bg

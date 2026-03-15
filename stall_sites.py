@@ -158,14 +158,15 @@ def main():
             win = windows_aa(consensus[g], cds_range, sequence,
                         flank_left=args.flank_left, flank_right=args.flank_right, psite_offset_codons=args.psite_offset)
             counts = count_matrix(win, AA_ORDER, flank_left=args.flank_left, flank_right=args.flank_right)
-            bg = background_aa_freq(consensus[g].keys(), cds_range, sequence, AA_ORDER)
+            bg, bg_counts = background_aa_freq(consensus[g].keys(), cds_range, sequence, AA_ORDER)
             W = pwm_position_weighted_log2(counts, bg, pseudocount=args.pseudocount)
-            return W, counts, bg
+            return W, counts, bg, bg_counts
 
         # compute all, then unify y-limits for fair visual comparison
         W_by_group = {}
         counts_by_group = {}
         bg_by_group = {}
+        bg_counts_by_group = {}
         for g in groups.keys():
             W, counts, bg = compute_W_for_group(g)
             W_by_group[g] = W
@@ -219,6 +220,9 @@ def main():
             # Save background
             bg_csv = os.path.join(args.out_csv, f"{g}_background.csv")
             bg_by_group[g].to_csv(bg_csv)
+            # Save background counts
+            bg_counts_csv = os.path.join(args.out_csv, f"{g}_background_counts.csv")
+            bg_counts_by_group[g].to_csv(bg_counts_csv)
         logging.info(f"Saved csv to {pwm_csv}")
 
 if __name__ == "__main__":

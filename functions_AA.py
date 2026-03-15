@@ -119,11 +119,10 @@ def background_aa_freq(transcripts: dict, cds_range: dict, sequence: dict,
             if aa in aa_order:
                 bg_counts[aa] += 1
     bg = pd.Series({aa: bg_counts.get(aa, 0) for aa in aa_order}, dtype=float)
-    bg_counts_csv = os.path.join("./motif_csv", f"{g}_background_counts.csv")
-    bg.to_csv(bg_counts_csv)
+    bg_counts_csv = bg.copy()
     # pseudocount to avoid zeros
     bg = (bg + 1e-6) / (bg.sum() + 1e-6 * len(bg))
-    return bg
+    return bg, bg_counts_csv
 
 def pwm_position_weighted_log2(counts_pos, bg_freq, pseudocount=0.5):
     counts = counts_pos.copy()

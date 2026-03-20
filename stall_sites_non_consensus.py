@@ -61,18 +61,25 @@ def main():
             groups[name] = reps.split(",")
         return groups
     groups = parse_groups(args.groups)
+    logging.info(f"Parsed {len(groups)} groups: {list(groups.keys())}")
 
-        # Load coverage
+    # Load coverage
+    logging.info(f"Loading coverage from {args.pickle} ...")
     with gzip.open(args.pickle, "rb") as f:
         cov = pickle.load(f)
-    
+    logging.info(f"Coverage loaded: {len(cov)} experiments, {len(next(iter(cov.values())))} transcripts each")
+
     remove_coverage_list = ["BWM_day0_rep1", "BWM_day5_rep1", "BWM_day10_rep1", "control_day0_rep1", "control_day5_rep1", "control_day10_rep1"]
-    for key in remove_coverage_list:
-        if key in cov:
-            del cov[key]
+    removed = [k for k in remove_coverage_list if k in cov]
+    for key in removed:
+        del cov[key]
+    if removed:
+        logging.info(f"Removed rep1 experiments: {removed}")
 
     # Load ribo object (adjust alias to your organism as needed)
+    logging.info(f"Loading ribo object from {args.ribo} ...")
     ribo_object = Ribo(args.ribo, alias=None)
+    logging.info("Ribo object loaded")
 
     # (Optional) quick sanity check that all reps exist in coverage
     missing = [r for rs in groups.values() for r in rs if r not in cov]
@@ -99,18 +106,23 @@ def main():
     print(f"{'='*60}\n")
 
     # Keep only filtered transcripts in coverage
+    logging.info("Filtering coverage to intersection transcripts ...")
     cov_filt = {
         exp: {tx: arr for tx, arr in tx_dict.items() if tx in filt_tx_set}
         for exp, tx_dict in cov.items()
     }
+    logging.info(f"Coverage filtered: {len(next(iter(cov_filt.values())))} transcripts retained per experiment")
 
     # Codonize counts
+    logging.info("Codonizing coverage arrays ...")
     codon_cov = {
         exp: {tx: codonize_counts_cds(arr) for tx, arr in tx_dict.items()}
         for exp, tx_dict in cov_filt.items()
     }
+    logging.info("Codonization complete")
 
     # Identify stall sites per experiment
+    logging.info(f"Calling stall sites (min_z={args.min_z}, min_reads={args.min_reads}, trim_edges={args.trim_edges}) ...")
     stalls = {
         exp: {
             tx: call_stalls(
@@ -124,6 +136,7 @@ def main():
         }
         for exp, tx_dict in codon_cov.items()
     }
+    logging.info("Stall calling complete")
 
     # Print
     print(f"Number of filtered transcripts: {len(filt_tx_set)}")
@@ -134,9 +147,12 @@ def main():
     print(f"Number of total stall sites per experiment: {total_counts}")
 
     # JSON
+    logging.info(f"Converting stalls to long-format dataframe ...")
     rep_to_group = {rep: grp for grp, reps in groups.items() for rep in reps}
     df = stalls_to_long_df(stalls, rep_to_group)
+    logging.info(f"Long-format dataframe: {len(df)} rows")
     Path(args.out_json).parent.mkdir(parents=True, exist_ok=True)
+    logging.info(f"Writing JSON to {args.out_json} ...")
     with open(args.out_json, "w") as f:
         for rec in df.to_dict(orient="records"):
             json.dump(rec, f)
@@ -145,23 +161,37 @@ def main():
 
     # Motif
     if args.motif:
+        logging.info("=== MOTIF ANALYSIS ===")
         reference_file_path = args.reference
+        logging.info("Looking up CDS ranges ...")
         cds_range = get_cds_range_lookup(ribo_object)
+        logging.info(f"CDS ranges loaded for {len(cds_range)} transcripts")
+        logging.info(f"Loading sequences from {reference_file_path} ...")
         sequence = get_sequence(ribo_object, reference_file_path, alias = ribopy.api.alias.apris_human_alias)
+        logging.info(f"Sequences loaded for {len(sequence)} transcripts")
+
         def compute_W_for_exp(exp):
-            exp_stalls = stalls[exp]
+            exp_stalls = {tx: [d["index"] for d in site_list] for tx, site_list in stalls[exp].items()}
+            n_sites = sum(len(v) for v in exp_stalls.values())
+            logging.info(f"  [{exp}] Building AA windows ({n_sites} stall sites) ...")
             win = windows_aa(exp_stalls, cds_range, sequence,
                         flank_left=args.flank_left, flank_right=args.flank_right, psite_offset_codons=args.psite_offset)
+            logging.info(f"  [{exp}] {len(win)} windows built; computing count matrix ...")
             counts = count_matrix(win, AA_ORDER, flank_left=args.flank_left, flank_right=args.flank_right)
+            logging.info(f"  [{exp}] Computing background AA frequencies ...")
             bg, bg_counts = background_aa_freq(exp_stalls.keys(), cds_range, sequence, AA_ORDER)
+            logging.info(f"  [{exp}] Computing PWM ...")
             W = pwm_position_weighted_log2(counts, bg, pseudocount=args.pseudocount)
+            logging.info(f"  [{exp}] Done")
             return W, counts, bg, bg_counts
 
         W_by_exp = {}
         counts_by_exp = {}
         bg_by_exp = {}
         bg_counts_by_exp = {}
-        for exp in stalls.keys():
+        n_exps = len(stalls)
+        for i, exp in enumerate(stalls.keys(), 1):
+            logging.info(f"Processing experiment {i}/{n_exps}: {exp}")
             W, counts, bg, bg_counts = compute_W_for_exp(exp)
             W_by_exp[exp] = W
             counts_by_exp[exp] = counts
@@ -169,20 +199,18 @@ def main():
             bg_counts_by_exp[exp] = bg_counts
 
         os.makedirs(args.out_csv, exist_ok=True)
+        logging.info(f"Saving CSVs to {args.out_csv} ...")
         for exp, W in W_by_exp.items():
-            # Save PWM (AA x position)
             pwm_csv = os.path.join(args.out_csv, f"{exp}_pwm_log2_enrichment.csv")
             W.to_csv(pwm_csv)
-            # Save counts
             counts_csv = os.path.join(args.out_csv, f"{exp}_counts.csv")
             counts_by_exp[exp].to_csv(counts_csv)
-            # Save background
             bg_csv = os.path.join(args.out_csv, f"{exp}_background.csv")
             bg_by_exp[exp].to_csv(bg_csv)
-            # Save background counts
             bg_counts_csv = os.path.join(args.out_csv, f"{exp}_background_counts.csv")
             bg_counts_by_exp[exp].to_csv(bg_counts_csv)
-        logging.info(f"Saved csv to {args.out_csv}")
+            logging.info(f"  Saved CSVs for {exp}")
+        logging.info(f"All CSVs saved to {args.out_csv}")
 
 if __name__ == "__main__":
     main()

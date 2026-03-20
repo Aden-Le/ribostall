@@ -11,7 +11,7 @@ import json, os
 from pathlib import Path
 import ribopy
 from ribopy import Ribo
-from functions_stall_sites import filter_tx, codonize_counts_cds, call_stalls, consensus_stalls_across_reps, parse_key, consensus_to_long_df
+from functions_stall_sites import filter_tx, codonize_counts_cds, call_stalls, consensus_to_long_df
 from functions_AA import translate_cds_nt_to_aa, windows_aa, count_matrix, background_aa_freq, pwm_position_weighted_log2, plot_logo, CODON2AA, AA_ORDER, AA_CLASS, CLASS_COLORS
 from functions import get_sequence, get_cds_range_lookup
 
@@ -87,12 +87,23 @@ def main():
         print("Warning: the following replicates are missing from coverage:", ", ".join(missing))
 
     # Filter transcripts
+    n_before = len(next(iter(cov.values())))
+    print(f"\n{'='*60}")
+    print(f"TRANSCRIPT FILTERING")
+    print(f"{'='*60}")
+    print(f"Transcripts before filtering: {n_before}")
+
     filt_tx_dict = {
         group: filter_tx(cov, reps, min_reps=args.tx_min_reps, threshold=args.tx_threshold)
         for group, reps in groups.items()
     }
+    for group, txs in filt_tx_dict.items():
+        print(f"  After per-group filter [{group}]: {len(txs)} transcripts  (lost {n_before - len(txs)})")
+
     # Intersection across tissues
     filt_tx_set = set.intersection(*(set(v) for v in filt_tx_dict.values())) if filt_tx_dict else set()
+    print(f"After intersection across all groups: {len(filt_tx_set)} transcripts  (lost {n_before - len(filt_tx_set)} total)")
+    print(f"{'='*60}\n")
 
     # Keep only filtered transcripts in coverage
     cov_filt = {
@@ -121,28 +132,16 @@ def main():
         for exp, tx_dict in codon_cov.items()
     }
 
-    # Consensus stalls per tissue group
-    consensus = {
-        group: consensus_stalls_across_reps(
-            stalls,
-            reps,
-            min_support=args.stall_min_reps,
-            tol=args.tol,
-            min_sep=args.min_sep
-        )
-        for group, reps in groups.items()
-    }
-
     # Print
     print(f"Number of filtered transcripts: {len(filt_tx_set)}")
     total_counts = {
-        group: sum(len(idxs) for idxs in stalls.values())
-        for group, stalls in consensus.items()
+        exp: sum(len(idxs) for idxs in tx_stalls.values())
+        for exp, tx_stalls in stalls.items()
     }
-    print(f"Number of total stall sites per group: {total_counts}")
+    print(f"Number of total stall sites per experiment: {total_counts}")
 
     # JSON
-    df = consensus_to_long_df(consensus)
+    df = consensus_to_long_df(stalls)
     Path(args.out_json).parent.mkdir(parents=True, exist_ok=True)
     with open(args.out_json, "w") as f:
         for rec in df.to_dict(orient="records"):
@@ -154,79 +153,42 @@ def main():
     if args.motif:
         reference_file_path = args.reference
         cds_range = get_cds_range_lookup(ribo_object)
-        sequence = get_sequence(ribo_object, reference_file_path, alias = ribopy.api.alias.apris_human_alias)   
-        def compute_W_for_group(g):
-            stalls = consensus[g]
-            win = windows_aa(consensus[g], cds_range, sequence,
+        sequence = get_sequence(ribo_object, reference_file_path, alias = ribopy.api.alias.apris_human_alias)
+        def compute_W_for_exp(exp):
+            exp_stalls = stalls[exp]
+            win = windows_aa(exp_stalls, cds_range, sequence,
                         flank_left=args.flank_left, flank_right=args.flank_right, psite_offset_codons=args.psite_offset)
             counts = count_matrix(win, AA_ORDER, flank_left=args.flank_left, flank_right=args.flank_right)
-            bg, bg_counts = background_aa_freq(consensus[g].keys(), cds_range, sequence, AA_ORDER)
+            bg, bg_counts = background_aa_freq(exp_stalls.keys(), cds_range, sequence, AA_ORDER)
             W = pwm_position_weighted_log2(counts, bg, pseudocount=args.pseudocount)
             return W, counts, bg, bg_counts
 
-        # compute all, then unify y-limits for fair visual comparison
-        W_by_group = {}
-        counts_by_group = {}
-        bg_by_group = {}
-        bg_counts_by_group = {}
-        for g in groups.keys():
-            W, counts, bg, bg_counts = compute_W_for_group(g)
-            W_by_group[g] = W
-            counts_by_group[g] = counts
-            bg_by_group[g] = bg
-            bg_counts_by_group[g] = bg_counts
+        W_by_exp = {}
+        counts_by_exp = {}
+        bg_by_exp = {}
+        bg_counts_by_exp = {}
+        for exp in stalls.keys():
+            W, counts, bg, bg_counts = compute_W_for_exp(exp)
+            W_by_exp[exp] = W
+            counts_by_exp[exp] = counts
+            bg_by_exp[exp] = bg
+            bg_counts_by_exp[exp] = bg_counts
 
-        # per-position heights (sum over amino acids)
-        ymax = max(
-            W.loc[:, pos][W.loc[:, pos] > 0].sum()
-            for g, W in W_by_group.items()
-            for pos in W.columns
-        )
-        ymin = max(
-            abs(W.loc[:, pos][W.loc[:, pos] < 0].sum())
-            for g, W in W_by_group.items()
-            for pos in W.columns
-        )
-
-        # plot each group separately
-        out_dir = os.path.dirname(args.out_png)
         os.makedirs(args.out_csv, exist_ok=True)
-        
-        for g in groups.keys():
-            fig, ax = plt.subplots(1, 1, figsize=(5, 5))
-            
-            plot_logo(W_by_group[g],
-                    title=f"{g.capitalize()}",
-                    aa_class=AA_CLASS)
-            ax.set_ylim(-ymin, ymax)   # same scale across groups
-            
-            patches = [mpatches.Patch(color=c, label=cls) for cls, c in CLASS_COLORS.items()]
-            fig.legend(handles=patches, loc="lower center", ncol=len(patches))
-            
-            plt.tight_layout()
-            plt.subplots_adjust(bottom=0.17)
-            
-            # Save with group name in filename
-            group_png = os.path.join(args.out_csv, f"{g}_motif.png")
-            fig.savefig(group_png, dpi=600)
-            logging.info(f"Saved image to {group_png}")
-            plt.close(fig)
-        
-        os.makedirs(args.out_csv, exist_ok=True)
-        for g, W in W_by_group.items():
+        for exp, W in W_by_exp.items():
             # Save PWM (AA x position)
-            pwm_csv = os.path.join(args.out_csv, f"{g}_pwm_log2_enrichment.csv")
+            pwm_csv = os.path.join(args.out_csv, f"{exp}_pwm_log2_enrichment.csv")
             W.to_csv(pwm_csv)
             # Save counts
-            counts_csv = os.path.join(args.out_csv, f"{g}_counts.csv")
-            counts_by_group[g].to_csv(counts_csv)
+            counts_csv = os.path.join(args.out_csv, f"{exp}_counts.csv")
+            counts_by_exp[exp].to_csv(counts_csv)
             # Save background
-            bg_csv = os.path.join(args.out_csv, f"{g}_background.csv")
-            bg_by_group[g].to_csv(bg_csv)
+            bg_csv = os.path.join(args.out_csv, f"{exp}_background.csv")
+            bg_by_exp[exp].to_csv(bg_csv)
             # Save background counts
-            bg_counts_csv = os.path.join(args.out_csv, f"{g}_background_counts.csv")
-            bg_counts_by_group[g].to_csv(bg_counts_csv)
-        logging.info(f"Saved csv to {pwm_csv}")
+            bg_counts_csv = os.path.join(args.out_csv, f"{exp}_background_counts.csv")
+            bg_counts_by_exp[exp].to_csv(bg_counts_csv)
+        logging.info(f"Saved csv to {args.out_csv}")
 
 if __name__ == "__main__":
     main()

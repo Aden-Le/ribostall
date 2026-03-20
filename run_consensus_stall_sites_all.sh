@@ -35,7 +35,7 @@ FLANK_RIGHT=4
 # Output files
 OUT_JSON="stall_sites.jsonl"
 OUT_PNG="motif.png"
-OUT_CSV="motif_csv"
+OUT_CSV="motif_csv_experiments"
 
 # ===============================================
 

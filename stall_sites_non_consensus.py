@@ -11,7 +11,7 @@ import json, os
 from pathlib import Path
 import ribopy
 from ribopy import Ribo
-from functions_stall_sites import filter_tx, codonize_counts_cds, call_stalls, consensus_to_long_df
+from functions_stall_sites import filter_tx, codonize_counts_cds, call_stalls, stalls_to_long_df
 from functions_AA import translate_cds_nt_to_aa, windows_aa, count_matrix, background_aa_freq, pwm_position_weighted_log2, plot_logo, CODON2AA, AA_ORDER, AA_CLASS, CLASS_COLORS
 from functions import get_sequence, get_cds_range_lookup
 
@@ -134,7 +134,8 @@ def main():
     print(f"Number of total stall sites per experiment: {total_counts}")
 
     # JSON
-    df = consensus_to_long_df(stalls)
+    rep_to_group = {rep: grp for grp, reps in groups.items() for rep in reps}
+    df = stalls_to_long_df(stalls, rep_to_group)
     Path(args.out_json).parent.mkdir(parents=True, exist_ok=True)
     with open(args.out_json, "w") as f:
         for rec in df.to_dict(orient="records"):

@@ -1,3 +1,5 @@
+
+
 import logging
 import argparse
 import gzip
@@ -60,16 +62,21 @@ def main():
 
     # Rep groups
     def parse_groups(groups_arg):
-        groups = {} # Makes empty dictionary
-        for block in groups_arg.split(";"): 
+        groups = {}
+        for block in groups_arg.split(";"):
             name, reps = block.split(":")
-            groups[name] = reps.split(",") # Creates Dictionary that stores {Condition [rep1, rep2, rep3]}
+            groups[name] = reps.split(",")
         return groups
     groups = parse_groups(args.groups)
 
-    # Load coverage file
+        # Load coverage
     with gzip.open(args.pickle, "rb") as f:
         cov = pickle.load(f)
+    
+    remove_coverage_list = ["BWM_day0_rep1", "BWM_day5_rep1", "BWM_day10_rep1", "control_day0_rep1", "control_day5_rep1", "control_day10_rep1"]
+    for key in remove_coverage_list:
+        if key in cov:
+            del cov[key]
 
     # Load ribo object (adjust alias to your organism as needed)
     ribo_object = Ribo(args.ribo, alias=None)
@@ -80,43 +87,26 @@ def main():
         print("Warning: the following replicates are missing from coverage:", ", ".join(missing))
 
     # Filter transcripts
-    # For each group, applies the filter_tx function to get a list of transcripts that have sufficient coverage in at least tx_min_reps replicates. 
-    # Stores these lists in a dictionary where the keys are the group names and the values are the lists of filtered transcripts.
     filt_tx_dict = {
         group: filter_tx(cov, reps, min_reps=args.tx_min_reps, threshold=args.tx_threshold)
         for group, reps in groups.items()
     }
-    # Intersection across tissues/conditions
-    # Gives a set of transcripts that passed filtering in each group
+    # Intersection across tissues
     filt_tx_set = set.intersection(*(set(v) for v in filt_tx_dict.values())) if filt_tx_dict else set()
 
-    # Keep only filtered transcripts coverage that passed in all groups
-    # This means each replicate in the coverage file will be filtered to only include the transcripts that are in the filt_tx_set. This ensures that downstream analyses are only performed on transcripts that have sufficient coverage across all groups/conditions.
-    # It will look like {exp: {tx: arr, tx2: arr2, ...}, exp2: {tx: arr, ...}, ...} but only for transcripts that passed the filter in all groups
+    # Keep only filtered transcripts in coverage
     cov_filt = {
         exp: {tx: arr for tx, arr in tx_dict.items() if tx in filt_tx_set}
         for exp, tx_dict in cov.items()
     }
 
     # Codonize counts
-    # For each replicate in the cov_filt dictionary, go through each transcript and apply the codonize_counts_cds function to convert the coverage 
-    # from nucleotide-level to codon-level. The result is stored in a new dictionary codon_cov that has the same structure as cov_filt but with 
-    # codon-level coverage arrays instead of nucleotide-level.
-    # So for the 1D array per transcript, it is the sum of the codon coverage across the 3 nucleotides in that codon. The length of the resulting array 
-    # is the number of full codons in the CDS after trimming according to the specified frame.
-    # In my case it's the lenght of the CDS divided by 3
-    # Example Output: {exp: {tx: codon_arr, tx2: codon_arr2, ...}, exp2: {tx: codon_arr, ...}, ...} 
     codon_cov = {
         exp: {tx: codonize_counts_cds(arr) for tx, arr in tx_dict.items()}
         for exp, tx_dict in cov_filt.items()
     }
 
     # Identify stall sites per experiment
-    # For each experiment and each transcript, apply the call_stalls function to identify stall sites based on the codon-level coverage. 
-    # The call_stalls function uses the specified parameters (min_z, min_obs, trim_edges, pseudocount) to determine which codons are considered 
-    # stall sites. 
-    # The result is stored in a new dictionary stalls that has the same structure as codon_cov but with lists of stall site indices instead of 
-    # coverage arrays.
     stalls = {
         exp: {
             tx: call_stalls(
@@ -130,14 +120,8 @@ def main():
         }
         for exp, tx_dict in codon_cov.items()
     }
-    # Will look like {exp: {tx: [site1, site2, ...], tx2: [...], ...}, exp2: {...}, ...} where site1, site2 are dicts with keys 
-    # "index", "obs", "z" for each stall site called in that transcript for that experiment
 
     # Consensus stalls per tissue group
-    # Consensus will look like {group: {tx: [site1, site2, ...], tx2: [...], ...}, group2: {...}, ...} where site1, site2 are dicts with keys
-    # So site1 will look like {"index": codon_index, "obs": observed_reads_at_site, "z": z_score_at_site} for each consensus stall site that 
-    # is supported by at least stall_min_reps replicates in that group
-    
     consensus = {
         group: consensus_stalls_across_reps(
             stalls,
@@ -166,49 +150,33 @@ def main():
             f.write("\n")
     logging.info(f"Saved JSON to {args.out_json}")
 
-    # Motif: Generate sequence logos showing amino acid enrichment at stall sites
+    # Motif
     if args.motif:
-        # Load reference sequences and CDS coordinate information
         reference_file_path = args.reference
         cds_range = get_cds_range_lookup(ribo_object)
-        sequence = get_sequence(ribo_object, reference_file_path, alias=None)   
-        
+        sequence = get_sequence(ribo_object, reference_file_path, alias = ribopy.api.alias.apris_human_alias)   
         def compute_W_for_group(g):
-<<<<<<< Updated upstream
-            # Get the stall sites for each condition in the consesnus dictionary
             stalls = consensus[g]
-            # Get the amino acid window for each of these stall sites
             win = windows_aa(consensus[g], cds_range, sequence,
                         flank_left=args.flank_left, flank_right=args.flank_right, psite_offset_codons=args.psite_offset)
-            # Create a matrix of counts for each AA at each relative position across all windows
             counts = count_matrix(win, AA_ORDER, flank_left=args.flank_left, flank_right=args.flank_right)
-            # Compute the background AA frequencies across all CDS regions in the dataset
-            bg = background_aa_freq(consensus[g].keys(), cds_range, sequence, AA_ORDER)
-            #
-            return pwm_position_weighted_log2(counts, bg, pseudocount=args.pseudocount)
+            bg, bg_counts = background_aa_freq(consensus[g].keys(), cds_range, sequence, AA_ORDER)
+            W = pwm_position_weighted_log2(counts, bg, pseudocount=args.pseudocount)
+            return W, counts, bg, bg_counts
 
-        # compute all
-        W_by_group = {g: compute_W_for_group(g) for g in groups.keys()}
+        # compute all, then unify y-limits for fair visual comparison
+        W_by_group = {}
+        counts_by_group = {}
+        bg_by_group = {}
+        bg_counts_by_group = {}
+        for g in groups.keys():
+            W, counts, bg, bg_counts = compute_W_for_group(g)
+            W_by_group[g] = W
+            counts_by_group[g] = counts
+            bg_by_group[g] = bg
+            bg_counts_by_group[g] = bg_counts
 
-        # per-position heights (sum over amino acids) (Graphing Code)
-=======
-            """Compute position weight matrix (PWM) for a group of stall sites."""
-            stalls = consensus[g]
-            # Extract amino acid windows around each stall site (flanking regions)
-            win = windows_aa(consensus[g], cds_range, sequence,
-                        flank_left=args.flank_left, flank_right=args.flank_right, psite_offset_codons=args.psite_offset)
-            # Count amino acid occurrences at each position
-            counts = count_matrix(win, AA_ORDER, flank_left=args.flank_left, flank_right=args.flank_right)
-            # Get background amino acid frequencies for normalization
-            bg = background_aa_freq(consensus[g].keys(), cds_range, sequence, AA_ORDER)
-            # Return log2 fold-enrichment PWM (observed/background)
-            return pwm_position_weighted_log2(counts, bg, pseudocount=args.pseudocount)
-
-        # Compute PWM for each group to apply consistent y-axis scaling
-        W_by_group = {g: compute_W_for_group(g) for g in groups.keys()}
-
-        # Calculate max positive and negative heights for y-axis limits (sum of log2 values per position)
->>>>>>> Stashed changes
+        # per-position heights (sum over amino acids)
         ymax = max(
             W.loc[:, pos][W.loc[:, pos] > 0].sum()
             for g, W in W_by_group.items()
@@ -220,40 +188,44 @@ def main():
             for pos in W.columns
         )
 
-        # Create side-by-side sequence logo plots (one per group)
-        fig, axes = plt.subplots(1, len(groups.keys()), figsize=(5*len(groups.keys()), 5), sharey=True)
-        if len(groups.keys()) == 1:
-            axes = [axes]
-
-        # Plot sequence logos with consistent y-axis scaling for comparison
-        for ax, g in zip(axes, groups.keys()):
-            plt.sca(ax)
+        # plot each group separately
+        out_dir = os.path.dirname(args.out_png)
+        os.makedirs(args.out_csv, exist_ok=True)
+        
+        for g in groups.keys():
+            fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+            
             plot_logo(W_by_group[g],
                     title=f"{g.capitalize()}",
                     aa_class=AA_CLASS)
-            ax.set_ylim(-ymin, ymax)   # same scale across panels
+            ax.set_ylim(-ymin, ymax)   # same scale across groups
+            
+            patches = [mpatches.Patch(color=c, label=cls) for cls, c in CLASS_COLORS.items()]
+            fig.legend(handles=patches, loc="lower center", ncol=len(patches))
+            
+            plt.tight_layout()
+            plt.subplots_adjust(bottom=0.17)
+            
+            # Save with group name in filename
+            group_png = os.path.join(args.out_csv, f"{g}_motif.png")
+            fig.savefig(group_png, dpi=600)
+            logging.info(f"Saved image to {group_png}")
+            plt.close(fig)
         
-        # Clean up axes for multi-panel figure (remove redundant labels)
-        for ax in axes[1:]:
-            ax.set_ylabel("")
-            ax.tick_params(axis="y", left=False, labelleft=False)
-            ax.spines["left"].set_visible(False)
-
-        # Add amino acid class legend at bottom
-        patches = [mpatches.Patch(color=c, label=cls) for cls, c in CLASS_COLORS.items()]
-        fig.legend(handles=patches, loc="lower center", ncol=len(patches))
-
-        # Save figure as PNG
-        plt.tight_layout()
-        plt.subplots_adjust(bottom=0.17)
-        fig.savefig(args.out_png, dpi=600)
-        logging.info(f"Saved image to {args.out_png}")
-        
-        # Save PWM data as CSV for each group (amino acids × positions with log2 enrichment values)
         os.makedirs(args.out_csv, exist_ok=True)
         for g, W in W_by_group.items():
+            # Save PWM (AA x position)
             pwm_csv = os.path.join(args.out_csv, f"{g}_pwm_log2_enrichment.csv")
             W.to_csv(pwm_csv)
+            # Save counts
+            counts_csv = os.path.join(args.out_csv, f"{g}_counts.csv")
+            counts_by_group[g].to_csv(counts_csv)
+            # Save background
+            bg_csv = os.path.join(args.out_csv, f"{g}_background.csv")
+            bg_by_group[g].to_csv(bg_csv)
+            # Save background counts
+            bg_counts_csv = os.path.join(args.out_csv, f"{g}_background_counts.csv")
+            bg_counts_by_group[g].to_csv(bg_counts_csv)
         logging.info(f"Saved csv to {pwm_csv}")
 
 if __name__ == "__main__":

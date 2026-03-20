@@ -1,34 +1,40 @@
 #!/bin/bash
 #----------------------------------------------------
-# Bash script: run stall_sites_non_consensus.py on coverage files
+# Bash script: run stall_sites.py on coverage files
 #----------------------------------------------------
 
 # ============== CONFIG: edit these ==============
 # Path to directory containing _coverage.pkl.gz files
 RIBO_DIR="./all_ribo_file"
-RIBO_FILE="$RIBO_DIR/C_elegan_all_02_04_2026.ribo"
+RIBO_FILE="$RIBO_DIR/C_elegan_all_02_04_2026.ribo"  # Path to one .ribo file for loading metadata (adjust as needed)
 
+# stall_sites.py arguments (required)
 # Format: "group1:rep1,rep2,rep3;group2:rep1,rep2,rep3"
+# IMPORTANT: replace rep names with actual replicate names from your .ribo file
 EXP_GROUPS='control_day_0:control_day0_rep2,control_day0_rep3;control_day_5:control_day5_rep2,control_day5_rep3;control_day_10:control_day10_rep2,control_day10_rep3;BWM_day_0:BWM_day0_rep2,BWM_day0_rep3;BWM_day_5:BWM_day5_rep2,BWM_day5_rep3;BWM_day_10:BWM_day10_rep2,BWM_day10_rep3'
 
-# Transcript filtering thresholds
+# Optional: transcript filtering thresholds
 TX_THRESHOLD=1.0
 TX_MIN_REPS=2
 
-# Stall site calling thresholds
+# Optional: stall site calling thresholds
 MIN_Z=1.0
 MIN_READS=2
+STALL_MIN_REPS=2
 TRIM_EDGES=10
+MIN_SEP=7
 PSEUDOCOUNT=0.5
 
-# Motif analysis (set to "yes" to enable)
+# Optional: motif analysis (set to "yes" to enable)
 RUN_MOTIF="yes"
-REFERENCE_FILE="./C_elegan_reference/appris_celegans_v1_selected_new.fa"
+# If using motif, set reference file path:
+REFERENCE_FILE="./C_elegan_reference/appris_celegans_v1_selected_new.fa"  # e.g., "./reference_files/appris_mouse_v2_selected.fa.gz"
 FLANK_LEFT=4
 FLANK_RIGHT=4
 
 # Output files
 OUT_JSON="stall_sites.jsonl"
+OUT_PNG="motif.png"
 OUT_CSV="motif_csv"
 
 # ===============================================
@@ -41,7 +47,7 @@ conda activate ribostall_env
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Find coverage pickle
+# Find all _coverage.pkl.gz files - we'll use one representative pickle per RIBO_DIR
 PICKLE=$(ls "$RIBO_DIR"/*_coverage.pkl.gz 2>/dev/null | head -1)
 
 if [ -z "$PICKLE" ]; then
@@ -50,27 +56,17 @@ if [ -z "$PICKLE" ]; then
 fi
 
 echo "Using coverage pickle: $PICKLE"
-echo "Groups: $EXP_GROUPS"
+echo "Groups: $GROUPS"
+# Build command array
+CMD=(python3 stall_sites.py --pickle "$PICKLE" --ribo "$RIBO_FILE" --groups "$EXP_GROUPS" --tx_threshold "$TX_THRESHOLD" --tx_min_reps "$TX_MIN_REPS" --min_z "$MIN_Z" --min_reads "$MIN_READS" --stall_min_reps "$STALL_MIN_REPS" --trim_edges "$TRIM_EDGES" --min_sep "$MIN_SEP" --pseudocount "$PSEUDOCOUNT" --out-json "$OUT_JSON" --out-csv "$RIBO_DIR/$OUT_CSV")
 
-CMD=(python3 stall_sites_non_consensus.py \
-  --pickle "$PICKLE" \
-  --ribo "$RIBO_FILE" \
-  --groups "$EXP_GROUPS" \
-  --tx_threshold "$TX_THRESHOLD" \
-  --tx_min_reps "$TX_MIN_REPS" \
-  --min_z "$MIN_Z" \
-  --min_reads "$MIN_READS" \
-  --trim_edges "$TRIM_EDGES" \
-  --pseudocount "$PSEUDOCOUNT" \
-  --out-json "$OUT_JSON" \
-  --out-csv "$RIBO_DIR/$OUT_CSV")
-
+# Add motif analysis if enabled
 if [ "$RUN_MOTIF" = "yes" ]; then
   if [ -z "$REFERENCE_FILE" ]; then
     echo "Error: RUN_MOTIF is yes but REFERENCE_FILE is not set"
     exit 1
   fi
-  CMD+=(--motif --reference "$REFERENCE_FILE" --flank-left "$FLANK_LEFT" --flank-right "$FLANK_RIGHT")
+  CMD+=(--motif --reference "$REFERENCE_FILE" --flank-left "$FLANK_LEFT" --flank-right "$FLANK_RIGHT" --out-png "$OUT_PNG")
 fi
 
 echo "Running: ${CMD[@]}"

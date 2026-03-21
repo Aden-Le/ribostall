@@ -53,19 +53,27 @@ def call_stalls(
     x_codon: np.ndarray,
     min_z: float = 1.0,
     min_obs: int = 2,
-    trim_edges: int = 10,
+    trim_start: int = 10,
+    trim_stop: int = 10,
     pseudocount: float = 0.5,
+    trim_edges: int | None = None,
 ):
     """
     Keep any codon with global z >= min_z and obs >= min_obs (no local filters).
+    trim_start: exclude first N codons (initiation ramp).
+    trim_stop:  exclude last N codons (termination region).
+    trim_edges: legacy parameter — if provided, sets both trim_start and trim_stop.
     Returns list of dicts: {index, obs, z}.
     """
+    if trim_edges is not None:
+        trim_start = trim_edges
+        trim_stop = trim_edges
     x = np.asarray(x_codon, dtype=float)
     n = x.size
     if n == 0:
         return []
     z = global_z_log(x, pseudocount=pseudocount)
-    lo, hi = trim_edges, n - trim_edges
+    lo, hi = trim_start, n - trim_stop
     if hi <= lo:
         return []
     cand = np.flatnonzero((z >= min_z) & (x >= min_obs) & (np.arange(n) >= lo) & (np.arange(n) < hi))

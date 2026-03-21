@@ -496,6 +496,52 @@ def main():
         df_freqs.to_csv(freq_path, index=False)
         print(f"  Saved: {freq_path}")
 
+        # Per-replicate E/P/A raw count CSVs (wide: AA × site, one file per rep)
+        input_dir = os.path.join(args.out_enrichment, "input_data")
+        os.makedirs(input_dir, exist_ok=True)
+        for rep, site_counts in replicate_counts.items():
+            rep_df = pd.DataFrame({
+                site_name: site_counts[site_name]
+                for site_name in ("E", "P", "A")
+            })
+            rep_df.index.name = "amino_acid"
+            rep_path = os.path.join(input_dir, f"{rep}_epa_counts.csv")
+            rep_df.to_csv(rep_path)
+        print(f"  Saved: per-replicate E/P/A count CSVs to {input_dir}")
+
+        # Per-replicate background AA frequencies
+        bg_rows = []
+        for rep in replicate_counts:
+            rep_stall_txs = {tx for tx, site_list in stalls[rep].items() if site_list}
+            rep_grp = rep_to_group.get(rep, "")
+            rep_bg_freq, rep_bg_counts = background_aa_freq(
+                filt_tx_dict.get(rep_grp, filt_tx_union), cds_range, sequence, AA_ORDER
+            )
+            for aa in rep_bg_freq.index:
+                bg_rows.append({
+                    "replicate": rep,
+                    "group": rep_grp,
+                    "condition": rep_to_condition.get(rep, ""),
+                    "timepoint": rep_to_timepoint.get(rep, ""),
+                    "amino_acid": aa,
+                    "bg_count": int(rep_bg_counts[aa]),
+                    "bg_freq": rep_bg_freq[aa],
+                })
+        df_bg_reps = pd.DataFrame(bg_rows)
+        bg_rep_path = os.path.join(input_dir, "per_group_background_aa.csv")
+        df_bg_reps.to_csv(bg_rep_path, index=False)
+        print(f"  Saved: {bg_rep_path}")
+
+        # Global background AA frequencies
+        bg_global_df = pd.DataFrame({
+            "amino_acid": bg_freq.index,
+            "bg_count": bg_raw_counts.values.astype(int),
+            "bg_freq": bg_freq.values,
+        })
+        bg_global_path = os.path.join(input_dir, "global_background_aa.csv")
+        bg_global_df.to_csv(bg_global_path, index=False)
+        print(f"  Saved: {bg_global_path}")
+
         within_path = os.path.join(args.out_enrichment, "within_condition_enrichment.csv")
         df_within.to_csv(within_path, index=False)
         print(f"  Saved: {within_path}")

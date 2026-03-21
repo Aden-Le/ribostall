@@ -95,18 +95,9 @@ def main():
         cov = pickle.load(f)
     logging.info(f"Coverage loaded: {len(cov)} experiments, {len(next(iter(cov.values())))} transcripts each")
 
-    # -------------------------------------------------------------------------
-    # Remove known bad replicates (rep1 experiments)
-    # -------------------------------------------------------------------------
-    # These specific rep1 samples are excluded from analysis (e.g. due to QC
-    # failure or a deliberate design decision to use only rep2+).
-    # We build the list first so we can log exactly what was removed.
-    remove_coverage_list = ["BWM_day0_rep1", "BWM_day5_rep1", "BWM_day10_rep1", "control_day0_rep1", "control_day5_rep1", "control_day10_rep1"]
-    removed = [k for k in remove_coverage_list if k in cov]
-    for key in removed:
-        del cov[key]
-    if removed:
-        logging.info(f"Removed rep1 experiments: {removed}")
+    # NOTE: The coverage pickle may contain rep1 experiments that failed QC.
+    # They are excluded automatically because --groups only lists rep2 & rep3.
+    # Any experiment not in --groups is never used by the analysis.
 
     # -------------------------------------------------------------------------
     # Load the ribo object

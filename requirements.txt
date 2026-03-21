@@ -15,6 +15,7 @@ pillow==11.3.0
 pyparsing==3.2.5
 pysam==0.23.3
 python-dateutil==2.9.0.post0
+scipy
 pytz==2025.2
 PyYAML==6.0.3
 ribopy==0.0.1

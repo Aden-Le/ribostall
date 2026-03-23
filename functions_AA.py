@@ -108,19 +108,21 @@ def background_aa_freq(transcripts: dict, cds_range: dict, sequence: dict,
     """
     bg_counts = Counter()
     for tx in transcripts:
-        # robust alias fallback
+        # Gets the transript key for cds range
         key = tx if tx in cds_range else tx.split("|")[4] if "|" in tx else tx
         if key not in cds_range or tx not in sequence:
             continue  # skip missing entries gracefully
         start, stop = cds_range[key]
         cds_nt = sequence[tx][start:stop]
-        aa_seq = translate_cds_nt_to_aa(cds_nt)  # assumes in-frame, stop excluded
+        # Gets the amino acid sequence for the CDS (X for unknown, * for stop)
+        aa_seq = translate_cds_nt_to_aa(cds_nt)
         for aa in aa_seq:
             if aa in aa_order:
                 bg_counts[aa] += 1
+    # Series of the counts, aligned to aa_order (missing AAs get 0)
     bg = pd.Series({aa: bg_counts.get(aa, 0) for aa in aa_order}, dtype=float)
     bg_counts_csv = bg.copy()
-    # pseudocount to avoid zeros
+    # pseudocount to avoid zeros, Normalied
     bg = (bg + 1e-6) / (bg.sum() + 1e-6 * len(bg))
     return bg, bg_counts_csv
 
@@ -237,6 +239,7 @@ def epa_triplet_counts(
 
         for i in idx_list:
             center = i + psite_offset_codons
+            # Offsets for E/P/A sites based on chosen basis
             e_i, p_i, a_i = center + e_rel, center + p_rel, center + a_rel
             if e_i < 0 or a_i >= L or p_i < 0 or p_i >= L:
                 continue

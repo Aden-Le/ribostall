@@ -40,40 +40,43 @@ def bh_fdr(p_values: np.ndarray) -> np.ndarray:
 # ---------------------------------------------------------------------------
 def within_condition_enrichment(
     replicate_counts: dict,
-    bg_freq: pd.Series,
+    bg_freq_per_group: dict,
     rep_to_condition: dict,
+    rep_to_group: dict,
 ) -> pd.DataFrame:
     """
-    For each condition, pool stall sites across replicates and test whether
-    each amino acid at each E/P/A site is enriched or depleted vs background.
+    For each group, test whether each amino acid at each E/P/A site is
+    enriched or depleted vs that group's background AA frequencies.
 
     Parameters
     ----------
     replicate_counts : dict
         {replicate: {"E": Series(AA->count), "P": Series(AA->count), "A": Series(AA->count)}}
-    bg_freq : pd.Series
-        Background amino acid frequencies (sums to 1), indexed by single-letter AA.
+    bg_freq_per_group : dict
+        {group: pd.Series} — background AA frequencies per group.
     rep_to_condition : dict
         {replicate: "control" or "BWM"}
+    rep_to_group : dict
+        {replicate: group_name}
 
     Returns
     -------
     pd.DataFrame with columns:
-        condition, site, amino_acid, stall_count, total_n, stall_freq,
+        condition, group, site, amino_acid, stall_count, total_n, stall_freq,
         bg_freq, log2_enrichment, p_value, p_adj
     """
-    conditions = sorted(set(rep_to_condition.values()))
+    groups = sorted(set(rep_to_group[r] for r in replicate_counts if r in rep_to_group))
     rows = []
 
-    for condition in conditions:
-        cond_reps = [r for r, c in rep_to_condition.items() if c == condition]
+    for group in groups:
+        bg_freq = bg_freq_per_group[group]
+        group_reps = [r for r in replicate_counts if rep_to_group.get(r) == group]
+        condition = rep_to_condition.get(group_reps[0], "") if group_reps else ""
 
         for site in ("E", "P", "A"):
-            # Pool counts across all replicates in this condition
+            # Pool counts across replicates in this group
             pooled = None
-            for rep in cond_reps:
-                if rep not in replicate_counts:
-                    continue
+            for rep in group_reps:
                 counts = replicate_counts[rep][site]
                 if pooled is None:
                     pooled = counts.copy()
@@ -96,6 +99,7 @@ def within_condition_enrichment(
                 result = stats.binomtest(k, total_n, p_bg, alternative="two-sided")
                 rows.append({
                     "condition": condition,
+                    "group": group,
                     "site": site,
                     "amino_acid": aa,
                     "stall_count": k,
@@ -110,15 +114,15 @@ def within_condition_enrichment(
     if df.empty:
         return df
 
-    # BH-FDR correction per condition
+    # BH-FDR correction per group
     dfs = []
-    for condition in conditions:
-        mask = df["condition"] == condition
+    for group in groups:
+        mask = df["group"] == group
         sub = df.loc[mask].copy()
         sub["p_adj"] = bh_fdr(sub["p_value"].values)
         dfs.append(sub)
     df = pd.concat(dfs, ignore_index=True)
-    return df.sort_values(["condition", "site", "p_adj"])
+    return df.sort_values(["group", "site", "p_adj"])
 
 
 # ---------------------------------------------------------------------------

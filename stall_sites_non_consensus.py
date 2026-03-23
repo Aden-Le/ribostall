@@ -5,9 +5,8 @@ import pickle
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import re
-import json, os
+import os
 import pandas as pd
-from pathlib import Path
 import ribopy
 from ribopy import Ribo
 
@@ -56,7 +55,6 @@ def main():
     parser.add_argument("--pseudocount", type=float, default=0.5,
                         help="Pseudocount for stall calling")
     parser.add_argument("--out-json", default="../ribostall_results/stall_sites.jsonl", help="JSON")
-    parser.add_argument("--motif", action="store_true", help="Plot motif")
     parser.add_argument("--reference", help="Reference file path")
     parser.add_argument("--flank-left", type=int, default=10, help="Motif")
     parser.add_argument("--flank-right", type=int, default=6, help="Motif")
@@ -121,10 +119,11 @@ def main():
     # -------------------------------------------------------------------------
     # Transcript filtering (per-group, NO intersection across groups)
     # -------------------------------------------------------------------------
-    # We only want to analyse transcripts that are reliably expressed.
-    # Each group keeps its own filtered transcript set independently.
-    # This avoids dropping transcripts uniquely expressed in one condition.
+    # These transcripts represent transcripts that have good coverage in both replicates per group
+
+    # how many transcripts are in the coverage before filtering?
     n_before = len(next(iter(cov.values())))
+    # Inverses the groups dict to map each replicate to its group, e.g. "rep1" -> "control_day_0".
     rep_to_group = {rep: grp for grp, reps in groups.items() for rep in reps}
 
     print(f"\n{'='*60}")
@@ -133,8 +132,7 @@ def main():
     print(f"Transcripts before filtering: {n_before}")
 
     # Per-group filter: for each group, call filter_tx which keeps only
-    # transcripts that exceed --tx_threshold reads/nt in at least
-    # --tx_min_reps replicates within that group.
+    # transcripts that exceed --tx_threshold reads/nt in at least --tx_min_reps replicates within that group.
     # Result: filt_tx_dict[group] = set of transcript names passing that group.
     filt_tx_dict = {
         group: set(filter_tx(cov, reps, min_reps=args.tx_min_reps, threshold=args.tx_threshold))
@@ -143,31 +141,25 @@ def main():
     for group, txs in filt_tx_dict.items():
         print(f"  Per-group filter [{group}]: {len(txs)} transcripts  (lost {n_before - len(txs)})")
 
-    # Union of all per-group filtered transcripts (for background AA frequencies)
-    filt_tx_union = set.union(*filt_tx_dict.values()) if filt_tx_dict else set()
-    print(f"Union across all groups: {len(filt_tx_union)} unique transcripts")
-    print(f"{'='*60}\n")
-
     # Rebuild the coverage dict — each experiment uses its GROUP's filtered transcripts.
     # Structure preserved: cov_filt[exp][tx] = array
-    logging.info("Filtering coverage to per-group transcripts ...")
     cov_filt = {}
     for exp, tx_dict in cov.items():
         grp = rep_to_group.get(exp)
         if grp is None:
             continue
+        # Transcripts that pass the filter for this experiment's group
         grp_txs = filt_tx_dict[grp]
+        # Only keep those transcripts in the coverage dict for this experiment
         cov_filt[exp] = {tx: arr for tx, arr in tx_dict.items() if tx in grp_txs}
-    for exp in cov_filt:
-        logging.info(f"  [{exp}] {len(cov_filt[exp])} transcripts retained")
 
     # -------------------------------------------------------------------------
     # Codonize coverage
     # -------------------------------------------------------------------------
     # The raw coverage arrays are nucleotide-resolution (one value per nt).
-    # codonize_counts_cds sums every 3 consecutive nt positions into a single
-    # codon-level count, restricted to the CDS region.
-    # Result: codon_cov[exp][tx] = 1-D array of length (CDS_len / 3)
+    # codonize_counts_cds sums every 3 consecutive nt positions into a single codon-level count, restricted to the CDS region.
+    # Looks like { "rep1": {"tx1": array([...]), "tx2": array([...]), ...}, "rep2": {...}, ... }
+    # Where each array looks like [5, 3, 0, 2, ...] with one value per codon in the CDS.
     logging.info("Codonizing coverage arrays ...")
     codon_cov = {
         exp: {tx: codonize_counts_cds(arr) for tx, arr in tx_dict.items()}
@@ -220,28 +212,26 @@ def main():
     # -------------------------------------------------------------------------
     # Write stall sites to JSON Lines
     # -------------------------------------------------------------------------
+    logging.info(f"Converting stalls to long-format dataframe ...")
+    # Inverses the groups dict to map each replicate to its group, e.g. "rep1" -> "control_day_0".
+    rep_to_group = {rep: grp for grp, reps in groups.items() for rep in reps}
+
     # stalls_to_long_df converts the nested stalls dict into a tidy pandas
     # DataFrame where each row is one stall site, with columns for experiment,
-    # group, transcript, codon index, z-score, reads, etc.
-    # rep_to_group inverts the groups dict so we can tag each row with its
-    # biological group label.
-    logging.info(f"Converting stalls to long-format dataframe ...")
-    rep_to_group = {rep: grp for grp, reps in groups.items() for rep in reps}
+    # Will look like:
+    #   exp       group       transcript  codon_index  z_score  reads
+    #   rep1      control_day_0  tx1         42           3
     df = stalls_to_long_df(stalls, rep_to_group)
     logging.info(f"Long-format dataframe: {len(df)} rows")
 
-    # Create the output directory if it doesn't exist, then write one JSON
-    # object per line (JSON Lines format) — easy to stream/parse later.
-    Path(args.out_json).parent.mkdir(parents=True, exist_ok=True)
-    logging.info(f"Writing JSON to {args.out_json} ...")
-    with open(args.out_json, "w") as f:
-        for rec in df.to_dict(orient="records"):
-            json.dump(rec, f)
-            f.write("\n")
-    logging.info(f"Saved JSON to {args.out_json}")
+    os.makedirs(args.out_enrichment, exist_ok=True)
+    stalls_csv_path = os.path.join(args.out_enrichment, "stall_sites.csv")
+    logging.info(f"Writing stall sites to {stalls_csv_path} ...")
+    df.to_csv(stalls_csv_path, index=False)
+    logging.info(f"Saved stall sites to {stalls_csv_path}")
 
     # -------------------------------------------------------------------------
-    # Load CDS ranges and sequences (shared by --motif and --enrichment)
+    # Load CDS ranges and sequences (Used in --enrichment)
     # -------------------------------------------------------------------------
     cds_range = None
     sequence = None
@@ -264,98 +254,6 @@ def main():
         print(f"{'='*60}\n")
 
     # -------------------------------------------------------------------------
-    # Optional: amino acid motif analysis
-    # -------------------------------------------------------------------------
-    if args.motif:
-
-        def compute_W_for_exp(exp):
-            """
-            For a single experiment, compute the amino acid PWM (position weight
-            matrix) over a window centred on each stall site.
-
-            Steps:
-            1. Extract the codon indices of all stall sites for this experiment.
-            2. Build amino acid windows: for each stall site, translate the CDS
-               window of (flank_left + 1 + flank_right) codons around the stall
-               codon into amino acids.
-            3. Build a count matrix: rows = amino acid, columns = window position.
-            4. Compute background amino acid frequencies from all expressed CDS
-               sequences (not just stall sites) — this is the expected frequency
-               if there were no enrichment.
-            5. Compute a log2 odds PWM: log2(observed / expected), which shows
-               which amino acids are over- or under-represented at each position.
-            """
-            # Flatten stalls[exp] from {tx: [{"index": i, ...}, ...]} to
-            # {tx: [i, ...]} — just the codon indices, not the full dicts.
-            exp_stalls = {tx: [d["index"] for d in site_list] for tx, site_list in stalls[exp].items()}
-            n_sites = sum(len(v) for v in exp_stalls.values())
-
-            # windows_aa translates each stall-site window into a list of amino
-            # acid strings of length (flank_left + 1 + flank_right).
-            # psite_offset_codons shifts the window centre if needed.
-            logging.info(f"  [{exp}] Building AA windows ({n_sites} stall sites) ...")
-            win = windows_aa(exp_stalls, cds_range, sequence,
-                        flank_left=args.flank_left, flank_right=args.flank_right, psite_offset_codons=args.psite_offset)
-
-            # count_matrix tallies how many times each amino acid appears at
-            # each position across all windows.
-            # Shape: (n_amino_acids, window_width)
-            logging.info(f"  [{exp}] {len(win)} windows built; computing count matrix ...")
-            counts = count_matrix(win, AA_ORDER, flank_left=args.flank_left, flank_right=args.flank_right)
-
-            # background_aa_freq computes the overall amino acid composition of
-            # the CDS sequences for the expressed transcripts. This is the null
-            # model: what frequency would we see by chance?
-            # bg = Series of frequencies; bg_counts = raw counts.
-            logging.info(f"  [{exp}] Computing background AA frequencies ...")
-            bg, bg_counts = background_aa_freq(exp_stalls.keys(), cds_range, sequence, AA_ORDER)
-
-            # pwm_position_weighted_log2 computes log2(observed / background)
-            # at each position, normalised and smoothed with a pseudocount.
-            # W is a DataFrame: rows = amino acids, columns = window positions.
-            # Positive values = enrichment; negative = depletion at stall sites.
-            logging.info(f"  [{exp}] Computing PWM ...")
-            W = pwm_position_weighted_log2(counts, bg, pseudocount=args.pseudocount)
-            logging.info(f"  [{exp}] Done")
-            return W, counts, bg, bg_counts
-
-        # Run the above for every experiment and store results keyed by exp name.
-        W_by_exp = {}          # PWM log2-enrichment matrices
-        counts_by_exp = {}     # Raw amino acid count matrices at stall windows
-        bg_by_exp = {}         # Background amino acid frequency vectors
-        bg_counts_by_exp = {}  # Raw background amino acid counts
-        n_exps = len(stalls)
-        for i, exp in enumerate(stalls.keys(), 1):
-            logging.info(f"Processing experiment {i}/{n_exps}: {exp}")
-            W, counts, bg, bg_counts = compute_W_for_exp(exp)
-            W_by_exp[exp] = W
-            counts_by_exp[exp] = counts
-            bg_by_exp[exp] = bg
-            bg_counts_by_exp[exp] = bg_counts
-
-        # -------------------------------------------------------------------------
-        # Save motif CSVs
-        # -------------------------------------------------------------------------
-        # For each experiment, write four CSV files to --out-csv:
-        #   <exp>_pwm_log2_enrichment.csv  — the PWM log2(obs/bg) matrix
-        #   <exp>_counts.csv               — raw AA counts at stall windows
-        #   <exp>_background.csv           — background AA frequencies
-        #   <exp>_background_counts.csv    — raw background AA counts
-        os.makedirs(args.out_csv, exist_ok=True)
-        logging.info(f"Saving CSVs to {args.out_csv} ...")
-        for exp, W in W_by_exp.items():
-            pwm_csv = os.path.join(args.out_csv, f"{exp}_pwm_log2_enrichment.csv")
-            W.to_csv(pwm_csv)
-            counts_csv = os.path.join(args.out_csv, f"{exp}_counts.csv")
-            counts_by_exp[exp].to_csv(counts_csv)
-            bg_csv = os.path.join(args.out_csv, f"{exp}_background.csv")
-            bg_by_exp[exp].to_csv(bg_csv)
-            bg_counts_csv = os.path.join(args.out_csv, f"{exp}_background_counts.csv")
-            bg_counts_by_exp[exp].to_csv(bg_counts_csv)
-            logging.info(f"  Saved CSVs for {exp}")
-        logging.info(f"All CSVs saved to {args.out_csv}")
-
-    # -------------------------------------------------------------------------
     # Optional: amino acid enrichment analysis at E/P/A sites
     # -------------------------------------------------------------------------
     if args.enrichment:
@@ -366,31 +264,42 @@ def main():
         # Extract E/P/A amino acid counts per replicate
         replicate_counts = {}  # {rep: {"E": Series, "P": Series, "A": Series}}
         for exp in stalls:
+            # exp_stalls is a dict: {tx: [index1, index2, ...]} for all stall sites in this experiment
             exp_stalls = {tx: [d["index"] for d in site_list] for tx, site_list in stalls[exp].items()}
             n_sites = sum(len(v) for v in exp_stalls.values())
             if n_sites == 0:
                 logging.info(f"  [{exp}] No stall sites — skipping")
                 continue
             logging.info(f"  [{exp}] Extracting E/P/A amino acids from {n_sites} stall sites ...")
+
+            # Returns counts of amino acids at E/P/A sites across all stall sites in this experiment.
             _, counts_E, counts_P, counts_A = epa_triplet_counts(
                 exp_stalls, cds_range, sequence, psite_offset_codons=0
             )
+            # Stores the counts in the replicate_counts dict for later enrichment analysis.
             replicate_counts[exp] = {"E": counts_E, "P": counts_P, "A": counts_A}
             print(f"  [{exp}] {int(counts_E.sum())} valid stall sites with E/P/A extracted")
 
         print(f"{'='*60}\n")
 
-        # Background AA frequencies from union of all filtered transcripts
+        # Background AA frequencies per group (each group has its own filtered transcripts)
         print(f"\n{'='*60}")
-        print(f"BACKGROUND AA FREQUENCIES")
+        print(f"BACKGROUND AA FREQUENCIES (per group)")
         print(f"{'='*60}")
-        logging.info(f"Computing background AA frequencies from {len(filt_tx_union)} transcripts ...")
-        bg_freq, bg_raw_counts = background_aa_freq(filt_tx_union, cds_range, sequence, AA_ORDER)
-        print(f"  Computed from {len(filt_tx_union)} transcripts ({int(bg_raw_counts.sum())} total codons)")
+        # Frequency is the proportion of each amino acid across all codons in the filtered transcripts for that group. (Normalized)
+        bg_freq_per_group = {}
+        # Counts is the total number of codons across all transcripts in that group (Counts)
+        bg_counts_per_group = {}
+        for grp, grp_txs in filt_tx_dict.items():
+            grp_bg_freq, grp_bg_counts = background_aa_freq(grp_txs, cds_range, sequence, AA_ORDER)
+            bg_freq_per_group[grp] = grp_bg_freq
+            bg_counts_per_group[grp] = grp_bg_counts
+            print(f"  [{grp}] {len(grp_txs)} transcripts ({int(grp_bg_counts.sum())} total codons)")
         print(f"{'='*60}\n")
 
         # Build replicate-to-condition and replicate-to-timepoint mappings
         # Group names expected: "control_day_0", "BWM_day_5", etc.
+        # Aligns the experiment to their condition and timepoint for later stratified analyses.
         rep_to_condition = {}
         rep_to_timepoint = {}
         for rep, grp in rep_to_group.items():
@@ -401,17 +310,21 @@ def main():
         # =====================================================================
         # Analysis 1: Within-condition enrichment (Binomial test)
         # =====================================================================
+        # replicate_counts: {exp: {"E": Series, "P": Series, "A": Series}, exp2: {...}, ...}
+        # bg_freq_per_group: {group: Series of AA frequencies for that group's filtered transcripts}
+        # rep_to_condition: {rep: condition} mapping for each experiment
+        # rep_to_group: {rep: group} mapping for each experiment
         print(f"\n{'='*60}")
         print(f"ANALYSIS 1: WITHIN-CONDITION ENRICHMENT (Binomial Test)")
         print(f"{'='*60}")
         logging.info("Running within-condition enrichment analysis ...")
-        df_within = within_condition_enrichment(replicate_counts, bg_freq, rep_to_condition)
+        df_within = within_condition_enrichment(replicate_counts, bg_freq_per_group, rep_to_condition, rep_to_group)
         n_sig = (df_within["p_adj"] < 0.05).sum() if not df_within.empty else 0
         n_tests = len(df_within)
         print(f"  Tests performed: {n_tests}")
         print(f"  Significant (p_adj < 0.05): {n_sig}")
         if n_sig > 0:
-            sig = df_within[df_within["p_adj"] < 0.05][["condition", "site", "amino_acid", "log2_enrichment", "p_adj"]]
+            sig = df_within[df_within["p_adj"] < 0.05][["condition", "group", "site", "amino_acid", "log2_enrichment", "p_adj"]]
             print(f"\n  Significant results:")
             print(sig.to_string(index=False))
         print(f"{'='*60}\n")
@@ -419,6 +332,8 @@ def main():
         # =====================================================================
         # Analysis 2: Between-condition overall (Wilcoxon rank-sum)
         # =====================================================================
+        # replicate_counts: {exp: {"E": Series, "P": Series, "A": Series}, exp2: {...}, ...}
+        # rep_to_condition: {rep: condition} mapping for each experiment
         print(f"\n{'='*60}")
         print(f"ANALYSIS 2: BETWEEN-CONDITION WILCOXON (n=6 vs n=6)")
         print(f"{'='*60}")
@@ -437,6 +352,9 @@ def main():
         # =====================================================================
         # Analysis 3: Per-timepoint between-condition (Fisher's exact)
         # =====================================================================
+        # replicate_counts: {exp: {"E": Series, "P": Series, "A": Series}, exp2: {...}, ...}
+        # rep_to_condition: {rep: condition} mapping for each experiment
+        # rep_to_timepoint: {rep: timepoint} mapping for each experiment
         print(f"\n{'='*60}")
         print(f"ANALYSIS 3: PER-TIMEPOINT FISHER'S EXACT TEST")
         print(f"  NOTE: Pooling 2 reps is pseudoreplication — interpret cautiously")
@@ -453,7 +371,7 @@ def main():
         print(f"{'='*60}\n")
 
         # =====================================================================
-        # Save per-replicate AA frequencies (intermediate output)
+        # Save per-replicate AA frequencies (intermediate output) | Just a bunch of saving
         # =====================================================================
         print(f"\n{'='*60}")
         print(f"WRITING RESULTS")
@@ -500,38 +418,22 @@ def main():
             rep_df.to_csv(rep_path)
         print(f"  Saved: per-replicate E/P/A count CSVs to {input_dir}")
 
-        # Per-replicate background AA frequencies
+        # Per-group background AA frequencies
         bg_rows = []
-        for rep in replicate_counts:
-            rep_stall_txs = {tx for tx, site_list in stalls[rep].items() if site_list}
-            rep_grp = rep_to_group.get(rep, "")
-            rep_bg_freq, rep_bg_counts = background_aa_freq(
-                filt_tx_dict.get(rep_grp, filt_tx_union), cds_range, sequence, AA_ORDER
-            )
-            for aa in rep_bg_freq.index:
+        for grp in bg_freq_per_group:
+            grp_bg_freq = bg_freq_per_group[grp]
+            grp_bg_counts = bg_counts_per_group[grp]
+            for aa in grp_bg_freq.index:
                 bg_rows.append({
-                    "replicate": rep,
-                    "group": rep_grp,
-                    "condition": rep_to_condition.get(rep, ""),
-                    "timepoint": rep_to_timepoint.get(rep, ""),
+                    "group": grp,
                     "amino_acid": aa,
-                    "bg_count": int(rep_bg_counts[aa]),
-                    "bg_freq": rep_bg_freq[aa],
+                    "bg_count": int(grp_bg_counts[aa]),
+                    "bg_freq": grp_bg_freq[aa],
                 })
-        df_bg_reps = pd.DataFrame(bg_rows)
-        bg_rep_path = os.path.join(input_dir, "per_group_background_aa.csv")
-        df_bg_reps.to_csv(bg_rep_path, index=False)
-        print(f"  Saved: {bg_rep_path}")
-
-        # Global background AA frequencies
-        bg_global_df = pd.DataFrame({
-            "amino_acid": bg_freq.index,
-            "bg_count": bg_raw_counts.values.astype(int),
-            "bg_freq": bg_freq.values,
-        })
-        bg_global_path = os.path.join(input_dir, "global_background_aa.csv")
-        bg_global_df.to_csv(bg_global_path, index=False)
-        print(f"  Saved: {bg_global_path}")
+        df_bg_groups = pd.DataFrame(bg_rows)
+        bg_group_path = os.path.join(input_dir, "per_group_background_aa.csv")
+        df_bg_groups.to_csv(bg_group_path, index=False)
+        print(f"  Saved: {bg_group_path}")
 
         within_path = os.path.join(args.out_enrichment, "within_condition_enrichment.csv")
         df_within.to_csv(within_path, index=False)

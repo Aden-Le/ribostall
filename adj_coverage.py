@@ -13,7 +13,7 @@ import ribopy
 from ribopy import Ribo
 
 # --- import your helpers ---
-from functions import get_cds_range_lookup, get_offset, apris_human_alias
+from functions_folder.functions import get_cds_range_lookup, get_offset, apris_human_alias
 
 # =========================
 # Logging

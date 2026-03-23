@@ -11,12 +11,12 @@ import ribopy
 from ribopy import Ribo
 
 # Local modules with the core analysis functions
-from functions_stall_sites import filter_tx, codonize_counts_cds, call_stalls, stalls_to_long_df
-from functions_AA import (translate_cds_nt_to_aa, windows_aa, count_matrix, background_aa_freq,
+from functions_folder.functions_stall_sites import filter_tx, codonize_counts_cds, call_stalls, stalls_to_long_df
+from functions_folder.functions_AA import (translate_cds_nt_to_aa, windows_aa, count_matrix, background_aa_freq,
                           pwm_position_weighted_log2, plot_logo, epa_triplet_counts,
                           CODON2AA, AA_ORDER, AA_CLASS, CLASS_COLORS)
-from functions import get_sequence, get_cds_range_lookup
-from functions_enrichment import within_condition_enrichment, between_condition_wilcoxon, per_timepoint_fisher
+from functions_folder.functions import get_sequence, get_cds_range_lookup
+from functions_folder.functions_enrichment import within_condition_enrichment, between_condition_wilcoxon, per_timepoint_fisher
 
 # =========================
 # Logging

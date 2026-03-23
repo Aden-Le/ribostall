@@ -9,7 +9,7 @@ import pandas as pd
 import ribopy
 from ribopy import Ribo
 
-from functions import get_cds_range_lookup, get_sequence
+from functions_folder.functions import get_cds_range_lookup, get_sequence
 
 
 def parse_args():

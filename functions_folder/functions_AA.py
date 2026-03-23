@@ -205,7 +205,7 @@ def epa_triplet_counts(
     consensus_group: dict[str, list[int]],   # {tx: [stall_codons]}
     cds_range: dict,                         # {tx_or_alias: (start,stop)}
     sequence: dict,                          # {tx: genomic nt sequence}
-    *,
+    *,                                       # Everything After * must be name = value, else default
     psite_offset_codons: int = 0,
     basis: str = "P",                        # "P": E=-1,P=0,A=+1 ; "A": E=-2,P=-1,A=0
     drop_stop_windows: bool = True,
@@ -236,7 +236,8 @@ def epa_triplet_counts(
         L = len(aa_seq)
         if L < 3: 
             continue
-
+        
+        # i is the P-site codon index
         for i in idx_list:
             center = i + psite_offset_codons
             # Offsets for E/P/A sites based on chosen basis
@@ -246,6 +247,7 @@ def epa_triplet_counts(
             eaa, paa, aaa = aa_seq[e_i], aa_seq[p_i], aa_seq[a_i]
             if drop_stop_windows and ("*" in (eaa,paa,aaa) or "X" in (eaa,paa,aaa)):
                 continue
+            # Counts the amino acid for each site
             if (eaa in AA_SET) and (paa in AA_SET) and (aaa in AA_SET):
                 triplet_counter[(eaa, paa, aaa)] += 1
                 E_counter[eaa] += 1

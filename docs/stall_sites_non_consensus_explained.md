@@ -712,40 +712,57 @@ Pooled counts:
     Non-Proline at P-site: 362 + 385 = 747
     Total:                 980
 
-2×2 contingency table:
+2×2 contingency table (rows sorted alphabetically by condition — BWM first):
                   Proline    Not-Proline
-  Control:          166         824         = 990
   BWM:              233         747         = 980
+  Control:          166         824         = 990
                    -----       -----
                     399        1571
 
-Fisher's exact test:
-  odds_ratio = (166 × 747) / (824 × 233) = 123,902 / 191,992 = 0.645
-  ... wait, let's recalculate:
-  odds_ratio = (166/824) / (233/747) = 0.2015 / 0.3119 = 0.646
-  Or equivalently: (166 × 747) / (233 × 824) = 0.646
+Fisher's exact test (OR = (a*d)/(b*c) where table = [[a,b],[c,d]]):
+  odds_ratio = (233 × 824) / (747 × 166)
+             = 191,992 / 123,902
+             = 1.549
   p-value = 8.2e-07
 
-  But Fisher reports odds_ratio as (a*d)/(b*c):
-    = (166 × 747) / (824 × 233)
-    = 123,902 / 191,992
-    = 0.645
-
-  Since OR < 1: Proline is LESS frequent in control than BWM at day_5
-  (equivalently, BWM has MORE Proline stalling at the P-site)
+  Since OR > 1: BWM has HIGHER odds of Proline at the P-site than control
+  (BWM has 1.55× the odds of Proline stalling at the P-site vs control)
 ```
 
 ### Interpreting the 2x2 table visually
 
 ```
                   Pro    ¬Pro
-  Control:       [166]   [824]     Pro rate: 16.8%
   BWM:           [233]   [747]     Pro rate: 23.8%
+  Control:       [166]   [824]     Pro rate: 16.8%
                                             ↑ higher in BWM
 
-  Odds ratio = 0.645 means control has 0.645× the odds of Proline vs BWM
-  → BWM has 1/0.645 = 1.55× higher odds of Proline at stall P-site
+  Odds ratio = 1.549 means BWM has 1.55× the odds of Proline vs control
 ```
+
+### Interpreting the Odds Ratio
+
+Because conditions are sorted alphabetically, **BWM is always row 0** and **control is always row 1** in the 2x2 table. The odds ratio is computed as:
+
+```
+OR = (BWM_AA × control_notAA) / (BWM_notAA × control_AA)
+```
+
+This means the odds ratio represents **BWM relative to control**:
+
+| Odds Ratio | Meaning |
+|------------|---------|
+| OR > 1     | The amino acid is **more frequent** in BWM stall sites than in control |
+| OR = 1     | No difference between BWM and control |
+| OR < 1     | The amino acid is **less frequent** in BWM stall sites than in control |
+
+**Magnitude examples:**
+- OR = 2.0 — BWM has 2× the odds of this AA at the site compared to control
+- OR = 1.5 — BWM has 50% higher odds than control
+- OR = 0.5 — BWM has half the odds of control (equivalently, control has 2× the odds of BWM)
+- OR = 0.75 — BWM has 25% lower odds than control
+
+> **Note:** The odds ratio orientation depends entirely on which condition appears first in alphabetical sort. If your conditions were named differently (e.g., "treated" vs "untreated"), the first row — and therefore the reference for OR > 1 — would change accordingly.
 
 ### Caveat: Pseudoreplication
 
@@ -754,12 +771,12 @@ The script warns about this: pooling 2 biological replicates into one count infl
 ### Output DataFrame
 
 ```
-| timepoint | site | amino_acid | control_count | control_total | BWM_count | BWM_total | odds_ratio | p_value  | p_adj    |
-|-----------|------|------------|---------------|---------------|-----------|-----------|------------|----------|----------|
-| day_5     | P    | P          | 166           | 990           | 233       | 980       | 0.645      | 8.2e-07  | 4.9e-05  |
-| day_5     | P    | D          | 105           | 990           | 140       | 980       | 0.738      | 0.012    | 0.144    |
-| day_0     | P    | P          | 160           | 1000          | 165       | 990       | 0.954      | 0.724    | 0.951    |
-| day_10    | E    | K          | 88            | 960           | 72        | 940       | 1.215      | 0.215    | 0.645    |
+| timepoint | site | amino_acid | BWM_count | BWM_total | control_count | control_total | odds_ratio | p_value  | p_adj    |
+|-----------|------|------------|-----------|-----------|---------------|---------------|------------|----------|----------|
+| day_5     | P    | P          | 233       | 980       | 166           | 990           | 1.549      | 8.2e-07  | 4.9e-05  |
+| day_5     | P    | D          | 140       | 980       | 105           | 990           | 1.355      | 0.012    | 0.144    |
+| day_0     | P    | P          | 165       | 990       | 160           | 1000          | 1.048      | 0.724    | 0.951    |
+| day_10    | E    | K          | 72        | 940       | 88            | 960           | 0.823      | 0.215    | 0.645    |
 | ...       | ...  | ...        | ...           | ...           | ...       | ...       | ...        | ...      | ...      |
 ```
 

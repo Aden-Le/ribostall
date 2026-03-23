@@ -79,8 +79,11 @@ def main():
             name, reps = block.split(":")
             groups[name] = reps.split(",")
         return groups
+    
     groups = parse_groups(args.groups)
     logging.info(f"Parsed {len(groups)} groups: {list(groups.keys())}")
+    # Inverses the groups dict to map each replicate to its group, e.g. "rep1" -> "control_day_0".
+    rep_to_group = {rep: grp for grp, reps in groups.items() for rep in reps}
 
     # -------------------------------------------------------------------------
     # Load coverage data
@@ -123,8 +126,6 @@ def main():
 
     # how many transcripts are in the coverage before filtering?
     n_before = len(next(iter(cov.values())))
-    # Inverses the groups dict to map each replicate to its group, e.g. "rep1" -> "control_day_0".
-    rep_to_group = {rep: grp for grp, reps in groups.items() for rep in reps}
 
     print(f"\n{'='*60}")
     print(f"TRANSCRIPT FILTERING (per-group, no intersection)")
@@ -317,8 +318,13 @@ def main():
         print(f"\n{'='*60}")
         print(f"ANALYSIS 1: WITHIN-CONDITION ENRICHMENT (Binomial Test)")
         print(f"{'='*60}")
+
         logging.info("Running within-condition enrichment analysis ...")
+        
+        # Binomial Test
         df_within = within_condition_enrichment(replicate_counts, bg_freq_per_group, rep_to_condition, rep_to_group)
+
+        # Print summary of results: number of tests performed and how many are significant after multiple testing correction (p_adj < 0.05).
         n_sig = (df_within["p_adj"] < 0.05).sum() if not df_within.empty else 0
         n_tests = len(df_within)
         print(f"  Tests performed: {n_tests}")
@@ -337,8 +343,11 @@ def main():
         print(f"\n{'='*60}")
         print(f"ANALYSIS 2: BETWEEN-CONDITION WILCOXON (n=6 vs n=6)")
         print(f"{'='*60}")
+
         logging.info("Running between-condition Wilcoxon rank-sum ...")
         df_wilcox = between_condition_wilcoxon(replicate_counts, rep_to_condition)
+
+        # Print summary of results: number of tests performed and how many are significant after multiple testing correction (p_adj < 0.05).
         n_sig = (df_wilcox["p_adj"] < 0.05).sum() if not df_wilcox.empty else 0
         n_tests = len(df_wilcox)
         print(f"  Tests performed: {n_tests}")
@@ -359,8 +368,11 @@ def main():
         print(f"ANALYSIS 3: PER-TIMEPOINT FISHER'S EXACT TEST")
         print(f"  NOTE: Pooling 2 reps is pseudoreplication — interpret cautiously")
         print(f"{'='*60}")
+
         logging.info("Running per-timepoint Fisher's exact tests ...")
         df_fisher = per_timepoint_fisher(replicate_counts, rep_to_condition, rep_to_timepoint)
+
+        # Print summary of results stratified by timepoint: number of tests and significant results per timepoint.
         for tp in sorted(df_fisher["timepoint"].unique()) if not df_fisher.empty else []:
             tp_df = df_fisher[df_fisher["timepoint"] == tp]
             n_sig_tp = (tp_df["p_adj"] < 0.05).sum()

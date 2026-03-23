@@ -69,8 +69,11 @@ def within_condition_enrichment(
     rows = []
 
     for group in groups:
+        # Background frequencies for this group
         bg_freq = bg_freq_per_group[group]
+        # Replicates in this group | Ex: "control_day_0" -> ["ctrl_rep1", "ctrl_rep2"]
         group_reps = [r for r in replicate_counts if rep_to_group.get(r) == group]
+        # Condition for this group (e.g. "control" or "BWM")
         condition = rep_to_condition.get(group_reps[0], "") if group_reps else ""
 
         for site in ("E", "P", "A"):
@@ -85,18 +88,24 @@ def within_condition_enrichment(
 
             if pooled is None:
                 continue
-
+            
+            # Total n is the total count of all amino acids at this site in this group (not background)
             total_n = int(pooled.sum())
             if total_n == 0:
                 continue
 
             for aa in pooled.index:
+                # k is the sum of target aa
                 k = int(pooled[aa])
+                # p_bg is the background frequency of this aa in this group (with small pseudocount to avoid zero)
                 p_bg = float(bg_freq.get(aa, 1e-6))
+                # freq is the observed frequency of this aa at this site in this group
                 freq = k / total_n
                 log2_enrich = np.log2(freq / p_bg) if freq > 0 and p_bg > 0 else 0.0
 
                 result = stats.binomtest(k, total_n, p_bg, alternative="two-sided")
+                
+                # For output, we want the raw p-value. Multiple testing correction will be done later per group.
                 rows.append({
                     "condition": condition,
                     "group": group,
@@ -151,6 +160,7 @@ def between_condition_wilcoxon(
     conditions = sorted(set(rep_to_condition.values()))
     if len(conditions) != 2:
         raise ValueError(f"Expected exactly 2 conditions, got {conditions}")
+    # Gets the 2 conditions in alphabetical order for consistent output column naming (e.g. median_BWM, median_control)
     cond_a, cond_b = conditions  # alphabetical: BWM, control
 
     # Compute per-replicate frequencies
@@ -158,8 +168,11 @@ def between_condition_wilcoxon(
     for rep, site_counts in replicate_counts.items():
         rep_freqs[rep] = {}
         for site in ("E", "P", "A"):
+            # Gets each AA counts for each site
             counts = site_counts[site]
+            # Gets the total counts of all AAs at this site in this replicate
             total = counts.sum()
+            # Converts them into frequencies for each AA at this site in this replicate
             rep_freqs[rep][site] = counts / total if total > 0 else counts * 0.0
 
     # Get amino acid list from first replicate
@@ -169,12 +182,13 @@ def between_condition_wilcoxon(
     rows = []
     for site in ("E", "P", "A"):
         for aa in aa_list:
+            # Get frequencies for this AA at this site across replicates in each condition
             freqs_a = [rep_freqs[r][site][aa] for r in rep_freqs if rep_to_condition.get(r) == cond_a]
             freqs_b = [rep_freqs[r][site][aa] for r in rep_freqs if rep_to_condition.get(r) == cond_b]
-
+            # Convert to numpy arrays for median and stats functions
             freqs_a = np.array(freqs_a, dtype=float)
             freqs_b = np.array(freqs_b, dtype=float)
-
+            # Get the median frequency for this AA at this site in each condition for fold change calculation
             med_a = float(np.median(freqs_a))
             med_b = float(np.median(freqs_b))
 
@@ -240,44 +254,57 @@ def per_timepoint_fisher(
         timepoint, site, amino_acid, control_count, control_total,
         BWM_count, BWM_total, odds_ratio, p_value, p_adj
     """
+    # All the conditions and timepoints present in the data, sorted for consistent output
     conditions = sorted(set(rep_to_condition.values()))
     timepoints = sorted(set(rep_to_timepoint.values()))
 
+    # Gets the AA list using the first replicate (assumes all replicates have the same AA index)
     first_rep = next(iter(replicate_counts))
     aa_list = list(replicate_counts[first_rep]["E"].index)
 
     rows = []
+    # For each time point, day0, day5, day10
     for tp in timepoints:
         for site in ("E", "P", "A"):
             # Pool counts per condition at this timepoint
             pooled_by_cond = {}
+            # BWM or Control
             for cond in conditions:
                 pooled = None
                 for rep in replicate_counts:
+                    # if this replicate doesn't match the current condition and timepoint, skip it
                     if rep_to_condition.get(rep) != cond or rep_to_timepoint.get(rep) != tp:
                         continue
+                    # The counts of all AAs at this site in this replicate
                     counts = replicate_counts[rep][site]
                     if pooled is None:
                         pooled = counts.copy()
                     else:
                         pooled = pooled.add(counts, fill_value=0)
+                # Pooled replicate counts for each condition at this timepoint and site
                 pooled_by_cond[cond] = pooled
 
             # Check both conditions have data
             if any(v is None for v in pooled_by_cond.values()):
                 continue
-
+            
+            # For each amino acid, build the 2x2 contingency table and run Fisher's exact test
             for aa in aa_list:
                 # 2x2 table: [[cond_a_AA, cond_a_notAA], [cond_b_AA, cond_b_notAA]]
                 counts_list = []
                 totals = {}
                 for cond in conditions:
+                    # The count of this AA at this site in this condition (pooled across replicates)
                     aa_count = int(pooled_by_cond[cond].get(aa, 0))
+                    # The total count of all AAs at this site in this condition (pooled across replicates)
                     total = int(pooled_by_cond[cond].sum())
+                    # The count of all other AAs at this site in this condition is total - aa_count
                     not_aa = total - aa_count
+                    # appends the counts for this condition to the contingency table list
                     counts_list.append([aa_count, not_aa])
                     totals[cond] = total
 
+                # Table Looks like this: [[BWM_AA, BWM_notAA], [control_AA, control_notAA]]
                 table = np.array(counts_list)
                 try:
                     odds_ratio, p_val = stats.fisher_exact(table, alternative="two-sided")

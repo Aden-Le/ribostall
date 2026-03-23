@@ -235,7 +235,7 @@ def main():
     # -------------------------------------------------------------------------
     cds_range = None
     sequence = None
-    if args.motif or args.enrichment:
+    if args.enrichment:
         reference_file_path = args.reference
 
         print(f"\n{'='*60}")

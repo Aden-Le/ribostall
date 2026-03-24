@@ -63,7 +63,7 @@ def within_condition_enrichment(
     -------
     pd.DataFrame with columns:
         condition, group, site, amino_acid, stall_count, total_n, stall_freq,
-        bg_freq, log2_enrichment, p_value, p_adj
+        bg_freq, log2_enrichment, weighted_log2_enrichment, p_value, p_adj
     """
     groups = sorted(set(rep_to_group[r] for r in replicate_counts if r in rep_to_group))
     rows = []
@@ -102,9 +102,10 @@ def within_condition_enrichment(
                 # freq is the observed frequency of this aa at this site in this group
                 freq = k / total_n
                 log2_enrich = np.log2(freq / p_bg) if freq > 0 and p_bg > 0 else 0.0
+                weighted_log2 = freq * log2_enrich
 
                 result = stats.binomtest(k, total_n, p_bg, alternative="two-sided")
-                
+
                 # For output, we want the raw p-value. Multiple testing correction will be done later per group.
                 rows.append({
                     "condition": condition,
@@ -116,6 +117,7 @@ def within_condition_enrichment(
                     "stall_freq": freq,
                     "bg_freq": p_bg,
                     "log2_enrichment": log2_enrich,
+                    "weighted_log2_enrichment": weighted_log2,
                     "p_value": result.pvalue,
                 })
 

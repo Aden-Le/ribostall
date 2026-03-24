@@ -541,7 +541,8 @@ For each group, for each E/P/A site, for each amino acid:
 3. Get the **expected frequency** from the group's background
 4. Run a **two-sided binomial test**: `binomtest(k, n, p_background)`
 5. Compute **log2 enrichment** = log2(observed_freq / background_freq)
-6. Apply **Benjamini-Hochberg FDR** correction per group
+6. Compute **weighted log2 enrichment** = observed_freq × log2_enrichment
+7. Apply **Benjamini-Hochberg FDR** correction per group
 
 ### Detailed Example
 
@@ -569,6 +570,10 @@ Background frequency of Proline in control_day_0 transcripts:
 Log2 enrichment:
   log2(0.1735 / 0.056) = log2(3.098) = 1.63
 
+Weighted log2 enrichment:
+  0.1735 × 1.63 = 0.283
+  (scales enrichment by how common the AA actually is at stall sites)
+
 Binomial test:
   binomtest(177, 1020, 0.056, alternative="two-sided")
   → p-value = 2.3e-45  (extremely significant)
@@ -590,13 +595,13 @@ Binomial: Is 177/1020 = 17.4% significantly different from 5.6%?
 ### Output DataFrame
 
 ```
-| condition | group         | site | amino_acid | stall_count | total_n | stall_freq | bg_freq | log2_enrichment | p_value  | p_adj    |
-|-----------|---------------|------|------------|-------------|---------|------------|---------|-----------------|----------|----------|
-| control   | control_day_0 | P    | P          | 177         | 1020    | 0.1735     | 0.056   | 1.63            | 2.3e-45  | 1.4e-43  |
-| control   | control_day_0 | P    | D          | 120         | 1020    | 0.1176     | 0.053   | 1.15            | 4.1e-20  | 1.2e-18  |
-| control   | control_day_0 | E    | K          | 95          | 1020    | 0.0931     | 0.058   | 0.68            | 1.2e-05  | 2.1e-04  |
-| BWM       | BWM_day_5     | A    | G          | 40          | 980     | 0.0408     | 0.070   | -0.78           | 3.5e-03  | 4.2e-02  |
-| ...       | ...           | ...  | ...        | ...         | ...     | ...        | ...     | ...             | ...      | ...      |
+| condition | group         | site | amino_acid | stall_count | total_n | stall_freq | bg_freq | log2_enrichment | weighted_log2_enrichment | p_value  | p_adj    |
+|-----------|---------------|------|------------|-------------|---------|------------|---------|-----------------|--------------------------|----------|----------|
+| control   | control_day_0 | P    | P          | 177         | 1020    | 0.1735     | 0.056   | 1.63            | 0.283                    | 2.3e-45  | 1.4e-43  |
+| control   | control_day_0 | P    | D          | 120         | 1020    | 0.1176     | 0.053   | 1.15            | 0.135                    | 4.1e-20  | 1.2e-18  |
+| control   | control_day_0 | E    | K          | 95          | 1020    | 0.0931     | 0.058   | 0.68            | 0.063                    | 1.2e-05  | 2.1e-04  |
+| BWM       | BWM_day_5     | A    | G          | 40          | 980     | 0.0408     | 0.070   | -0.78           | -0.032                   | 3.5e-03  | 4.2e-02  |
+| ...       | ...           | ...  | ...        | ...         | ...     | ...        | ...     | ...             | ...                      | ...      | ...      |
 ```
 
 ---

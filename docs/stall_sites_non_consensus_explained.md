@@ -592,6 +592,10 @@ Binomial: Is 177/1020 = 17.4% significantly different from 5.6%?
 → YES (p < 0.001)
 ```
 
+### Caveat: Low Replicate Count (n=2)
+
+With more replicates (e.g., n=5+), you would compute per-replicate frequencies and use a replicate-aware test (one-sample t-test or Wilcoxon signed-rank) to compare against the background — this explicitly models between-replicate variance. With only n=2 biological replicates per group, there are not enough data points to estimate that variance. The binomial test is a count-based test that works even with n=1, so pooling the 2 replicates together is the pragmatic choice — it increases the total stall site count for more precise frequency estimates, but it cannot account for replicate-level variation (e.g., shared library prep or batch effects).
+
 ### Output DataFrame
 
 ```
@@ -769,9 +773,9 @@ This means the odds ratio represents **BWM relative to control**:
 
 > **Note:** The odds ratio orientation depends entirely on which condition appears first in alphabetical sort. If your conditions were named differently (e.g., "treated" vs "untreated"), the first row — and therefore the reference for OR > 1 — would change accordingly.
 
-### Caveat: Pseudoreplication
+### Caveat: Low Replicate Count (n=2)
 
-The script warns about this: pooling 2 biological replicates into one count inflates the apparent sample size. The 2x2 table acts as if 990 and 980 are independent observations, but they come from only 2 biological replicates per condition. P-values may be too optimistic. This analysis is exploratory — confirming timepoint-specific effects requires more replicates.
+With more replicates (e.g., n=5+ per condition per timepoint), you would compute per-replicate frequencies and use a replicate-aware test (Wilcoxon rank-sum or t-test) to compare conditions at each timepoint — this explicitly models between-replicate variance. With only n=2 biological replicates per condition per timepoint, there are not enough data points to estimate that variance. Fisher's exact test is a count-based test that works even with n=1, so pooling the 2 replicates together is the pragmatic choice — it increases the total stall site count for more precise frequency estimates, but it cannot account for replicate-level variation (e.g., shared library prep or batch effects). P-values may be too optimistic as a result. This analysis is exploratory — confirming timepoint-specific effects requires more replicates.
 
 ### Output DataFrame
 

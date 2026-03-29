@@ -50,33 +50,48 @@ def within_condition_binomial_occupancy(
     """
     # Background frequencies
     total_bg = sum(transcriptome_counts.values())
+    # Calculates background frequency for each unit (codon or AA) as count in transcriptome divided by total background count
     bg_freq = {u: c / total_bg for u, c in transcriptome_counts.items()} if total_bg > 0 else {}
 
+    # Either Codons or AAs sorted alphabetically
     all_units = sorted(transcriptome_counts.keys())
     rows = []
-
+    
+    # For each group (e.g. "control_day_0"), pools the raw counts across replicates in that group and compares to background frequencies 
+    # using a binomial test
     for grp, reps in sorted(groups.items()):
+        # Splits the group name into condition and time point
+        # For example, "control_day_0" would be split into condition="control" and timepoint="day_0"
         parts = grp.split("_", 1)
         condition = parts[0]
         timepoint = parts[1] if len(parts) > 1 else grp
 
         # Pool raw counts across replicates in this group
         pooled = {}
+        # For each unit (codon or AA), sums the raw counts across all replicates in the group to get a pooled count for that unit in the group
         for unit in all_units:
             pooled[unit] = sum(raw_counts_by_exp.get(rep, {}).get(unit, 0.0) for rep in reps)
 
+        # Total number of reads in the group
         total_n = sum(pooled.values())
         if total_n == 0:
             continue
 
         for unit in all_units:
+            # Rounds the pooled count to the nearest integer to get the observed count for this unit in the group
             k = int(round(pooled[unit]))
+            # Get the background frequency for this unit
             p_bg = bg_freq.get(unit, 1e-6)
+            # Gets the frequency of this unit in the group by dividing the observed count by the total number of reads in the group
             freq = k / total_n if total_n > 0 else 0.0
 
+            # Calculate log2 enrichment as log2(observed frequency / background frequency), with a pseudocount to avoid log of zero
             log2_enrich = np.log2(freq / p_bg) if freq > 0 and p_bg > 0 else 0.0
             weighted_log2 = freq * log2_enrich
-
+            # k is the observed count of the unit in the group, total_n is the total number of reads in the group,
+            # p_bg is the background frequency of the unit. The binomial test checks if the observed 
+            # count k is significantly different from what would be expected under a binomial distribution
+            # with parameters total_n and p_bg.
             result = stats.binomtest(k, int(round(total_n)), p_bg, alternative="two-sided")
 
             rows.append({

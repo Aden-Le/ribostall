@@ -56,7 +56,9 @@ def iter_trimmed_codons(seq: str, trim_start_codons: int, trim_stop_codons: int)
     if start_nt >= end_nt:
         return
     last_full = end_nt - ((end_nt - start_nt) % 3)
+    # i would be 0, 3, 6, ... relative to the trimmed CDS start
     for i in range(start_nt, last_full, 3):
+        # nt for the codon triplet
         codon = seq[i:i+3]
         if len(codon) == 3 and "N" not in codon.upper():
             yield codon, i
@@ -107,8 +109,6 @@ def main():
     sequence = get_sequence(ribo_object, args.reference,
                             alias=bool(args.use_human_alias))
 
-    # 
-    codon_occ_by_exp = {exp: defaultdict(float) for exp in coverage_dict}
     transcriptome_codon_counts = defaultdict(int)
 
     # iterate once over transcripts for background
@@ -119,18 +119,25 @@ def main():
         for codon, _ in iter_trimmed_codons(cds_seq, args.trim_start, args.trim_stop):
             transcriptome_codon_counts[codon] += 1
 
+    # Creates dictionary of form {exp: {codon: count}} for each experiment
+    codon_occ_by_exp = {exp: defaultdict(float) for exp in coverage_dict}
+
     # per-experiment counts
     logging.info("Computing per-experiment codon occupancy ...")
     for exp, tx_map in coverage_dict.items():
         for tx, cov in tx_map.items():
+            # If no coverage skip or if transcript not in CDS range skip
             if cov is None or tx not in cds_range:
                 continue
+            # Gets CDS sequence and iterates over codons, applying trimming if specified
             start, stop = cds_range[tx]
             cds_seq = sequence[tx][start:stop]
+            # Returns the 3 nt and their index relative to the CDS start (0-based) for each codon in the trimmed CDS sequence
             for codon, cds_nt_idx in iter_trimmed_codons(cds_seq, args.trim_start, args.trim_stop):
                 cov_start = cds_nt_idx
                 cov_end = cov_start + 3
                 if cov_end <= len(cov):
+                    # Sums the coverage for the 3 nucleotides of the codon
                     count = cov[cov_start:cov_end].sum()
                     if count > 0:
                         codon_occ_by_exp[exp][codon] += float(count)
@@ -138,10 +145,12 @@ def main():
     # =========================================================================
     # Build codon-level output
     # =========================================================================
+    # Gets all in the transcriptome
     all_codons = set(transcriptome_codon_counts)
+    # Gets all codons observed in any experiment
     for exp in codon_occ_by_exp:
         all_codons.update(codon_occ_by_exp[exp].keys())
-    # Filter out stop codons
+    # Filter out stop codons and sorts codons alphabetically
     all_codons = {c for c in all_codons if CODON2AA.get(c.upper(), "*") != "*"}
     ordered_codons = sorted(all_codons)
 
@@ -151,16 +160,22 @@ def main():
         total_reads_per_exp[exp] = sum(codon_occ_by_exp[exp].values())
 
     # Codon occupancy CSV: raw counts + per-instance rate + RPM
+    # Centered around codons
     codon_rows = []
     for codon in ordered_codons:
         row = OrderedDict()
         row["Codon"] = codon
         row["AminoAcid"] = CODON2AA.get(codon.upper(), "X")
         row["Transcriptome"] = transcriptome_codon_counts.get(codon, 0)
+        # Background count
         bg_count = transcriptome_codon_counts.get(codon, 0)
+        # For each experiment
         for exp in sorted(codon_occ_by_exp.keys()):
+            # Raw count for this codon in this experiment
             raw = codon_occ_by_exp[exp].get(codon, 0.0)
+            # Frequency per transcriptome instance (rate)
             rate = raw / bg_count if bg_count > 0 else 0.0
+            # RPM normalization
             total = total_reads_per_exp.get(exp, 1)
             rpm = (raw / total) * 1e6 if total > 0 else 0.0
             row[f"{exp}_raw"] = raw
@@ -173,11 +188,14 @@ def main():
     # Build amino acid-level output
     # =========================================================================
     logging.info("Aggregating to amino acid level ...")
+    # Aggregate transcriptome codon counts to amino acid counts for background
     transcriptome_aa_counts = aggregate_to_aa(dict(transcriptome_codon_counts))
     aa_occ_by_exp = {}
+    # Aggregate each experiment's codon counts to amino acid counts
     for exp in codon_occ_by_exp:
         aa_occ_by_exp[exp] = aggregate_to_aa(dict(codon_occ_by_exp[exp]))
 
+    # Builds Dataframe with rows for each amino acid
     aa_rows = []
     for aa in AA_ORDER:
         row = OrderedDict()
@@ -216,6 +234,7 @@ def main():
         logging.info("Done (no statistical tests requested).")
         return
 
+    # Import statiscal test functions
     from functions_folder.functions_global_occupancy import (
         within_condition_binomial_occupancy,
         between_condition_wilcoxon_occupancy,
@@ -224,10 +243,12 @@ def main():
         per_timepoint_fisher_occupancy,
     )
 
+    # Parse Groups
     groups = parse_groups(args.groups)
     logging.info(f"Parsed {len(groups)} groups: {list(groups.keys())}")
 
     # Build mapping dicts
+    # Build dictionary mapping each replicate to its group, condition, and timepoint
     rep_to_group = {rep: grp for grp, reps in groups.items() for rep in reps}
     rep_to_condition = {}
     rep_to_timepoint = {}
@@ -237,8 +258,8 @@ def main():
         rep_to_timepoint[rep] = parts[1] if len(parts) > 1 else grp  # "day_0", etc.
 
     # Sanity check: warn if any declared replicate is absent
-    all_reps = [r for reps in groups.values() for r in reps]
-    missing = [r for r in all_reps if r not in coverage_dict]
+    all_reps = [r for reps in groups.values() for r in reps] # replicates declared in groups
+    missing = [r for r in all_reps if r not in coverage_dict] # replicates missing from coverage data
     if missing:
         logging.warning(f"Replicates missing from coverage: {', '.join(missing)}")
 
@@ -246,10 +267,11 @@ def main():
     declared_reps = set(all_reps)
 
     # Build per-rep raw count dicts (codon and AA) — only for declared reps
+    # The codon counts per experiment and the aa counts per experiment declared in groups
     codon_raw_for_stats = {exp: dict(codon_occ_by_exp[exp]) for exp in declared_reps if exp in codon_occ_by_exp}
     aa_raw_for_stats = {exp: aa_occ_by_exp[exp] for exp in declared_reps if exp in aa_occ_by_exp}
 
-    # Build per-rep normalized rate dicts
+    # Build per-rep normalized rate dicts, normalized by transcriptome background (codon and AA) — only for declared reps
     codon_rates_for_stats = {}
     aa_rates_for_stats = {}
     for exp in declared_reps:
@@ -260,7 +282,7 @@ def main():
             bg = transcriptome_codon_counts.get(codon, 0)
             raw = codon_occ_by_exp[exp].get(codon, 0.0)
             codon_rates_for_stats[exp][codon] = raw / bg if bg > 0 else 0.0
-
+        # Similarly for amino acids
         aa_rates_for_stats[exp] = {}
         for aa in AA_ORDER:
             bg = transcriptome_aa_counts.get(aa, 0)
@@ -279,6 +301,7 @@ def main():
     tc_codon = {c: transcriptome_codon_counts[c] for c in ordered_codons}
     tc_aa = {aa: transcriptome_aa_counts.get(aa, 0) for aa in AA_ORDER}
 
+    # Save CSV Function
     def save_csv(df, name):
         path = out_dir / name
         df.to_csv(path, index=False)

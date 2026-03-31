@@ -210,7 +210,7 @@ def main():
     print(f"{'='*60}\n")
 
     # -------------------------------------------------------------------------
-    # Write stall sites to JSON Lines
+    # Write stall sites to CSV Lines
     # -------------------------------------------------------------------------
     logging.info(f"Converting stalls to long-format dataframe ...")
     # Inverses the groups dict to map each replicate to its group, e.g. "rep1" -> "control_day_0".

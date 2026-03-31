@@ -54,7 +54,6 @@ def main():
                         help="Exclude last N codons before stop (termination region)")
     parser.add_argument("--pseudocount", type=float, default=0.5,
                         help="Pseudocount for stall calling")
-    parser.add_argument("--out-json", default="../ribostall_results/stall_sites.jsonl", help="JSON")
     parser.add_argument("--reference", help="Reference file path")
     parser.add_argument("--flank-left", type=int, default=10, help="Motif")
     parser.add_argument("--flank-right", type=int, default=6, help="Motif")

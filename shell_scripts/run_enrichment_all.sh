@@ -27,7 +27,6 @@ PSEUDOCOUNT=0.5
 REFERENCE_FILE="./C_elegan_reference/appris_celegans_v1_selected_new.fa"
 
 # Output files
-OUT_JSON="stall_sites.jsonl"
 OUT_ENRICHMENT="./enrichment_results"
 
 # ===============================================

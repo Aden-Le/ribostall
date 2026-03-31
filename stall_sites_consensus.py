@@ -87,6 +87,11 @@ def main():
     logging.info(f"Coverage loaded: {len(cov)} experiments, {len(next(iter(cov.values())))} transcripts each")
     # --- end logging ---
 
+    # Filter coverage to only declared replicates
+    declared_reps = {rep for reps in groups.values() for rep in reps}
+    cov = {exp: tx_dict for exp, tx_dict in cov.items() if exp in declared_reps}
+    logging.info(f"Keeping {len(cov)} declared replicates (dropped undeclared samples)")
+
     # -------------------------------------------------------------------------
     # Load the ribo object
     # -------------------------------------------------------------------------

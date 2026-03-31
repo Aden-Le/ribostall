@@ -4,3 +4,4 @@ outputs/
 docs/
 global_occupancy_results/
 test.py
+stall_sites_results/

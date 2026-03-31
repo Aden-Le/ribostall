@@ -157,11 +157,16 @@ def between_condition_wilcoxon_occupancy(
 
     rows = []
     for unit in all_units:
+        # Rates_a and rates_b are arrays of normalized occupancy rates for this unit across replicates in condition A
+        # and condition B, respectively
+        # For example, the normalized occupancy rates for codon "AAA" across all replicates in the
+        # BWM condition would be collected into rates_a,
         rates_a = np.array([rates_by_exp[r][unit] for r in rates_by_exp
                             if rep_to_condition.get(r) == cond_a], dtype=float)
         rates_b = np.array([rates_by_exp[r][unit] for r in rates_by_exp
                             if rep_to_condition.get(r) == cond_b], dtype=float)
 
+        # The medians are taken for the log2 FC calculation
         med_a = float(np.median(rates_a)) if len(rates_a) > 0 else 0.0
         med_b = float(np.median(rates_b)) if len(rates_b) > 0 else 0.0
 
@@ -201,8 +206,8 @@ def between_condition_wilcoxon_occupancy(
 def between_timepoint_wilcoxon_occupancy(
     rates_by_exp: dict,
     rep_to_timepoint: dict,
-    time_a: str = "day_0",
-    time_b: str = "day_10",
+    time_a: str = "day_10",
+    time_b: str = "day_0",
 ) -> pd.DataFrame:
     """
     Compare occupancy rates between two timepoints, pooling across conditions.

@@ -11,7 +11,7 @@ import ribopy
 from ribopy import Ribo
 
 # Local modules with the core analysis functions
-from functions_folder.functions_stall_sites import filter_tx, codonize_counts_cds, call_stalls, stalls_to_long_df
+from functions_folder.functions_stall_sites import filter_tx, codonize_counts_cds, call_stalls, stalls_to_long_df, consensus_stalls_across_reps
 from functions_folder.functions_AA import (translate_cds_nt_to_aa, windows_aa, count_matrix, background_aa_freq,
                           pwm_position_weighted_log2, plot_logo, epa_triplet_counts,
                           CODON2AA, AA_ORDER, AA_CLASS, CLASS_COLORS)
@@ -207,6 +207,28 @@ def main():
         grp = rep_to_group.get(exp, "?")
         print(f"  [{exp}] ({grp}): {count} stall sites  ({len(codon_cov[exp])} transcripts)")
     print(f"  Total across all experiments: {sum(total_counts.values())} stall sites")
+    print(f"{'='*60}\n")
+
+    # Reproducibility quality metric: consensus stall sites across replicates per group.
+    print(f"{'='*60}")
+    print(f"REPRODUCIBILITY (consensus across replicates)")
+    print(f"{'='*60}")
+    for grp, reps in groups.items():
+        if len(reps) < 2:
+            print(f"  [{grp}]: skipped (only {len(reps)} replicate)")
+            continue
+        consensus = consensus_stalls_across_reps(stalls, reps, min_support=2, tol=0)
+        n_consensus = sum(len(idxs) for idxs in consensus.values())
+        n_total_union = len(set(
+            (tx, d["index"])
+            for r in reps
+            for tx, site_list in stalls[r].items()
+            for d in site_list
+        ))
+        pct = (n_consensus / n_total_union * 100) if n_total_union else 0
+        print(f"  [{grp}] ({len(reps)} reps): "
+              f"{n_consensus} consensus / {n_total_union} union stall sites "
+              f"({pct:.1f}% reproducible)")
     print(f"{'='*60}\n")
 
     # -------------------------------------------------------------------------

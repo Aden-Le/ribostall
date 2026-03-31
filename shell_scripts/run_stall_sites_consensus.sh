@@ -19,7 +19,8 @@ TX_MIN_REPS=2
 # Stall site calling thresholds
 MIN_Z=1.0
 MIN_READS=2
-TRIM_EDGES=10
+TRIM_START=20
+TRIM_STOP=10
 PSEUDOCOUNT=0.5
 
 # Consensus calling parameters
@@ -31,9 +32,9 @@ MIN_SEP=7
 REFERENCE_FILE="./C_elegan_reference/appris_celegans_v1_selected_new.fa"
 
 # Output files
-OUT_CSV="../ribostall_results/stall_sites.csv"
-OUT_PNG="../ribostall_results/motif.png"
-OUT_CSV="../ribostall_results/motif_csv"
+OUT_CSV="stall_sites_results/stall_sites.csv"
+OUT_PNG="stall_sites_results/motif.png"
+OUT_MOTIF_CSV="stall_sites_results"
 
 # Set to "--motif" to enable motif plotting, or "" to skip
 MOTIF_FLAG="--motif"
@@ -63,7 +64,7 @@ echo "Coverage pickle: $PICKLE"
 echo "Ribo file: $RIBO_FILE"
 echo "Reference: $REFERENCE_FILE"
 echo "Groups: $EXP_GROUPS"
-echo "Parameters: min_z=$MIN_Z, min_reads=$MIN_READS, trim_edges=$TRIM_EDGES, pseudocount=$PSEUDOCOUNT"
+echo "Parameters: min_z=$MIN_Z, min_reads=$MIN_READS, trim_start=$TRIM_START, trim_stop=$TRIM_STOP, pseudocount=$PSEUDOCOUNT"
 echo "Consensus: stall_min_reps=$STALL_MIN_REPS, tol=$TOL, min_sep=$MIN_SEP"
 echo "Output CSV: $OUT_CSV"
 echo "=============================================="
@@ -76,7 +77,8 @@ CMD=(python3 stall_sites_consensus.py \
   --tx_min_reps "$TX_MIN_REPS" \
   --min_z "$MIN_Z" \
   --min_reads "$MIN_READS" \
-  --trim_edges "$TRIM_EDGES" \
+  --trim-start "$TRIM_START" \
+  --trim-stop "$TRIM_STOP" \
   --pseudocount "$PSEUDOCOUNT" \
   --stall_min_reps "$STALL_MIN_REPS" \
   --tol "$TOL" \
@@ -84,7 +86,7 @@ CMD=(python3 stall_sites_consensus.py \
   --out-csv "$OUT_CSV" \
   --reference "$REFERENCE_FILE" \
   --out-png "$OUT_PNG" \
-  --out-csv "$OUT_CSV")
+  --out-motif-csv "$OUT_MOTIF_CSV")
 
 # Append motif flag if set
 if [ -n "$MOTIF_FLAG" ]; then

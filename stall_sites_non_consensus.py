@@ -58,10 +58,10 @@ def main():
     parser.add_argument("--flank-left", type=int, default=10, help="Motif")
     parser.add_argument("--flank-right", type=int, default=6, help="Motif")
     parser.add_argument("--psite-offset", type=int, default=0, help="Motif")
-    parser.add_argument("--out-csv", default="../ribostall_results/motif_csv", help="Motif")
+    parser.add_argument("--out-csv", default="stall_sites_results", help="Motif")
     parser.add_argument("--enrichment", action="store_true",
                         help="Run amino acid enrichment analysis at E/P/A sites")
-    parser.add_argument("--out-enrichment", default="../ribostall_results/enrichment",
+    parser.add_argument("--out-enrichment", default="stall_sites_results",
                         help="Output directory for enrichment analysis CSVs")
 
     args = parser.parse_args()

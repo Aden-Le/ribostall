@@ -1,28 +1,48 @@
 #!/bin/bash
 #----------------------------------------------------
-# Bash script: generate within-condition volcano plots
+# Bash script: generate within-condition bar plots
 # for global codon and amino acid occupancy enrichment
 #----------------------------------------------------
 
+# Add R to PATH (Windows)
+export PATH="$PATH:/c/Program Files/R/R-4.4.2/bin"
+
 # ============== CONFIG: edit these ==============
-INPUT_DIR="./global_occupancy_results"
+
+# Input directory containing the binomial CSVs
+INPUT_DIR="./global_occupancy_results/analysis"
+
+# Output directory for plots
 OUTPUT_DIR="./global_occupancy_results/within_condition_output"
-ENRICHMENT_TYPE="both"   # unweighted, weighted, or both
-FORMAT="png"             # pdf, png, or both
+
+# Enrichment type: "unweighted", "weighted", or "both"
+ENRICHMENT_TYPE="both"
+
+# Output format: "pdf", "png", or "both"
+FORMAT="png"
+
+# DPI for PNG output
 DPI=300
-Y_CAP=""                 # set to a number (e.g. 25) to cap y-axis, or leave empty
+
+# Y-axis cap: clamp y-axis to ±this value
+# Leave empty ("") to disable
+Y_CAP=""
+
 # ===============================================
 
-# Activate conda/env if you use one
-source ${HOME}/miniconda3/etc/profile.d/conda.sh
-conda activate ribostall_env
-
-# Navigate to repo root
+# Navigate to repo root (one level up from shell_scripts/)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/.."
 
 echo "=============================================="
-echo "GLOBAL OCCUPANCY WITHIN-CONDITION VOLCANO PLOTS"
+echo "GLOBAL OCCUPANCY WITHIN-CONDITION BAR PLOTS"
+echo "=============================================="
+echo "Input directory:  $INPUT_DIR"
+echo "Output directory: $OUTPUT_DIR"
+echo "Enrichment type:  $ENRICHMENT_TYPE"
+echo "Format:           $FORMAT"
+echo "DPI:              $DPI"
+echo "Y-axis cap:       ${Y_CAP:-none}"
 echo "=============================================="
 
 # Build optional flags

@@ -218,12 +218,16 @@ def main():
     # =========================================================================
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+    raw_dir = out_dir / "raw"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    stats_dir = out_dir / "analysis"
+    stats_dir.mkdir(parents=True, exist_ok=True)
 
-    codon_path = out_dir / "codon_occupancy.csv"
+    codon_path = raw_dir / "codon_occupancy.csv"
     df_codon.to_csv(codon_path, index=False)
     logging.info(f"Saved {codon_path}")
 
-    aa_path = out_dir / "aa_occupancy.csv"
+    aa_path = raw_dir / "aa_occupancy.csv"
     df_aa.to_csv(aa_path, index=False)
     logging.info(f"Saved {aa_path}")
 
@@ -303,7 +307,7 @@ def main():
 
     # Save CSV Function
     def save_csv(df, name):
-        path = out_dir / name
+        path = stats_dir / name
         df.to_csv(path, index=False)
         logging.info(f"Saved {path} ({len(df)} rows)")
 

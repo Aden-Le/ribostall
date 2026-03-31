@@ -2,3 +2,5 @@ enrichment_results/
 R_scripts/
 outputs/
 docs/
+global_occupancy_results/
+test.py

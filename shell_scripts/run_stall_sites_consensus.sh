@@ -37,7 +37,7 @@ OUT_PNG="stall_sites_results/motif.png"
 OUT_MOTIF_CSV="stall_sites_results"
 
 # Set to "--motif" to enable motif plotting, or "" to skip
-MOTIF_FLAG="--motif"
+MOTIF_FLAG=""
 
 # ===============================================
 

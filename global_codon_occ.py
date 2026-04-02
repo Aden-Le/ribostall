@@ -159,7 +159,16 @@ def main():
     for exp in codon_occ_by_exp:
         total_reads_per_exp[exp] = sum(codon_occ_by_exp[exp].values())
 
-    # Codon occupancy CSV: raw counts + per-instance rate + RPM
+    # Pre-compute per-experiment rate sums for within-replicate proportion normalisation
+    exp_codon_rate_sums = {}
+    for exp in codon_occ_by_exp:
+        exp_codon_rate_sums[exp] = sum(
+            codon_occ_by_exp[exp].get(c, 0.0) / transcriptome_codon_counts[c]
+            for c in ordered_codons
+            if transcriptome_codon_counts.get(c, 0) > 0
+        )
+
+    # Codon occupancy CSV: raw counts + per-instance rate + within-rep proportion + RPM
     # Centered around codons
     codon_rows = []
     for codon in ordered_codons:
@@ -167,19 +176,17 @@ def main():
         row["Codon"] = codon
         row["AminoAcid"] = CODON2AA.get(codon.upper(), "X")
         row["Transcriptome"] = transcriptome_codon_counts.get(codon, 0)
-        # Background count
         bg_count = transcriptome_codon_counts.get(codon, 0)
-        # For each experiment
         for exp in sorted(codon_occ_by_exp.keys()):
-            # Raw count for this codon in this experiment
             raw = codon_occ_by_exp[exp].get(codon, 0.0)
-            # Frequency per transcriptome instance (rate)
             rate = raw / bg_count if bg_count > 0 else 0.0
-            # RPM normalization
+            rate_sum = exp_codon_rate_sums.get(exp, 0)
+            proportion = rate / rate_sum if rate_sum > 0 else 0.0
             total = total_reads_per_exp.get(exp, 1)
             rpm = (raw / total) * 1e6 if total > 0 else 0.0
             row[f"{exp}_raw"] = raw
             row[f"{exp}_rate"] = rate
+            row[f"{exp}_proportion"] = proportion
             row[f"{exp}_rpm"] = rpm
         codon_rows.append(row)
     df_codon = pd.DataFrame(codon_rows)
@@ -195,6 +202,15 @@ def main():
     for exp in codon_occ_by_exp:
         aa_occ_by_exp[exp] = aggregate_to_aa(dict(codon_occ_by_exp[exp]))
 
+    # Pre-compute per-experiment AA rate sums for within-replicate proportion normalisation
+    exp_aa_rate_sums = {}
+    for exp in aa_occ_by_exp:
+        exp_aa_rate_sums[exp] = sum(
+            aa_occ_by_exp[exp].get(aa, 0.0) / transcriptome_aa_counts[aa]
+            for aa in AA_ORDER
+            if transcriptome_aa_counts.get(aa, 0) > 0
+        )
+
     # Builds Dataframe with rows for each amino acid
     aa_rows = []
     for aa in AA_ORDER:
@@ -205,10 +221,13 @@ def main():
         for exp in sorted(aa_occ_by_exp.keys()):
             raw = aa_occ_by_exp[exp].get(aa, 0.0)
             rate = raw / bg_count if bg_count > 0 else 0.0
+            rate_sum = exp_aa_rate_sums.get(exp, 0)
+            proportion = rate / rate_sum if rate_sum > 0 else 0.0
             total = total_reads_per_exp.get(exp, 1)
             rpm = (raw / total) * 1e6 if total > 0 else 0.0
             row[f"{exp}_raw"] = raw
             row[f"{exp}_rate"] = rate
+            row[f"{exp}_proportion"] = proportion
             row[f"{exp}_rpm"] = rpm
         aa_rows.append(row)
     df_aa = pd.DataFrame(aa_rows)
@@ -267,43 +286,28 @@ def main():
     if missing:
         logging.warning(f"Replicates missing from coverage: {', '.join(missing)}")
 
-    # Filter to only declared replicates
     declared_reps = set(all_reps)
 
-    # Build per-rep raw count dicts (codon and AA) — only for declared reps
-    # The codon counts per experiment and the aa counts per experiment declared in groups
-    codon_raw_for_stats = {exp: dict(codon_occ_by_exp[exp]) for exp in declared_reps if exp in codon_occ_by_exp}
-    aa_raw_for_stats = {exp: aa_occ_by_exp[exp] for exp in declared_reps if exp in aa_occ_by_exp}
+    # Pull all stats inputs from the saved CSVs — raw counts and within-rep
+    # normalised proportions are already computed and stored there.
+    logging.info("Reading stats inputs from saved CSVs ...")
+    df_codon_csv = pd.read_csv(codon_path)
+    df_aa_csv = pd.read_csv(aa_path)
 
-    # Build per-rep normalized rate dicts, normalized by transcriptome background (codon and AA) — only for declared reps
+    codon_raw_for_stats = {}
     codon_rates_for_stats = {}
+    aa_raw_for_stats = {}
     aa_rates_for_stats = {}
     for exp in declared_reps:
-        if exp not in codon_occ_by_exp:
-            continue
-        codon_rates_for_stats[exp] = {}
-        for codon in ordered_codons:
-            bg = transcriptome_codon_counts.get(codon, 0)
-            raw = codon_occ_by_exp[exp].get(codon, 0.0)
-            codon_rates_for_stats[exp][codon] = raw / bg if bg > 0 else 0.0
-        # Similarly for amino acids
-        aa_rates_for_stats[exp] = {}
-        for aa in AA_ORDER:
-            bg = transcriptome_aa_counts.get(aa, 0)
-            raw = aa_occ_by_exp[exp].get(aa, 0.0)
-            aa_rates_for_stats[exp][aa] = raw / bg if bg > 0 else 0.0
+        if f"{exp}_raw" in df_codon_csv.columns:
+            codon_raw_for_stats[exp] = dict(zip(df_codon_csv["Codon"], df_codon_csv[f"{exp}_raw"]))
+            codon_rates_for_stats[exp] = dict(zip(df_codon_csv["Codon"], df_codon_csv[f"{exp}_proportion"]))
+        if f"{exp}_raw" in df_aa_csv.columns:
+            aa_raw_for_stats[exp] = dict(zip(df_aa_csv["AminoAcid"], df_aa_csv[f"{exp}_raw"]))
+            aa_rates_for_stats[exp] = dict(zip(df_aa_csv["AminoAcid"], df_aa_csv[f"{exp}_proportion"]))
 
-    # Ensure all reps have all units (fill missing with 0)
-    for exp in codon_raw_for_stats:
-        for codon in ordered_codons:
-            codon_raw_for_stats[exp].setdefault(codon, 0.0)
-    for exp in aa_raw_for_stats:
-        for aa in AA_ORDER:
-            aa_raw_for_stats[exp].setdefault(aa, 0.0)
-
-    # Convert transcriptome counts to proper dicts with only relevant units
-    tc_codon = {c: transcriptome_codon_counts[c] for c in ordered_codons}
-    tc_aa = {aa: transcriptome_aa_counts.get(aa, 0) for aa in AA_ORDER}
+    tc_codon = dict(zip(df_codon_csv["Codon"], df_codon_csv["Transcriptome"]))
+    tc_aa = dict(zip(df_aa_csv["AminoAcid"], df_aa_csv["Transcriptome"]))
 
     # Save CSV Function
     def save_csv(df, name):

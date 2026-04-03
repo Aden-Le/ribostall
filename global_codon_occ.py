@@ -104,6 +104,11 @@ def main():
         coverage_dict = pickle.load(f)
     logging.info(f"Coverage loaded: {len(coverage_dict)} experiments")
 
+    if args.groups:
+        declared_reps = {r for reps in parse_groups(args.groups).values() for r in reps}
+        coverage_dict = {k: v for k, v in coverage_dict.items() if k in declared_reps}
+        logging.info(f"Filtered to {len(coverage_dict)} experiments matching --groups")
+
     # Get CDS ranges and sequences
     cds_range = get_cds_range_lookup(ribo_object)
     sequence = get_sequence(ribo_object, args.reference,
@@ -197,7 +202,7 @@ def main():
     logging.info("Aggregating to amino acid level ...")
     # Aggregate transcriptome codon counts to amino acid counts for background
     transcriptome_aa_counts = aggregate_to_aa(dict(transcriptome_codon_counts))
-    
+
     # Aggregate each experiment's codon counts to amino acid counts
     aa_occ_by_exp = {}
     for exp in codon_occ_by_exp:

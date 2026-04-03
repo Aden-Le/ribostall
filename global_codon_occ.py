@@ -117,13 +117,7 @@ def main():
     # Build codon-level output
     # =========================================================================
     # Gets all the codons in the transcriptome
-    all_codons = set(transcriptome_codon_counts)
-    # Gets all codons observed in any experiment
-    for exp in codon_occ_by_exp:
-        all_codons.update(codon_occ_by_exp[exp].keys())
-    # Filter out stop codons and sorts codons alphabetically
-    all_codons = {c for c in all_codons if CODON2AA.get(c.upper(), "*") != "*"}
-    ordered_codons = sorted(all_codons)
+    ordered_codons = sorted(set(transcriptome_codon_counts))
 
     # Compute total reads per experiment (for RPM normalization)
     total_reads_per_exp = {}
@@ -131,6 +125,7 @@ def main():
         total_reads_per_exp[exp] = sum(codon_occ_by_exp[exp].values())
 
     # Pre-compute per-experiment rate sums for within-replicate proportion normalization
+    # Sum of (codon occupancy / transcriptome codon count) across all codons for each experiment
     exp_codon_rate_sums = {}
     for exp in codon_occ_by_exp:
         exp_codon_rate_sums[exp] = sum(
@@ -143,11 +138,11 @@ def main():
     # Centered around codons
     codon_rows = []
     for codon in ordered_codons:
+        bg_count = transcriptome_codon_counts.get(codon, 0)
         row = OrderedDict()
         row["Codon"] = codon
         row["AminoAcid"] = CODON2AA.get(codon.upper(), "X")
-        row["Transcriptome"] = transcriptome_codon_counts.get(codon, 0)
-        bg_count = transcriptome_codon_counts.get(codon, 0)
+        row["Transcriptome"] = bg_count
         for exp in sorted(codon_occ_by_exp.keys()):
             raw = codon_occ_by_exp[exp].get(codon, 0.0)
             rate = raw / bg_count if bg_count > 0 else 0.0
@@ -186,10 +181,10 @@ def main():
     # Builds Dataframe with rows for each amino acid
     aa_rows = []
     for aa in AA_ORDER:
+        bg_count = transcriptome_aa_counts.get(aa, 0)
         row = OrderedDict()
         row["AminoAcid"] = aa
-        row["Transcriptome"] = transcriptome_aa_counts.get(aa, 0)
-        bg_count = transcriptome_aa_counts.get(aa, 0)
+        row["Transcriptome"] = bg_count
         for exp in sorted(aa_occ_by_exp.keys()):
             raw = aa_occ_by_exp[exp].get(aa, 0.0)
             rate = raw / bg_count if bg_count > 0 else 0.0

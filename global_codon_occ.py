@@ -12,7 +12,11 @@ import ribopy
 from ribopy import Ribo
 
 from functions_folder.functions import get_cds_range_lookup, get_sequence
-from functions_folder.functions_AA import CODON2AA, AA_ORDER
+from functions_folder.functions_AA import CODONfrom functions_folder.functions_global_occupancy import (
+    iter_trimmed_codons,
+    parse_groups,
+    aggregate_to_aa,
+)
 
 # =========================
 # Logging
@@ -42,53 +46,14 @@ def parse_args():
     p.add_argument("--use-human-alias", action="store_true",
                    help="Use ribopy.api.alias.apris_human_alias when opening the Ribo file")
     p.add_argument("--groups",
-                   help="Semicolon-separated group:rep1,rep2 definitions (required for --run-stats)")
-    p.add_argument("--run-stats", action="store_true",
-                   help="Run statistical tests (requires --groups)")
+                   help="Semicolon-separated group:rep1,rep2 definitions, "
+                        "e.g. 'groupA:rep1,rep2;groupB:rep3,rep4' "
+                        "(used to filter coverage_dict to declared replicates only)")
     return p.parse_args()
-
-
-def iter_trimmed_codons(seq: str, trim_start_codons: int, trim_stop_codons: int):
-    """yield (codon_str, cds_nt_idx) for trimmed cds sequence"""
-    n = len(seq)
-    start_nt = trim_start_codons * 3
-    end_nt = n - (trim_stop_codons * 3)
-    if start_nt >= end_nt:
-        return
-    last_full = end_nt - ((end_nt - start_nt) % 3)
-    # i would be 0, 3, 6, ... relative to the trimmed CDS start
-    for i in range(start_nt, last_full, 3):
-        # nt for the codon triplet
-        codon = seq[i:i+3]
-        if len(codon) == 3 and "N" not in codon.upper():
-            yield codon, i
-
-
-def parse_groups(groups_arg):
-    """Parse CLI group string into dict: {group_name: [rep1, rep2, ...]}"""
-    groups = {}
-    for block in groups_arg.split(";"):
-        name, reps = block.split(":")
-        groups[name] = reps.split(",")
-    return groups
-
-
-def aggregate_to_aa(codon_dict):
-    """Aggregate a {codon: value} dict to {AA: value} using CODON2AA, skipping stop codons."""
-    aa_dict = defaultdict(float)
-    for codon, val in codon_dict.items():
-        aa = CODON2AA.get(codon.upper())
-        if aa and aa != "*":
-            aa_dict[aa] += val
-    return dict(aa_dict)
 
 
 def main():
     args = parse_args()
-    
-    # Need --groups if --run-stats
-    if args.run_stats and not args.groups:
-        raise ValueError("--run-stats requires --groups")
 
     # ribo object for UTR and CDS data
     logging.info(f"Loading ribo object from {args.ribo} ...")
@@ -245,8 +210,6 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
     raw_dir = out_dir / "raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
-    stats_dir = out_dir / "analysis"
-    stats_dir.mkdir(parents=True, exist_ok=True)
 
     codon_path = raw_dir / "codon_occupancy.csv"
     df_codon.to_csv(codon_path, index=False)
@@ -256,134 +219,8 @@ def main():
     df_aa.to_csv(aa_path, index=False)
     logging.info(f"Saved {aa_path}")
 
-    # =========================================================================
-    # Statistical tests (if --run-stats)
-    # =========================================================================
-    if not args.run_stats:
-        logging.info("Done (no statistical tests requested).")
-        return
-
-    # Import statiscal test functions
-    from functions_folder.functions_global_occupancy import (
-        within_condition_binomial_occupancy,
-        between_condition_wilcoxon_occupancy,
-        between_timepoint_wilcoxon_occupancy,
-        between_timepoint_fisher_within_condition,
-        per_timepoint_fisher_occupancy,
-    )
-
-    # Parse Groups
-    groups = parse_groups(args.groups)
-    logging.info(f"Parsed {len(groups)} groups: {list(groups.keys())}")
-
-    # Build mapping dicts
-    # Build dictionary mapping each replicate to its group, condition, and timepoint
-    rep_to_group = {rep: grp for grp, reps in groups.items() for rep in reps}
-    rep_to_condition = {}
-    rep_to_timepoint = {}
-    for rep, grp in rep_to_group.items():
-        parts = grp.split("_", 1)
-        rep_to_condition[rep] = parts[0]       # "control" or "BWM"
-        rep_to_timepoint[rep] = parts[1] if len(parts) > 1 else grp  # "day_0", etc.
-
-    # Sanity check: warn if any declared replicate is absent
-    all_reps = [r for reps in groups.values() for r in reps] # replicates declared in groups
-    missing = [r for r in all_reps if r not in coverage_dict] # replicates missing from coverage data
-    if missing:
-        logging.warning(f"Replicates missing from coverage: {', '.join(missing)}")
-
-    declared_reps = set(all_reps)
-
-    # Pull all stats inputs from the saved CSVs — raw counts and within-rep
-    # normalised proportions are already computed and stored there.
-    logging.info("Reading stats inputs from saved CSVs ...")
-    df_codon_csv = pd.read_csv(codon_path)
-    df_aa_csv = pd.read_csv(aa_path)
-
-    codon_raw_for_stats = {}
-    codon_rates_for_stats = {}
-    aa_raw_for_stats = {}
-    aa_rates_for_stats = {}
-    for exp in declared_reps:
-        if f"{exp}_raw" in df_codon_csv.columns:
-            codon_raw_for_stats[exp] = dict(zip(df_codon_csv["Codon"], df_codon_csv[f"{exp}_raw"]))
-            codon_rates_for_stats[exp] = dict(zip(df_codon_csv["Codon"], df_codon_csv[f"{exp}_proportion"]))
-        if f"{exp}_raw" in df_aa_csv.columns:
-            aa_raw_for_stats[exp] = dict(zip(df_aa_csv["AminoAcid"], df_aa_csv[f"{exp}_raw"]))
-            aa_rates_for_stats[exp] = dict(zip(df_aa_csv["AminoAcid"], df_aa_csv[f"{exp}_proportion"]))
-
-    tc_codon = dict(zip(df_codon_csv["Codon"], df_codon_csv["Transcriptome"]))
-    tc_aa = dict(zip(df_aa_csv["AminoAcid"], df_aa_csv["Transcriptome"]))
-
-    # Save CSV Function
-    def save_csv(df, name):
-        path = stats_dir / name
-        df.to_csv(path, index=False)
-        logging.info(f"Saved {path} ({len(df)} rows)")
-
-    # -----------------------------------------------------------------
-    # Analysis 1: Within-condition binomial
-    # -----------------------------------------------------------------
-    print(f"\n{'='*60}")
-    print("ANALYSIS 1: WITHIN-CONDITION ENRICHMENT (Binomial Test)")
-    print(f"{'='*60}")
-
-    df = within_condition_binomial_occupancy(codon_raw_for_stats, tc_codon, groups, rep_to_group)
-    save_csv(df, "codon_within_condition_binomial.csv")
-
-    df = within_condition_binomial_occupancy(aa_raw_for_stats, tc_aa, groups, rep_to_group)
-    save_csv(df, "aa_within_condition_binomial.csv")
-
-    # -----------------------------------------------------------------
-    # Analysis 2: Between-condition Wilcoxon (BWM vs Control)
-    # -----------------------------------------------------------------
-    print(f"\n{'='*60}")
-    print("ANALYSIS 2: BETWEEN-CONDITION WILCOXON (BWM vs Control)")
-    print(f"{'='*60}")
-
-    df = between_condition_wilcoxon_occupancy(codon_rates_for_stats, rep_to_condition)
-    save_csv(df, "codon_wilcoxon_condition.csv")
-
-    df = between_condition_wilcoxon_occupancy(aa_rates_for_stats, rep_to_condition)
-    save_csv(df, "aa_wilcoxon_condition.csv")
-
-    # -----------------------------------------------------------------
-    # Analysis 3: Between-timepoint
-    # -----------------------------------------------------------------
-    print(f"\n{'='*60}")
-    print("ANALYSIS 3: BETWEEN-TIMEPOINT (Day 0 vs Day 10)")
-    print(f"{'='*60}")
-
-    # 3a: Wilcoxon pooled across conditions (n=4 vs n=4)
-    print("\n  3a: Wilcoxon (pooled across conditions, n=4 vs n=4)")
-    df = between_timepoint_wilcoxon_occupancy(codon_rates_for_stats, rep_to_timepoint)
-    save_csv(df, "codon_wilcoxon_timepoint.csv")
-
-    df = between_timepoint_wilcoxon_occupancy(aa_rates_for_stats, rep_to_timepoint)
-    save_csv(df, "aa_wilcoxon_timepoint.csv")
-
-    # 3b: Fisher's within each condition (pool 2 reps)
-    print("\n  3b: Fisher's exact (within each condition, pooled replicates)")
-    print("  WARNING: Pooling 2 biological replicates is pseudoreplication.")
-    print("           P-values are anti-conservative and should be interpreted cautiously.")
-    df = between_timepoint_fisher_within_condition(
-        codon_raw_for_stats, groups, rep_to_condition, rep_to_timepoint)
-    save_csv(df, "codon_timepoint_fisher_within_condition.csv")
-
-    df = between_timepoint_fisher_within_condition(
-        aa_raw_for_stats, groups, rep_to_condition, rep_to_timepoint)
-    save_csv(df, "aa_timepoint_fisher_within_condition.csv")
-
-    # -----------------------------------------------------------------
-    # Analysis 4: Per-timepoint Fisher's (BWM vs Control at each day)
-    # -----------------------------------------------------------------
-    print(f"\n{'='*60}")
-    print("ANALYSIS 4: PER-TIMEPOINT FISHER'S (BWM vs Control at each day)")
-    print(f"{'='*60}")
-    print("WARNING: Pooling 2 biological replicates is pseudoreplication.")
-    print("         P-values are anti-conservative and should be interpreted cautiously.")
-
-    df = per_timepoint_fisher_occupancy(codon_raw_for_stats, rep_to_condition, rep_to_timepoint)
+    logging.info("Done.")
+on_raw_for_stats, rep_to_condition, rep_to_timepoint)
     save_csv(df, "codon_per_timepoint_fisher.csv")
 
     df = per_timepoint_fisher_occupancy(aa_raw_for_stats, rep_to_condition, rep_to_timepoint)

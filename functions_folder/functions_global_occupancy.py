@@ -455,3 +455,42 @@ def per_timepoint_fisher_occupancy(
         dfs.append(sub)
     df = pd.concat(dfs, ignore_index=True)
     return df.sort_values(["timepoint", "p_adj"])
+
+
+# ---------------------------------------------------------------------------
+# Shared helpers (used by global_codon_occ.py and global_codon_occ_stats.py)
+# ---------------------------------------------------------------------------
+
+def iter_trimmed_codons(seq: str, trim_start_codons: int, trim_stop_codons: int):
+    """Yield (codon_str, cds_nt_idx) for the trimmed CDS sequence."""
+    n = len(seq)
+    start_nt = trim_start_codons * 3
+    end_nt = n - (trim_stop_codons * 3)
+    if start_nt >= end_nt:
+        return
+    last_full = end_nt - ((end_nt - start_nt) % 3)
+    for i in range(start_nt, last_full, 3):
+        codon = seq[i:i + 3]
+        if len(codon) == 3 and "N" not in codon.upper():
+            yield codon, i
+
+
+def parse_groups(groups_arg: str) -> dict:
+    """Parse CLI group string into dict: {group_name: [rep1, rep2, ...]}."""
+    groups = {}
+    for block in groups_arg.split(";"):
+        name, reps = block.split(":")
+        groups[name] = reps.split(",")
+    return groups
+
+
+def aggregate_to_aa(codon_dict: dict) -> dict:
+    """Aggregate a {codon: value} dict to {AA: value}, skipping stop codons."""
+    from collections import defaultdict
+    from functions_folder.functions_AA import CODON2AA
+    aa_dict = defaultdict(float)
+    for codon, val in codon_dict.items():
+        aa = CODON2AA.get(codon.upper())
+        if aa and aa != "*":
+            aa_dict[aa] += val
+    return dict(aa_dict)

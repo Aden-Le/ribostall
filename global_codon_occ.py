@@ -111,7 +111,7 @@ def main():
 
     transcriptome_codon_counts = defaultdict(int)
 
-    # iterate once over transcripts for background
+    # iterate once over transcripts for background while applying trimming
     logging.info("Computing transcriptome codon counts (background) ...")
     for tx in cds_range:
         start, stop = cds_range[tx]
@@ -145,7 +145,7 @@ def main():
     # =========================================================================
     # Build codon-level output
     # =========================================================================
-    # Gets all in the transcriptome
+    # Gets all the codons in the transcriptome
     all_codons = set(transcriptome_codon_counts)
     # Gets all codons observed in any experiment
     for exp in codon_occ_by_exp:
@@ -159,13 +159,13 @@ def main():
     for exp in codon_occ_by_exp:
         total_reads_per_exp[exp] = sum(codon_occ_by_exp[exp].values())
 
-    # Pre-compute per-experiment rate sums for within-replicate proportion normalisation
+    # Pre-compute per-experiment rate sums for within-replicate proportion normalization
     exp_codon_rate_sums = {}
     for exp in codon_occ_by_exp:
         exp_codon_rate_sums[exp] = sum(
             codon_occ_by_exp[exp].get(c, 0.0) / transcriptome_codon_counts[c]
             for c in ordered_codons
-            if transcriptome_codon_counts.get(c, 0) > 0
+            if transcriptome_codon_counts.get(c, 0) > 0 # if a codon is not present in the transcriptome, skip it for rate sum to avoid division by zero
         )
 
     # Codon occupancy CSV: raw counts + per-instance rate + within-rep proportion + RPM
@@ -197,8 +197,9 @@ def main():
     logging.info("Aggregating to amino acid level ...")
     # Aggregate transcriptome codon counts to amino acid counts for background
     transcriptome_aa_counts = aggregate_to_aa(dict(transcriptome_codon_counts))
-    aa_occ_by_exp = {}
+    
     # Aggregate each experiment's codon counts to amino acid counts
+    aa_occ_by_exp = {}
     for exp in codon_occ_by_exp:
         aa_occ_by_exp[exp] = aggregate_to_aa(dict(codon_occ_by_exp[exp]))
 

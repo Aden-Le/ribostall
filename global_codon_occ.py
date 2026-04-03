@@ -12,7 +12,8 @@ import ribopy
 from ribopy import Ribo
 
 from functions_folder.functions import get_cds_range_lookup, get_sequence
-from functions_folder.functions_AA import CODONfrom functions_folder.functions_global_occupancy import (
+from functions_folder.functions_AA import CODON2AA, AA_ORDER
+from functions_folder.functions_global_occupancy import (
     iter_trimmed_codons,
     parse_groups,
     aggregate_to_aa,
@@ -220,16 +221,6 @@ def main():
     logging.info(f"Saved {aa_path}")
 
     logging.info("Done.")
-on_raw_for_stats, rep_to_condition, rep_to_timepoint)
-    save_csv(df, "codon_per_timepoint_fisher.csv")
-
-    df = per_timepoint_fisher_occupancy(aa_raw_for_stats, rep_to_condition, rep_to_timepoint)
-    save_csv(df, "aa_per_timepoint_fisher.csv")
-
-    print(f"\n{'='*60}")
-    print("All analyses complete.")
-    print(f"Results saved to: {out_dir.resolve()}")
-    print(f"{'='*60}")
 
 
 if __name__ == "__main__":

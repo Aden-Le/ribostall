@@ -47,7 +47,11 @@ def main():
     # Parse groups and build mapping dicts
     groups = parse_groups(args.groups)
     logging.info(f"Parsed {len(groups)} groups: {list(groups.keys())}")
-
+    
+    # Build mapping from replicate to group, condition, and timepoint
+    # rep_to_group: control_day0_rep2 -> control_day_0
+    # rep_to_condition: control_day0_rep2 -> control
+    # rep_to_timepoint: control_day0_rep2 -> day_0
     rep_to_group = {rep: grp for grp, reps in groups.items() for rep in reps}
     rep_to_condition = {}
     rep_to_timepoint = {}
@@ -84,6 +88,7 @@ def main():
             aa_raw_for_stats[exp] = dict(zip(df_aa_csv["AminoAcid"], df_aa_csv[f"{exp}_raw"]))
             aa_rates_for_stats[exp] = dict(zip(df_aa_csv["AminoAcid"], df_aa_csv[f"{exp}_proportion"]))
 
+    # Transcriptome-wide codon/AA frequencies from the CSVs (for binomial tests)
     tc_codon = dict(zip(df_codon_csv["Codon"], df_codon_csv["Transcriptome"]))
     tc_aa = dict(zip(df_aa_csv["AminoAcid"], df_aa_csv["Transcriptome"]))
 
@@ -93,7 +98,7 @@ def main():
         logging.info(f"Saved {path} ({len(df)} rows)")
 
     # -----------------------------------------------------------------
-    # Analysis 1: Within-condition binomial
+    # Analysis 1: Within-condition binomial (Validated (AL) ~ 04/05/2026)
     # -----------------------------------------------------------------
     print(f"\n{'='*60}")
     print("ANALYSIS 1: WITHIN-CONDITION ENRICHMENT (Binomial Test)")
@@ -106,7 +111,7 @@ def main():
     save_csv(df, "aa_within_condition_binomial.csv")
 
     # -----------------------------------------------------------------
-    # Analysis 2: Between-condition Wilcoxon (BWM vs Control)
+    # Analysis 2: Between-condition Wilcoxon (BWM vs Control) (Validated (AL) ~ 04/05/2026)
     # -----------------------------------------------------------------
     print(f"\n{'='*60}")
     print("ANALYSIS 2: BETWEEN-CONDITION WILCOXON (BWM vs Control)")
@@ -119,7 +124,7 @@ def main():
     save_csv(df, "aa_wilcoxon_condition.csv")
 
     # -----------------------------------------------------------------
-    # Analysis 3: Between-timepoint
+    # Analysis 3: Between-timepoint (Validated (AL) ~ 04/05/2026)
     # -----------------------------------------------------------------
     print(f"\n{'='*60}")
     print("ANALYSIS 3: BETWEEN-TIMEPOINT (Day 0 vs Day 10)")
@@ -146,7 +151,7 @@ def main():
     save_csv(df, "aa_timepoint_fisher_within_condition.csv")
 
     # -----------------------------------------------------------------
-    # Analysis 4: Per-timepoint Fisher's (BWM vs Control at each day)
+    # Analysis 4: Per-timepoint Fisher's (BWM vs Control at each day) (Validated (AL) ~ 04/05/2026)
     # -----------------------------------------------------------------
     print(f"\n{'='*60}")
     print("ANALYSIS 4: PER-TIMEPOINT FISHER'S (BWM vs Control at each day)")

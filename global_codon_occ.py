@@ -56,7 +56,7 @@ def parse_args():
 def main():
     args = parse_args()
 
-    # ribo object for UTR and CDS data
+    # Loads the ribo object for UTR and CDS data
     logging.info(f"Loading ribo object from {args.ribo} ...")
     if args.use_human_alias:
         ribo_object = Ribo(args.ribo, alias=ribopy.api.alias.apris_human_alias)
@@ -64,13 +64,14 @@ def main():
         ribo_object = Ribo(args.ribo)
     logging.info("Ribo object loaded")
 
-    # coverage dict
+    # Loads the coverage dict
     logging.info(f"Loading coverage from {args.pickle} ...")
     with gzip.open(args.pickle, "rb") as f:
         coverage_dict = pickle.load(f)
     logging.info(f"Coverage loaded: {len(coverage_dict)} experiments")
 
     if args.groups:
+        # Creates set of all replicates declared in --groups and filters coverage_dict to only those replicates
         declared_reps = {r for reps in parse_groups(args.groups).values() for r in reps}
         coverage_dict = {k: v for k, v in coverage_dict.items() if k in declared_reps}
         logging.info(f"Filtered to {len(coverage_dict)} experiments matching --groups")
@@ -131,7 +132,6 @@ def main():
         exp_codon_rate_sums[exp] = sum(
             codon_occ_by_exp[exp].get(c, 0.0) / transcriptome_codon_counts[c]
             for c in ordered_codons
-            if transcriptome_codon_counts.get(c, 0) > 0 # if a codon is not present in the transcriptome, skip it for rate sum to avoid division by zero
         )
 
     # Codon occupancy CSV: raw counts + per-instance rate + within-rep proportion + RPM

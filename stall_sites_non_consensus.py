@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import re
 import os
+import numpy as np
 import pandas as pd
 import ribopy
 from ribopy import Ribo
@@ -16,7 +17,7 @@ from functions_folder.functions_AA import (translate_cds_nt_to_aa, windows_aa, c
                           pwm_position_weighted_log2, plot_logo, epa_triplet_counts,
                           CODON2AA, AA_ORDER, AA_CLASS, CLASS_COLORS)
 from functions_folder.functions import get_sequence, get_cds_range_lookup
-from functions_folder.functions_enrichment import within_condition_enrichment, between_condition_wilcoxon, per_timepoint_fisher
+from functions_folder.functions_enrichment import within_condition_enrichment, between_condition_wilcoxon, per_timepoint_fisher, plot_coverage_density
 
 # =========================
 # Logging
@@ -130,6 +131,22 @@ def main():
     print(f"TRANSCRIPT FILTERING (per-group, no intersection)")
     print(f"{'='*60}")
     print(f"Transcripts before filtering: {n_before}")
+    print(f"\n  {'Replicate':<25} {'Group':<15} {'Avg cov/tx (reads/nt)':>22} {'SD':>10} {'Total coverage':>16}")
+    print(f"  {'-'*25} {'-'*15} {'-'*22} {'-'*10} {'-'*16}")
+    for group, reps in groups.items():
+        for rep in reps:
+            tx_dict = cov[rep]
+            means = [np.asarray(v, float).mean() for v in tx_dict.values()]
+            avg_cov = np.mean(means) if means else 0.0
+            sd_cov = np.std(means) if means else 0.0
+            total_cov = sum(np.asarray(v, float).sum() for v in tx_dict.values())
+            print(f"  {rep:<25} {group:<15} {avg_cov:>22.4f} {sd_cov:>10.4f} {total_cov:>16,.0f}")
+    print()
+
+    # Density plot of per-transcript average coverage for each replicate
+    os.makedirs(args.out_enrichment, exist_ok=True)
+    plot_coverage_density(cov, groups, args.out_enrichment)
+    logging.info(f"Saved coverage density plot to {args.out_enrichment}/coverage_density.png")
 
     # Per-group filter: for each group, call filter_tx which keeps only
     # transcripts that exceed --tx_threshold reads/nt in at least --tx_min_reps replicates within that group.

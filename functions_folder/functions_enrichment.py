@@ -9,8 +9,11 @@ Three analyses:
 Each E/P/A site is tested INDEPENDENTLY — never accumulated across sites.
 """
 
+import os
+
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from scipy import stats
 
 
@@ -338,3 +341,62 @@ def per_timepoint_fisher(
         dfs.append(sub)
     df = pd.concat(dfs, ignore_index=True)
     return df.sort_values(["timepoint", "site", "p_adj"])
+
+
+# ---------------------------------------------------------------------------
+# Coverage density plot
+# ---------------------------------------------------------------------------
+def plot_coverage_density(cov, groups, out_dir):
+    """
+    Plot KDE density curves of per-transcript average coverage (reads/nt)
+    for every replicate on a single composite figure.
+
+    Parameters
+    ----------
+    cov : dict
+        {replicate: {transcript: np.ndarray of per-nt counts}}
+    groups : dict
+        {group_name: [rep1, rep2, ...]}
+    out_dir : str
+        Directory to save the output figure (coverage_density.png).
+    """
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    group_list = list(groups.keys())
+    cmap = plt.cm.get_cmap("tab10", max(len(group_list), 1))
+    group_colors = {grp: cmap(i) for i, grp in enumerate(group_list)}
+    linestyles = ["-", "--", ":", "-."]
+
+    for group, reps in groups.items():
+        color = group_colors[group]
+        for j, rep in enumerate(reps):
+            if rep not in cov:
+                continue
+            tx_dict = cov[rep]
+            means = np.array([np.asarray(v, float).mean() for v in tx_dict.values()])
+            means = means[means > 0]
+            if len(means) < 2:
+                continue
+
+            log_means = np.log10(means)
+            kde = stats.gaussian_kde(log_means)
+            x = np.linspace(log_means.min() - 0.5, log_means.max() + 0.5, 500)
+            ax.plot(
+                x, kde(x),
+                label=f"{rep} ({group})",
+                color=color,
+                linestyle=linestyles[j % len(linestyles)],
+                linewidth=1.5,
+            )
+
+    ax.set_xlabel("log10(Mean coverage per transcript, reads/nt)")
+    ax.set_ylabel("Density")
+    ax.set_title("Per-transcript average coverage distribution")
+    ax.legend(fontsize=7, loc="upper right")
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    plt.tight_layout()
+
+    os.makedirs(out_dir, exist_ok=True)
+    fig.savefig(os.path.join(out_dir, "coverage_density.png"), dpi=150)
+    plt.close(fig)

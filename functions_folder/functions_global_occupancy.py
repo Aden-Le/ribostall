@@ -232,14 +232,17 @@ def between_timepoint_wilcoxon_occupancy(
 
     rows = []
     for unit in all_units:
+        # All replicates with timepoint day_10
         rates_a = np.array([rates_by_exp[r][unit] for r in rates_by_exp
                             if rep_to_timepoint.get(r) == time_a], dtype=float)
+        # All replicates with timepoint day_0
         rates_b = np.array([rates_by_exp[r][unit] for r in rates_by_exp
                             if rep_to_timepoint.get(r) == time_b], dtype=float)
 
         med_a = float(np.median(rates_a)) if len(rates_a) > 0 else 0.0
         med_b = float(np.median(rates_b)) if len(rates_b) > 0 else 0.0
 
+        # Log fold change of time_a vs time_b (e.g. day_10 vs day_0)
         if med_a > 0 and med_b > 0:
             log2_fc = np.log2(med_a / med_b)
         else:
@@ -277,8 +280,8 @@ def between_timepoint_fisher_within_condition(
     groups: dict,
     rep_to_condition: dict,
     rep_to_timepoint: dict,
-    time_a: str = "day_0",
-    time_b: str = "day_10",
+    time_a: str = "day_10",
+    time_b: str = "day_0",
 ) -> pd.DataFrame:
     """
     Within each condition, pool Day 0 and Day 10 reps into counts and run
@@ -306,23 +309,30 @@ def between_timepoint_fisher_within_condition(
         condition, unit, {time_a}_count, {time_a}_total,
         {time_b}_count, {time_b}_total, odds_ratio, p_value, p_adj
     """
+    # BWM and Control conditions sorted alphabetically
     conditions = sorted(set(rep_to_condition.values()))
+    
+    # The units (codons or AAs)
     first_rep = next(iter(raw_counts_by_exp))
     all_units = sorted(raw_counts_by_exp[first_rep].keys())
 
     rows = []
+    # For each condition, BWM & Control
     for cond in conditions:
-        # Pool reps for each timepoint within this condition
         pooled = {}
+        # For timepoint day_10 and day_0
         for tp in (time_a, time_b):
             pooled[tp] = {}
             for unit in all_units:
+                # Sum the raw counts for this unit across all replicates that belong to this condition and timepoint
+                # Ex all raw counts for BWM day_0 replicates would be summed to get the pooled count for this unit in the BWM day_0 group
                 pooled[tp][unit] = sum(
                     raw_counts_by_exp.get(rep, {}).get(unit, 0.0)
                     for rep in raw_counts_by_exp
                     if rep_to_condition.get(rep) == cond and rep_to_timepoint.get(rep) == tp
                 )
-
+        
+        # Pooled values for day_10 and day_0 for this condition
         total_a = sum(pooled[time_a].values())
         total_b = sum(pooled[time_b].values())
         if total_a == 0 or total_b == 0:
@@ -396,30 +406,39 @@ def per_timepoint_fisher_occupancy(
         timepoint, unit, {cond_a}_count, {cond_a}_total,
         {cond_b}_count, {cond_b}_total, odds_ratio, p_value, p_adj
     """
+    # Conditions of interest sorted alphabetically (e.g. BWM, Control)
     conditions = sorted(set(rep_to_condition.values()))
+    # Timepoints of interest sorted alphabetically (e.g. day_0, day_10, day_5)
     timepoints = sorted(set(rep_to_timepoint.values()))
     first_rep = next(iter(raw_counts_by_exp))
     all_units = sorted(raw_counts_by_exp[first_rep].keys())
 
     rows = []
+    # Ex: For day_0
     for tp in timepoints:
-        # Pool reps per condition at this timepoint
         pooled_by_cond = {}
+        # For control
         for cond in conditions:
+            # Empty dict for control
             pooled_by_cond[cond] = {}
+            # For all amino acids
             for unit in all_units:
+                # Sum the raw counts for each amino acid across both replicates
                 pooled_by_cond[cond][unit] = sum(
                     raw_counts_by_exp.get(rep, {}).get(unit, 0.0)
                     for rep in raw_counts_by_exp
                     if rep_to_condition.get(rep) == cond and rep_to_timepoint.get(rep) == tp
                 )
 
+        # Total number of reads for both conditions at this timepoint
         totals = {cond: sum(pooled_by_cond[cond].values()) for cond in conditions}
         if any(t == 0 for t in totals.values()):
             continue
-
+        
+        # For each Amino Acid
         for unit in all_units:
             counts_list = []
+            # BWM first and then control (BWM on top)
             for cond in conditions:
                 c = int(round(pooled_by_cond[cond][unit]))
                 t = int(round(totals[cond]))

@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import re
 import os
+import numpy as np
 import pandas as pd
 from ribopy import Ribo
 from functions_folder.functions_stall_sites import filter_tx, codonize_counts_cds, call_stalls, consensus_stalls_across_reps, consensus_to_long_df
@@ -119,6 +120,17 @@ def main():
     print(f"TRANSCRIPT FILTERING (per-group, then intersection)")
     print(f"{'='*60}")
     print(f"Transcripts before filtering: {n_before}")
+    print(f"\n  {'Replicate':<25} {'Group':<15} {'Avg cov/tx (reads/nt)':>22} {'SD':>10} {'Total coverage':>16}")
+    print(f"  {'-'*25} {'-'*15} {'-'*22} {'-'*10} {'-'*16}")
+    for group, reps in groups.items():
+        for rep in reps:
+            tx_dict = cov[rep]
+            means = [np.asarray(v, float).mean() for v in tx_dict.values()]
+            avg_cov = np.mean(means) if means else 0.0
+            sd_cov = np.std(means) if means else 0.0
+            total_cov = sum(np.asarray(v, float).sum() for v in tx_dict.values())
+            print(f"  {rep:<25} {group:<15} {avg_cov:>22.4f} {sd_cov:>10.4f} {total_cov:>16,.0f}")
+    print()
     # --- end logging ---
 
     filt_tx_dict = {

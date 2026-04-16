@@ -226,7 +226,8 @@ def main():
     print(f"  Total across all experiments: {sum(total_counts.values())} stall sites")
     print(f"{'='*60}\n")
 
-    # Reproducibility quality metric: consensus stall sites across replicates per group.
+    # Logging Purposes Only (~ Validated AL ~ 04/06/2026)
+    # Reproducibility quality metric: consensus stall sites across replicates per group. (Does not effect Logic)
     print(f"{'='*60}")
     print(f"REPRODUCIBILITY (consensus across replicates)")
     print(f"{'='*60}")

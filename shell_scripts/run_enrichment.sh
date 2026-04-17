@@ -3,10 +3,11 @@
 # Bash script: per-replicate stall calling
 # (stall_sites_non_consensus_call.py)
 #
-# Produces stall_sites_codon.csv, stall_sites_aa.csv,
-# and filtered_transcripts.json in $OUT_ENRICHMENT.
+# Produces stall_sites_{codon,aa}.csv and
+# per_group_background_{codon,aa}.csv in $OUT_ENRICHMENT.
 # Run run_enrichment_stats.sh afterwards for the
-# enrichment tests.
+# enrichment tests — it is ribopy-free and consumes
+# only those CSVs.
 #----------------------------------------------------
 
 # ============== CONFIG: edit these ==============

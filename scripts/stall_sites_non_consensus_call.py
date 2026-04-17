@@ -5,19 +5,21 @@ stall_sites_non_consensus_call.py
 Data-generation half of the non-consensus stall-site pipeline.
 
 Loads coverage, calls stall sites per replicate, annotates each stall with its
-E/P/A codon and amino acid identities, and writes two tidy CSVs:
+E/P/A codon and amino acid identities, and writes two tidy CSVs plus matching
+per-group background frequency CSVs:
 
-  * ``stall_sites_codon.csv`` — one row per stall, with E_codon/P_codon/A_codon
-  * ``stall_sites_aa.csv``    — one row per stall, with E_aa/P_aa/A_aa
+  * ``stall_sites_codon.csv``       — one row per stall, with E_codon/P_codon/A_codon
+  * ``stall_sites_aa.csv``          — one row per stall, with E_aa/P_aa/A_aa
+  * ``per_group_background_codon.csv`` — per-group codon background counts/freqs
+  * ``per_group_background_aa.csv``    — per-group AA background counts/freqs
 
-Also serialises the per-group filtered transcript sets to
-``filtered_transcripts.json`` so the sister stats script can rebuild exactly
-the same background distributions without re-running the filter.
+All ribopy / reference-FASTA work is concentrated here so the sister stats
+script can consume the CSV intermediates on a machine without ribopy installed
+(e.g. outside the SSH environment that hosts the ``.ribo`` file).
 """
 
 import argparse
 import gzip
-import json
 import logging
 import os
 import pickle
@@ -27,6 +29,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import numpy as np
+import pandas as pd
 import ribopy
 from ribopy import Ribo
 
@@ -37,7 +40,13 @@ from ribostall.stall_sites import (
     stalls_to_long_df,
     consensus_stalls_across_reps,
 )
-from ribostall.amino_acids import annotate_stalls_epa
+from ribostall.amino_acids import (
+    AA_ORDER,
+    SENSE_CODONS,
+    annotate_stalls_epa,
+    background_aa_freq,
+    background_codon_freq,
+)
 from ribostall.sequence import get_sequence, get_cds_range_lookup
 from ribostall.enrichment import plot_coverage_density
 
@@ -248,10 +257,28 @@ def main():
     logging.info(f"Saved codon-annotated stall sites to {codon_path}")
     logging.info(f"Saved AA-annotated stall sites to {aa_path}")
 
-    filt_path = os.path.join(args.out_dir, "filtered_transcripts.json")
-    with open(filt_path, "w") as f:
-        json.dump({g: sorted(txs) for g, txs in filt_tx_dict.items()}, f)
-    logging.info(f"Saved per-group filtered transcripts to {filt_path}")
+    # ------------------------------------------------------------------
+    # Per-group background frequencies (codon + AA) for the stats script
+    # ------------------------------------------------------------------
+    print(f"\n{'='*60}\nBACKGROUND FREQUENCIES (per group)\n{'='*60}")
+    for level, helper, alphabet, feature_col in (
+        ("codon", background_codon_freq, SENSE_CODONS, "codon"),
+        ("aa", background_aa_freq, AA_ORDER, "amino_acid"),
+    ):
+        rows = []
+        for grp, grp_txs in filt_tx_dict.items():
+            bg_freq, bg_counts = helper(grp_txs, cds_range, sequence, alphabet)
+            print(f"  [{grp}] ({level}) {len(grp_txs)} transcripts, {int(bg_counts.sum())} total {level}s")
+            for feat in bg_freq.index:
+                rows.append({
+                    "group": grp,
+                    feature_col: feat,
+                    "bg_count": int(bg_counts[feat]),
+                    "bg_freq": float(bg_freq[feat]),
+                })
+        bg_path = os.path.join(args.out_dir, f"per_group_background_{level}.csv")
+        pd.DataFrame(rows).to_csv(bg_path, index=False)
+        logging.info(f"Saved per-group {level} backgrounds to {bg_path}")
 
 
 if __name__ == "__main__":

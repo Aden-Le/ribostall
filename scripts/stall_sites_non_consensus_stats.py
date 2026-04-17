@@ -13,12 +13,16 @@ Level is auto-detected from the input columns. The three enrichment tests
 are run identically in both modes — the only things that differ are the
 feature alphabet and the background-frequency helper.
 
+This script is intentionally ribopy-free: per-group background frequencies
+are read from the ``per_group_background_{codon,aa}.csv`` CSVs emitted by
+``stall_sites_non_consensus_call.py``. That lets the stats run on a machine
+without ribopy / the source ``.ribo`` file.
+
 Run it twice, once per CSV, to get codon-level and AA-level outputs side by
 side. Output filenames are suffixed with ``_codon`` or ``_aa`` accordingly.
 """
 
 import argparse
-import json
 import logging
 import os
 import sys
@@ -27,16 +31,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pandas as pd
-import ribopy
-from ribopy import Ribo
 
-from ribostall.amino_acids import (
-    AA_ORDER,
-    SENSE_CODONS,
-    background_aa_freq,
-    background_codon_freq,
-)
-from ribostall.sequence import get_sequence, get_cds_range_lookup
+from ribostall.amino_acids import AA_ORDER, SENSE_CODONS
 from ribostall.enrichment import (
     within_condition_enrichment,
     between_condition_wilcoxon,
@@ -56,13 +52,11 @@ def parse_args():
     )
     parser.add_argument("--stall-sites", required=True,
                         help="Path to stall_sites_codon.csv or stall_sites_aa.csv")
-    parser.add_argument("--ribo", required=True, help="Path to ribo file")
-    parser.add_argument("--reference", required=True, help="Reference FASTA file for background frequencies")
     parser.add_argument("--groups", required=True,
                         help="Experimental groups, e.g. 'groupA:rep1,rep2;groupB:rep3,rep4'")
-    parser.add_argument("--filtered-tx",
-                        help="Path to filtered_transcripts.json written by the call script. "
-                             "If omitted, defaults to <stall-sites directory>/filtered_transcripts.json.")
+    parser.add_argument("--background",
+                        help="Path to per_group_background_{level}.csv written by the call script. "
+                             "If omitted, defaults to <stall-sites directory>/per_group_background_{level}.csv.")
     parser.add_argument("--out-dir", default="results/stall_sites/enrichment",
                         help="Output directory for enrichment CSVs")
     return parser.parse_args()
@@ -104,8 +98,6 @@ def main():
 
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    input_dir = out_dir / "input_data"
-    input_dir.mkdir(parents=True, exist_ok=True)
 
     # --------------------------------------------------------------
     # Load stall sites and detect granularity
@@ -138,36 +130,20 @@ def main():
         print(f"  [{rep}] counts per site: {totals}")
 
     # --------------------------------------------------------------
-    # Reconstruct per-group filtered transcripts for backgrounds
+    # Load per-group background frequencies (written by the call script)
     # --------------------------------------------------------------
-    filt_path = Path(args.filtered_tx) if args.filtered_tx else stall_path.parent / "filtered_transcripts.json"
-    logging.info(f"Loading filtered transcripts from {filt_path} ...")
-    with open(filt_path) as f:
-        filt_tx_dict = {g: set(txs) for g, txs in json.load(f).items()}
-    for g, txs in filt_tx_dict.items():
-        print(f"  [{g}] {len(txs)} filtered transcripts (for background)")
-
-    # --------------------------------------------------------------
-    # Load sequences to compute backgrounds
-    # --------------------------------------------------------------
-    logging.info(f"Loading ribo object from {args.ribo} ...")
-    ribo_object = Ribo(args.ribo, alias=None)
-    logging.info("Looking up CDS ranges ...")
-    cds_range = get_cds_range_lookup(ribo_object)
-    logging.info(f"Loading sequences from {args.reference} ...")
-    sequence = get_sequence(ribo_object, args.reference, alias=ribopy.api.alias.apris_human_alias)
-
-    print(f"\n{'='*60}\nBACKGROUND {level.upper()} FREQUENCIES (per group)\n{'='*60}")
+    bg_path = Path(args.background) if args.background else stall_path.parent / f"per_group_background_{suffix}.csv"
+    logging.info(f"Loading per-group {level} backgrounds from {bg_path} ...")
+    bg_df = pd.read_csv(bg_path)
     bg_freq_per_group = {}
     bg_counts_per_group = {}
-    for grp, grp_txs in filt_tx_dict.items():
-        if level == "aa":
-            bg_freq, bg_counts = background_aa_freq(grp_txs, cds_range, sequence, AA_ORDER)
-        else:
-            bg_freq, bg_counts = background_codon_freq(grp_txs, cds_range, sequence, SENSE_CODONS)
-        bg_freq_per_group[grp] = bg_freq
-        bg_counts_per_group[grp] = bg_counts
-        print(f"  [{grp}] {len(grp_txs)} transcripts ({int(bg_counts.sum())} total {level}s)")
+    print(f"\n{'='*60}\nBACKGROUND {level.upper()} FREQUENCIES (per group)\n{'='*60}")
+    for grp, sub in bg_df.groupby("group"):
+        freq = sub.set_index(feature_col)["bg_freq"].reindex(alphabet).astype(float)
+        counts = sub.set_index(feature_col)["bg_count"].reindex(alphabet).fillna(0).astype(int)
+        bg_freq_per_group[grp] = freq
+        bg_counts_per_group[grp] = counts
+        print(f"  [{grp}] {int(counts.sum())} total {level}s")
     print(f"{'='*60}\n")
 
     # --------------------------------------------------------------
@@ -238,21 +214,8 @@ def main():
     freq_path = out_dir / f"replicate_{suffix}_frequencies.csv"
     pd.DataFrame(freq_rows).to_csv(freq_path, index=False)
 
-    # Per-group background
-    bg_rows = []
-    for grp in bg_freq_per_group:
-        for feat in bg_freq_per_group[grp].index:
-            bg_rows.append({
-                "group": grp,
-                feature_col: feat,
-                "bg_count": int(bg_counts_per_group[grp][feat]),
-                "bg_freq": float(bg_freq_per_group[grp][feat]),
-            })
-    bg_path = input_dir / f"per_group_background_{suffix}.csv"
-    pd.DataFrame(bg_rows).to_csv(bg_path, index=False)
-
     print(f"\nSaved:")
-    for p in (within_path, wilcox_path, fisher_path, freq_path, bg_path):
+    for p in (within_path, wilcox_path, fisher_path, freq_path):
         print(f"  {p}")
     logging.info(f"All {level}-level enrichment results saved to {out_dir}")
 

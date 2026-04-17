@@ -56,7 +56,9 @@ python scripts/adj_coverage.py  \
 
 # 2. Get stall sites
 
-`stall_sites.py` finds stall sites from the coverage data with applied P-site offsets. This is done by:
+Stall-site analysis is split into two scripts. `stall_sites_non_consensus_call.py` calls stall sites and annotates each with its E/P/A codon and amino acid, producing two tidy CSVs (`stall_sites_codon.csv` and `stall_sites_aa.csv`) plus a `filtered_transcripts.json` handoff file. `stall_sites_non_consensus_stats.py` consumes one of those CSVs at a time and runs three enrichment tests — run it twice, once per CSV, to get codon-level and AA-level results side-by-side (`within_condition_enrichment_{codon,aa}.csv`, `between_condition_wilcoxon_{codon,aa}.csv`, `per_timepoint_fisher_{codon,aa}.csv`). See [[stall_sites_non_consensus_call_explained]] and [[stall_sites_non_consensus_stats_explained]] for the full walkthroughs.
+
+`stall_sites_consensus.py` is the sibling consensus-based pipeline; it finds stall sites from coverage data with applied P-site offsets. This is done by:
 1. **Transcript filtering**: For each transcript, the average reads per nucleotide is computed. Transcripts with coverage below `--tx_threshold` in fewer than `--tx_min_rep` are excluded.
 2. **Codonize read counts**: An array of the number of reads per codon. `0` corresponds to the start codon.
 3. **z-score calculation**: Coverage per codon is converted to `log2(x + pseudocount)` to stabilize variance and handle zeros. Compute transcript-wide z-scores. Codons with z-scores ≥ `--min_z` and reads ≥ `--min_reads` are considered candidate stalls. The first and last `--trim_edges` codons are ignored.

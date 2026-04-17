@@ -46,6 +46,8 @@ def within_condition_enrichment(
     bg_freq_per_group: dict,
     rep_to_condition: dict,
     rep_to_group: dict,
+    *,
+    feature_col: str = "amino_acid",
 ) -> pd.DataFrame:
     """
     For each group, test whether each amino acid at each E/P/A site is
@@ -114,7 +116,7 @@ def within_condition_enrichment(
                     "condition": condition,
                     "group": group,
                     "site": site,
-                    "amino_acid": aa,
+                    feature_col: aa,
                     "stall_count": k,
                     "total_n": total_n,
                     "stall_freq": freq,
@@ -145,6 +147,8 @@ def within_condition_enrichment(
 def between_condition_wilcoxon(
     replicate_counts: dict,
     rep_to_condition: dict,
+    *,
+    feature_col: str = "amino_acid",
 ) -> pd.DataFrame:
     """
     For each AA at each E/P/A site, compare per-replicate stall frequencies
@@ -214,7 +218,7 @@ def between_condition_wilcoxon(
 
             rows.append({
                 "site": site,
-                "amino_acid": aa,
+                feature_col: aa,
                 f"median_{cond_a}": med_a,
                 f"median_{cond_b}": med_b,
                 "log2_FC": log2_fc,
@@ -236,6 +240,8 @@ def per_timepoint_fisher(
     replicate_counts: dict,
     rep_to_condition: dict,
     rep_to_timepoint: dict,
+    *,
+    feature_col: str = "amino_acid",
 ) -> pd.DataFrame:
     """
     For each timepoint, pool 2 reps per condition and run Fisher's exact test
@@ -319,7 +325,7 @@ def per_timepoint_fisher(
                 row = {
                     "timepoint": tp,
                     "site": site,
-                    "amino_acid": aa,
+                    feature_col: aa,
                     "odds_ratio": odds_ratio,
                     "p_value": p_val,
                 }

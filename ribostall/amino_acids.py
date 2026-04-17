@@ -35,6 +35,9 @@ AA_CLASS = {
 
 AA_ORDER = [a for a in "ACDEFGHIKLMNPQRSTVWY"]  # no stop
 
+# Sense codons (61 total, stops excluded), alphabetical.
+SENSE_CODONS = sorted(c for c, aa in CODON2AA.items() if aa != "*")
+
 CLASS_COLORS = {
     "acidic":"#D62728",      # red
     "basic":"#1F77B4",       # blue
@@ -266,6 +269,124 @@ def epa_triplet_counts(
     counts_A = pd.Series([A_counter.get(a,0) for a in aa_order], index=aa_order, name="A")
 
     return counts_epa, counts_E, counts_P, counts_A
+
+def annotate_stalls_epa(
+    df: pd.DataFrame,
+    cds_range: dict,
+    sequence: dict,
+    *,
+    psite_offset_codons: int = 0,
+    basis: str = "P",
+    drop_invalid: bool = True,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Annotate each per-stall row with its E/P/A codon and E/P/A amino acid.
+
+    Parameters
+    ----------
+    df : long-format dataframe from ``stalls_to_long_df`` with at minimum a
+        ``transcript`` column and a ``pos_codon`` column (codon index within CDS).
+    cds_range, sequence : lookups produced by ``ribostall.sequence``.
+    psite_offset_codons, basis : same semantics as ``epa_triplet_counts``.
+    drop_invalid : if True, drop rows where any of E/P/A falls outside the CDS
+        or maps to a stop (``*``) or unknown (``X``) codon/AA.
+
+    Returns
+    -------
+    (df_codon, df_aa) : two dataframes with the same rows (post filtering),
+        the first with added columns ``E_codon, P_codon, A_codon`` and the
+        second with ``E_aa, P_aa, A_aa``.
+    """
+    assert basis in ("P", "A")
+    e_rel, p_rel, a_rel = (-1, 0, +1) if basis == "P" else (-2, -1, 0)
+
+    # Cache per-transcript codon lists so we don't re-split the same CDS for
+    # every stall row on that transcript.
+    codon_cache: dict[str, list[str]] = {}
+
+    def _get_codons(tx: str):
+        cached = codon_cache.get(tx)
+        if cached is not None:
+            return cached
+        key = tx if tx in cds_range else (tx.split("|")[4] if "|" in tx else tx)
+        if key not in cds_range or tx not in sequence:
+            codon_cache[tx] = None
+            return None
+        start, stop = cds_range[key]
+        cds_nt = sequence[tx][start:stop].upper().replace("U", "T")
+        n_codons = len(cds_nt) // 3
+        codons = [cds_nt[3 * i : 3 * i + 3] for i in range(n_codons)]
+        codon_cache[tx] = codons
+        return codons
+
+    e_cod_out, p_cod_out, a_cod_out = [], [], []
+    e_aa_out, p_aa_out, a_aa_out = [], [], []
+    keep = []
+
+    for row in df.itertuples(index=False):
+        tx = getattr(row, "transcript")
+        i = int(getattr(row, "pos_codon")) + psite_offset_codons
+        codons = _get_codons(tx)
+        if codons is None:
+            keep.append(False)
+            e_cod_out.append(None); p_cod_out.append(None); a_cod_out.append(None)
+            e_aa_out.append(None); p_aa_out.append(None); a_aa_out.append(None)
+            continue
+        L = len(codons)
+        ei, pi, ai = i + e_rel, i + p_rel, i + a_rel
+        if ei < 0 or ai >= L or pi < 0 or pi >= L:
+            keep.append(False)
+            e_cod_out.append(None); p_cod_out.append(None); a_cod_out.append(None)
+            e_aa_out.append(None); p_aa_out.append(None); a_aa_out.append(None)
+            continue
+        e_cod, p_cod, a_cod = codons[ei], codons[pi], codons[ai]
+        e_aa = CODON2AA.get(e_cod, "X")
+        p_aa = CODON2AA.get(p_cod, "X")
+        a_aa = CODON2AA.get(a_cod, "X")
+        invalid = any(aa in ("*", "X") for aa in (e_aa, p_aa, a_aa))
+        keep.append(not invalid)
+        e_cod_out.append(e_cod); p_cod_out.append(p_cod); a_cod_out.append(a_cod)
+        e_aa_out.append(e_aa); p_aa_out.append(p_aa); a_aa_out.append(a_aa)
+
+    base = df.copy()
+    base["E_codon"] = e_cod_out
+    base["P_codon"] = p_cod_out
+    base["A_codon"] = a_cod_out
+    base["E_aa"] = e_aa_out
+    base["P_aa"] = p_aa_out
+    base["A_aa"] = a_aa_out
+    if drop_invalid:
+        base = base.loc[pd.Series(keep, index=base.index)].reset_index(drop=True)
+
+    codon_cols = [c for c in base.columns if c not in ("E_aa", "P_aa", "A_aa")]
+    aa_cols = [c for c in base.columns if c not in ("E_codon", "P_codon", "A_codon")]
+    return base[codon_cols].copy(), base[aa_cols].copy()
+
+
+def background_codon_freq(transcripts, cds_range: dict, sequence: dict,
+                          codon_order=SENSE_CODONS):
+    """
+    Background codon-usage frequency across callable CDS of ``transcripts``.
+    Mirrors ``background_aa_freq`` but at codon granularity.
+
+    Returns (bg_freq_series, bg_counts_series) both indexed by ``codon_order``.
+    """
+    bg_counts = Counter()
+    codon_set = set(codon_order)
+    for tx in transcripts:
+        key = tx if tx in cds_range else (tx.split("|")[4] if "|" in tx else tx)
+        if key not in cds_range or tx not in sequence:
+            continue
+        start, stop = cds_range[key]
+        cds_nt = sequence[tx][start:stop].upper().replace("U", "T")
+        for i in range(0, len(cds_nt) - (len(cds_nt) % 3), 3):
+            cod = cds_nt[i:i + 3]
+            if cod in codon_set:
+                bg_counts[cod] += 1
+    counts = pd.Series({c: bg_counts.get(c, 0) for c in codon_order}, dtype=float)
+    bg = (counts + 1e-6) / (counts.sum() + 1e-6 * len(counts))
+    return bg, counts
+
 
 def epa_enrichment(counts_epa: pd.Series, bg_aa_freq: pd.Series, pseudocount: float = 0.5) -> pd.Series:
     """

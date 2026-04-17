@@ -19,8 +19,8 @@ library(dplyr)
 parser <- ArgumentParser(description = "Generate volcano plots for per-timepoint Fisher enrichment")
 
 parser$add_argument("--input",
-                    default = "results/stall_sites/enrichment/per_timepoint_fisher.csv",
-                    help = "Path to per_timepoint_fisher.csv")
+                    default = "results/stall_sites/enrichment/per_timepoint_fisher_aa.csv",
+                    help = "Path to per_timepoint_fisher_{aa,codon}.csv (emit by stall_sites_non_consensus_stats.py)")
 
 parser$add_argument("--outdir",
                     default = "results/stall_sites/plots/per_timepoint_fisher",

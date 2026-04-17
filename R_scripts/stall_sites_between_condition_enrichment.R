@@ -20,8 +20,8 @@ library(patchwork)
 parser <- ArgumentParser(description = "Generate bar plots for between-condition amino acid enrichment")
 
 parser$add_argument("--input",
-                    default = "results/stall_sites/enrichment/between_condition_wilcoxon.csv",
-                    help = "Path to between_condition_wilcoxon.csv")
+                    default = "results/stall_sites/enrichment/between_condition_wilcoxon_aa.csv",
+                    help = "Path to between_condition_wilcoxon_{aa,codon}.csv (emit by stall_sites_non_consensus_stats.py)")
 
 parser$add_argument("--outdir",
                     default = "results/stall_sites/plots/between_condition",

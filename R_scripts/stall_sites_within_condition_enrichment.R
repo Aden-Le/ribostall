@@ -19,8 +19,8 @@ library(dplyr)
 parser <- ArgumentParser(description = "Generate volcano plots for within-condition amino acid enrichment")
 
 parser$add_argument("--input",
-                    default = "results/stall_sites/enrichment/within_condition_enrichment.csv",
-                    help = "Path to within_condition_enrichment.csv")
+                    default = "results/stall_sites/enrichment/within_condition_enrichment_aa.csv",
+                    help = "Path to within_condition_enrichment_{aa,codon}.csv (emit by stall_sites_non_consensus_stats.py)")
 
 parser$add_argument("--outdir",
                     default = "results/stall_sites/plots/within_condition",

@@ -1,6 +1,6 @@
 #!/bin/bash
 #----------------------------------------------------
-# Bash script: run stall_sites_non_consensus.py with
+# Bash script: run the split call + stats pipeline with
 # enrichment analysis on coverage files
 #----------------------------------------------------
 
@@ -17,9 +17,9 @@ TX_THRESHOLD=1.0
 TX_MIN_REPS=2
 
 # Stall site calling thresholds (raised defaults)
-MIN_Z=2.0
-MIN_READS=5
-TRIM_START=20
+MIN_Z=1.0
+MIN_READS=2
+TRIM_START=10
 TRIM_STOP=10
 PSEUDOCOUNT=0.5
 
@@ -58,9 +58,10 @@ echo "Parameters: min_z=$MIN_Z, min_reads=$MIN_READS, trim_start=$TRIM_START, tr
 echo "Output enrichment: $OUT_ENRICHMENT"
 echo "=============================================="
 
-CMD=(python3 scripts/stall_sites_non_consensus.py \
+python3 scripts/stall_sites_non_consensus_call.py \
   --pickle "$PICKLE" \
   --ribo "$RIBO_FILE" \
+  --reference "$REFERENCE_FILE" \
   --groups "$EXP_GROUPS" \
   --tx_threshold "$TX_THRESHOLD" \
   --tx_min_reps "$TX_MIN_REPS" \
@@ -69,13 +70,16 @@ CMD=(python3 scripts/stall_sites_non_consensus.py \
   --trim-start "$TRIM_START" \
   --trim-stop "$TRIM_STOP" \
   --pseudocount "$PSEUDOCOUNT" \
-  --out-json "$OUT_JSON" \
-  --reference "$REFERENCE_FILE" \
-  --enrichment \
-  --out-enrichment "$OUT_ENRICHMENT")
+  --out-dir "$OUT_ENRICHMENT"
 
-echo "Running: ${CMD[@]}"
-"${CMD[@]}"
+for LEVEL in aa codon; do
+  python3 scripts/stall_sites_non_consensus_stats.py \
+    --stall-sites "$OUT_ENRICHMENT/stall_sites_${LEVEL}.csv" \
+    --ribo "$RIBO_FILE" \
+    --reference "$REFERENCE_FILE" \
+    --groups "$EXP_GROUPS" \
+    --out-dir "$OUT_ENRICHMENT"
+done
 
 echo ""
 echo "=============================================="

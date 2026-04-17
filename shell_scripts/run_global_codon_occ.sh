@@ -22,10 +22,10 @@ TRIM_STOP=10
 OFFSET="P"
 
 # Reference file
-REFERENCE_FILE="./C_elegan_reference/appris_celegans_v1_selected_new.fa"
+REFERENCE_FILE="./reference/appris_celegans_v1_selected_new.fa"
 
 # Output directory (must match --out-dir used in run_global_codon_occ_stats.sh)
-OUT_DIR="./global_occupancy_results"
+OUT_DIR="./results/global_occupancy"
 
 # ===============================================
 
@@ -57,7 +57,7 @@ echo "Parameters:      trim_start=$TRIM_START, trim_stop=$TRIM_STOP, offset=$OFF
 echo "Output directory: $OUT_DIR"
 echo "=============================================="
 
-CMD=(python3 global_codon_occ.py \
+CMD=(python3 scripts/global_codon_occ.py \
   --pickle "$PICKLE" \
   --ribo "$RIBO_FILE" \
   --reference "$REFERENCE_FILE" \

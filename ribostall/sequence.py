@@ -1,6 +1,6 @@
 import ribopy
 from ribopy import Ribo
-from functions_folder.Fasta import FastaFile
+from ribostall.fasta import FastaFile
 from ribopy.core.get_gadgets import get_region_boundaries, get_reference_names
 import pandas as pd
 

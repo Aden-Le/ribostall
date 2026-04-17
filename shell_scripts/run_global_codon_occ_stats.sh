@@ -11,7 +11,7 @@
 EXP_GROUPS='control_day_0:control_day0_rep2,control_day0_rep3;control_day_5:control_day5_rep2,control_day5_rep3;control_day_10:control_day10_rep2,control_day10_rep3;BWM_day_0:BWM_day0_rep2,BWM_day0_rep3;BWM_day_5:BWM_day5_rep2,BWM_day5_rep3;BWM_day_10:BWM_day10_rep2,BWM_day10_rep3'
 
 # Must match --out-dir used in run_global_codon_occ.sh
-OUT_DIR="./global_occupancy_results"
+OUT_DIR="./results/global_occupancy"
 
 # ===============================================
 
@@ -32,7 +32,7 @@ echo "Output directory: $OUT_DIR/analysis/"
 echo "Groups:           $EXP_GROUPS"
 echo "=============================================="
 
-CMD=(python3 global_codon_occ_stats.py \
+CMD=(python3 scripts/global_codon_occ_stats.py \
   --out-dir "$OUT_DIR" \
   --groups "$EXP_GROUPS")
 

@@ -6,8 +6,8 @@
 export PATH="$PATH:/c/Program Files/R/R-4.4.2/bin"
 
 # ── CONFIG ───────────────────────────────────────────────────
-INPUT_CSV="./enrichment_results/per_timepoint_fisher.csv"
-OUTPUT_DIR="./outputs/per_timepoint_fisher_output"
+INPUT_CSV="./results/stall_sites/enrichment/per_timepoint_fisher.csv"
+OUTPUT_DIR="./results/stall_sites/plots/per_timepoint_fisher"
 FORMAT="png"
 DPI=300
 # ─────────────────────────────────────────────────────────────

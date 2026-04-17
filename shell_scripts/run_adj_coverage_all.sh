@@ -39,7 +39,7 @@ for RIBO in "$RIBO_DIR"/*.ribo; do
   BASENAME=$(basename "$RIBO" .ribo)
   OUT="${RIBO_DIR}/${BASENAME}_coverage.pkl.gz"
 
-  CMD="python3 adj_coverage.py --ribo $RIBO --min-len $MIN_LEN --max-len $MAX_LEN --return-site $RETURN_SITE --out $OUT --procs $PROCS"
+  CMD="python3 scripts/adj_coverage.py --ribo $RIBO --min-len $MIN_LEN --max-len $MAX_LEN --return-site $RETURN_SITE --out $OUT --procs $PROCS"
   [ "$USE_ALIAS" = "yes" ] && CMD="$CMD --alias"
   CMD="$CMD --site-type $SITE_TYPE"
   # Uncomment if using custom search window:

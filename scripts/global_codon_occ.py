@@ -3,17 +3,20 @@ import argparse
 import gzip
 import logging
 import pickle
+import sys
 from collections import defaultdict, OrderedDict
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import numpy as np
 import pandas as pd
 import ribopy
 from ribopy import Ribo
 
-from functions_folder.functions import get_cds_range_lookup, get_sequence
-from functions_folder.functions_AA import CODON2AA, AA_ORDER
-from functions_folder.functions_global_occupancy import (
+from ribostall.sequence import get_cds_range_lookup, get_sequence
+from ribostall.amino_acids import CODON2AA, AA_ORDER
+from ribostall.global_occupancy import (
     iter_trimmed_codons,
     parse_groups,
     aggregate_to_aa,
@@ -38,8 +41,8 @@ def parse_args():
     p.add_argument("--reference", required=True,
                    help="Path to reference fasta/2bit/etc used by get_sequence()")
     p.add_argument("--ofset", required=True, help="Offset applied to coverage data - P or A")
-    p.add_argument("--out-dir", default="global_occupancy_results",
-                   help="Output directory (default: global_occupancy_results)")
+    p.add_argument("--out-dir", default="results/global_occupancy",
+                   help="Output directory (default: results/global_occupancy)")
     p.add_argument("--trim-start", type=int, default=0,
                    help="Exclude the first N codons of the CDS (default: 0)")
     p.add_argument("--trim-stop", type=int, default=0,

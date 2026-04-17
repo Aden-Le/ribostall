@@ -17,8 +17,8 @@ library(dplyr)
 # Test Data
 # ============================================================
 
-INPUT_DIR <- "C:/Users/Aden Le/Documents/GitHub/ribostall/global_occupancy_results/analysis"
-OUTPUT_DIR <- "C:/Users/Aden Le/Documents/GitHub/ribostall/global_occupancy_results/fisher_output"
+INPUT_DIR <- "C:/Users/Aden Le/Documents/GitHub/ribostall/results/global_occupancy/analysis"
+OUTPUT_DIR <- "C:/Users/Aden Le/Documents/GitHub/ribostall/results/global_occupancy/plots/fisher"
 args <- list(level = "aa",
              input = file.path(INPUT_DIR, "aa_per_timepoint_fisher.csv"),
              outdir = file.path(OUTPUT_DIR, "aa_per_timepoint"),

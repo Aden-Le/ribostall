@@ -6,8 +6,8 @@
 #----------------------------------------------------
 
 # ============== CONFIG: edit these ==============
-INPUT_DIR="./global_occupancy_results/analysis"
-OUTPUT_DIR="./global_occupancy_results/fisher_output"
+INPUT_DIR="./results/global_occupancy/analysis"
+OUTPUT_DIR="./results/global_occupancy/plots/fisher"
 FORMAT="png"       # pdf, png, or both
 DPI=300
 # ===============================================

@@ -17,8 +17,8 @@ library(patchwork)
 # Test Input
 # ============================================================
 
-# INPUT_DIR <- "C:/Users/Aden Le/Documents/GitHub/ribostall/global_occupancy_results/analysis"
-# OUTPUT_DIR <- "C:/Users/Aden Le/Documents/GitHub/ribostall/global_occupancy_results/wilcoxin_output"
+# INPUT_DIR <- "C:/Users/Aden Le/Documents/GitHub/ribostall/results/global_occupancy/analysis"
+# OUTPUT_DIR <- "C:/Users/Aden Le/Documents/GitHub/ribostall/results/global_occupancy/plots/wilcoxon"
 # args <- list(level = "aa",
 #              input = file.path(INPUT_DIR, "aa_wilcoxon_condition.csv"),
 #              outdir = file.path(OUTPUT_DIR, "aa_condition"),

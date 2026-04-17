@@ -10,10 +10,10 @@ export PATH="$PATH:/c/Program Files/R/R-4.4.2/bin"
 # ============== CONFIG: edit these ==============
 
 # Input CSV from enrichment analysis
-INPUT_CSV="./enrichment_results/within_condition_enrichment.csv"
+INPUT_CSV="./results/stall_sites/enrichment/within_condition_enrichment.csv"
 
 # Output directory for plots
-OUTPUT_DIR="./outputs/within_condition_output"
+OUTPUT_DIR="./results/stall_sites/plots/within_condition"
 
 # Enrichment type: "unweighted", "weighted", or "both"
 ENRICHMENT_TYPE="both"

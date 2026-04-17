@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 import argparse
 import logging
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pandas as pd
 
-from functions_folder.functions_global_occupancy import (
+from ribostall.global_occupancy import (
     parse_groups,
     within_condition_binomial_occupancy,
     between_condition_wilcoxon_occupancy,
@@ -27,8 +30,8 @@ def parse_args():
     p = argparse.ArgumentParser(
         description="Run statistical tests on global codon/AA occupancy CSVs produced by global_codon_occ.py."
     )
-    p.add_argument("--out-dir", default="global_occupancy_results",
-                   help="Output directory used by global_codon_occ.py (default: global_occupancy_results). "
+    p.add_argument("--out-dir", default="results/global_occupancy",
+                   help="Output directory used by global_codon_occ.py (default: results/global_occupancy). "
                         "Reads from out_dir/raw/ and writes to out_dir/analysis/.")
     p.add_argument("--groups", required=True,
                    help="Semicolon-separated group:rep1,rep2 definitions, "

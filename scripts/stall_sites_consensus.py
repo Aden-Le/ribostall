@@ -2,6 +2,11 @@ import logging
 import argparse
 import gzip
 import pickle
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import re
@@ -9,9 +14,10 @@ import os
 import numpy as np
 import pandas as pd
 from ribopy import Ribo
-from functions_folder.functions_stall_sites import filter_tx, codonize_counts_cds, call_stalls, consensus_stalls_across_reps, consensus_to_long_df
-from functions_folder.functions_AA import windows_aa, count_matrix, background_aa_freq, pwm_position_weighted_log2, plot_logo, AA_ORDER, AA_CLASS, CLASS_COLORS
-from functions_folder.functions import get_sequence, get_cds_range_lookup
+
+from ribostall.stall_sites import filter_tx, codonize_counts_cds, call_stalls, consensus_stalls_across_reps, consensus_to_long_df
+from ribostall.amino_acids import windows_aa, count_matrix, background_aa_freq, pwm_position_weighted_log2, plot_logo, AA_ORDER, AA_CLASS, CLASS_COLORS
+from ribostall.sequence import get_sequence, get_cds_range_lookup
 
 # =========================
 # Logging
@@ -49,14 +55,14 @@ def main():
                         help="Tolerance window for matching sites across reps (same units as indices)")
     parser.add_argument("--min_sep", type=int, default=7,
                         help="Minimum separation between consensus sites; prefer downstream when closer than this")
-    parser.add_argument("--out-csv", default="../ribostall_results/stall_sites.csv", help="Output CSV for stall sites")
+    parser.add_argument("--out-csv", default="results/stall_sites/motifs/stall_sites.csv", help="Output CSV for stall sites")
     parser.add_argument("--motif", action="store_true", help="Plot motif")
     parser.add_argument("--reference", help="Reference file path")
     parser.add_argument("--flank-left", type=int, default=10, help="Motif")
     parser.add_argument("--flank-right", type=int, default=6, help="Motif")
     parser.add_argument("--psite-offset", type=int, default=0, help="Motif")
-    parser.add_argument("--out-png", default="../ribostall_results/motif.png", help="Motif")
-    parser.add_argument("--out-motif-csv", default="../ribostall_results/motif_csv", help="Output directory for motif PWM CSVs")
+    parser.add_argument("--out-png", default="results/stall_sites/motifs/motif.png", help="Motif")
+    parser.add_argument("--out-motif-csv", default="results/stall_sites/motifs", help="Output directory for motif PWM CSVs")
 
     args = parser.parse_args()
 

@@ -24,10 +24,10 @@ TRIM_STOP=10
 PSEUDOCOUNT=0.5
 
 # Reference file (required for enrichment analysis)
-REFERENCE_FILE="./C_elegan_reference/appris_celegans_v1_selected_new.fa"
+REFERENCE_FILE="./reference/appris_celegans_v1_selected_new.fa"
 
 # Output files
-OUT_ENRICHMENT="./enrichment_results"
+OUT_ENRICHMENT="./results/stall_sites/enrichment"
 
 # ===============================================
 
@@ -58,7 +58,7 @@ echo "Parameters: min_z=$MIN_Z, min_reads=$MIN_READS, trim_start=$TRIM_START, tr
 echo "Output enrichment: $OUT_ENRICHMENT"
 echo "=============================================="
 
-CMD=(python3 stall_sites_non_consensus.py \
+CMD=(python3 scripts/stall_sites_non_consensus.py \
   --pickle "$PICKLE" \
   --ribo "$RIBO_FILE" \
   --groups "$EXP_GROUPS" \

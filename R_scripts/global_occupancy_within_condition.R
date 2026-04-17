@@ -17,8 +17,8 @@ library(dplyr)
 # Test Input
 # ============================================================
 
-# INPUT_DIR <- "C:/Users/Aden Le/Documents/GitHub/ribostall/global_occupancy_results/analysis"
-# OUTPUT_DIR <- "C:/Users/Aden Le/Documents/GitHub/ribostall/global_occupancy_results"
+# INPUT_DIR <- "C:/Users/Aden Le/Documents/GitHub/ribostall/results/global_occupancy/analysis"
+# OUTPUT_DIR <- "C:/Users/Aden Le/Documents/GitHub/ribostall/results/global_occupancy/plots/within_condition"
 # args <- list(level = "aa",
 #              input = file.path(INPUT_DIR, "aa_within_condition_binomial.csv"),
 #              outdir = file.path(OUTPUT_DIR, "within_condition_output"),

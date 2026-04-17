@@ -45,7 +45,7 @@ Output:
 
 Example input:
 ```
-python adj_coverage.py  \
+python scripts/adj_coverage.py  \
 --ribo "../bxc/bxc_disome.ribo" \
 --site-type "stop" \
 --min-len 57 \
@@ -92,7 +92,7 @@ Optional: `--motif` finds amino acid enrichment around stall sites. This is done
 
 Example input to check filter thresholds:
 ```
-python stall_sites.py \
+python scripts/stall_sites_consensus.py \
 --pickle "../bxc/cov_di.pkl.gz" \
 --ribo "../bxc/bxc_disome.ribo" \
 --groups "kidney:kidney_rep1,kidney_rep2,kidney_rep3;liver:liver_rep1,liver_rep2,liver_rep3;lung:lung_rep1,lung_rep2,lung_rep3" \
@@ -102,7 +102,7 @@ python stall_sites.py \
 
 Example input for motif analysis:
 ```
-python stall_sites.py \
+python scripts/stall_sites_consensus.py \
 --pickle "../bxc/cov_di.pkl.gz" \
 --ribo "../bxc/bxc_disome.ribo" \
 --groups "kidney:kidney_rep1,kidney_rep2,kidney_rep3;liver:liver_rep1,liver_rep2,liver_rep3;lung:lung_rep1,lung_rep2,lung_rep3" \
@@ -145,7 +145,7 @@ Successful run of `adj_coverage.py`:
 
 Successful run of `stall_sites.py`:
 ```
-(ribo) (base) uwusers-imac:ribostall chunglab$ python stall_sites.py --pickle "../Gatfield_Share/cov_di.pkl.gz" --ribo "../Gatfield_Share/bxc_disome.ribo" --groups "kidney:kidney_rep1,kidney_rep2,kidney_rep3;liver:liver_rep1,liver_rep2,liver_rep3;lung:lung_rep1,lung_rep2,lung_rep3" --tx_threshold 0.3 --min_z 1.0 --motif --reference "../Gatfield_Share/appris_mouse_v2_selected.fa.gz" --flank-left 20 --flank-right 10
+(ribo) (base) uwusers-imac:ribostall chunglab$ python scripts/stall_sites_consensus.py --pickle "../Gatfield_Share/cov_di.pkl.gz" --ribo "../Gatfield_Share/bxc_disome.ribo" --groups "kidney:kidney_rep1,kidney_rep2,kidney_rep3;liver:liver_rep1,liver_rep2,liver_rep3;lung:lung_rep1,lung_rep2,lung_rep3" --tx_threshold 0.3 --min_z 1.0 --motif --reference "../Gatfield_Share/appris_mouse_v2_selected.fa.gz" --flank-left 20 --flank-right 10
 Number of filtered transcripts: 122
 Number of total stall sites per group: {'kidney': 902, 'liver': 942, 'lung': 853}
 2025-09-30 13:40:32,099  INFO  MainProcess  Saved JSON to ../ribostall_results/stall_sites.jsonl

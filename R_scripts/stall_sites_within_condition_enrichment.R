@@ -19,11 +19,11 @@ library(dplyr)
 parser <- ArgumentParser(description = "Generate volcano plots for within-condition amino acid enrichment")
 
 parser$add_argument("--input",
-                    default = "enrichment_results/within_condition_enrichment.csv",
+                    default = "results/stall_sites/enrichment/within_condition_enrichment.csv",
                     help = "Path to within_condition_enrichment.csv")
 
 parser$add_argument("--outdir",
-                    default = "within_condition_output",
+                    default = "results/stall_sites/plots/within_condition",
                     help = "Output directory for plots")
 
 parser$add_argument("--show-ci",

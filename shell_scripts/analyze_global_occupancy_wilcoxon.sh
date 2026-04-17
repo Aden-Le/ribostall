@@ -6,8 +6,8 @@
 #----------------------------------------------------
 
 # ============== CONFIG: edit these ==============
-INPUT_DIR="./global_occupancy_results/analysis"
-OUTPUT_DIR="./global_occupancy_results/wilcoxon_output"
+INPUT_DIR="./results/global_occupancy/analysis"
+OUTPUT_DIR="./results/global_occupancy/plots/wilcoxon"
 FORMAT="png"       # pdf, png, or both
 DPI=300
 # ===============================================

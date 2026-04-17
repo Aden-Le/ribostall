@@ -29,12 +29,12 @@ TOL=0
 MIN_SEP=7
 
 # Reference file (required for motif analysis)
-REFERENCE_FILE="./C_elegan_reference/appris_celegans_v1_selected_new.fa"
+REFERENCE_FILE="./reference/appris_celegans_v1_selected_new.fa"
 
 # Output files
-OUT_CSV="stall_sites_results/stall_sites.csv"
-OUT_PNG="stall_sites_results/motif.png"
-OUT_MOTIF_CSV="stall_sites_results"
+OUT_CSV="results/stall_sites/motifs/stall_sites.csv"
+OUT_PNG="results/stall_sites/motifs/motif.png"
+OUT_MOTIF_CSV="results/stall_sites/motifs"
 
 # Set to "--motif" to enable motif plotting, or "" to skip
 MOTIF_FLAG=""
@@ -69,7 +69,7 @@ echo "Consensus: stall_min_reps=$STALL_MIN_REPS, tol=$TOL, min_sep=$MIN_SEP"
 echo "Output CSV: $OUT_CSV"
 echo "=============================================="
 
-CMD=(python3 stall_sites_consensus.py \
+CMD=(python3 scripts/stall_sites_consensus.py \
   --pickle "$PICKLE" \
   --ribo "$RIBO_FILE" \
   --groups "$EXP_GROUPS" \

@@ -2,6 +2,11 @@ import logging
 import argparse
 import gzip
 import pickle
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import re
@@ -11,13 +16,12 @@ import pandas as pd
 import ribopy
 from ribopy import Ribo
 
-# Local modules with the core analysis functions
-from functions_folder.functions_stall_sites import filter_tx, codonize_counts_cds, call_stalls, stalls_to_long_df, consensus_stalls_across_reps
-from functions_folder.functions_AA import (translate_cds_nt_to_aa, windows_aa, count_matrix, background_aa_freq,
+from ribostall.stall_sites import filter_tx, codonize_counts_cds, call_stalls, stalls_to_long_df, consensus_stalls_across_reps
+from ribostall.amino_acids import (translate_cds_nt_to_aa, windows_aa, count_matrix, background_aa_freq,
                           pwm_position_weighted_log2, plot_logo, epa_triplet_counts,
                           CODON2AA, AA_ORDER, AA_CLASS, CLASS_COLORS)
-from functions_folder.functions import get_sequence, get_cds_range_lookup
-from functions_folder.functions_enrichment import within_condition_enrichment, between_condition_wilcoxon, per_timepoint_fisher, plot_coverage_density
+from ribostall.sequence import get_sequence, get_cds_range_lookup
+from ribostall.enrichment import within_condition_enrichment, between_condition_wilcoxon, per_timepoint_fisher, plot_coverage_density
 
 # =========================
 # Logging
@@ -59,10 +63,10 @@ def main():
     parser.add_argument("--flank-left", type=int, default=10, help="Motif")
     parser.add_argument("--flank-right", type=int, default=6, help="Motif")
     parser.add_argument("--psite-offset", type=int, default=0, help="Motif")
-    parser.add_argument("--out-csv", default="stall_sites_results", help="Motif")
+    parser.add_argument("--out-csv", default="results/stall_sites/enrichment", help="Motif")
     parser.add_argument("--enrichment", action="store_true",
                         help="Run amino acid enrichment analysis at E/P/A sites")
-    parser.add_argument("--out-enrichment", default="stall_sites_results",
+    parser.add_argument("--out-enrichment", default="results/stall_sites/enrichment",
                         help="Output directory for enrichment analysis CSVs")
 
     args = parser.parse_args()

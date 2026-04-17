@@ -10,10 +10,10 @@ export PATH="$PATH:/c/Program Files/R/R-4.4.2/bin"
 # ============== CONFIG: edit these ==============
 
 # Input CSV from enrichment analysis
-INPUT_CSV="./enrichment_results/between_condition_wilcoxon.csv"
+INPUT_CSV="./results/stall_sites/enrichment/between_condition_wilcoxon.csv"
 
 # Output directory for plots
-OUTPUT_DIR="./outputs/between_condition_output"
+OUTPUT_DIR="./results/stall_sites/plots/between_condition"
 
 # Output format: "pdf", "png", or "both"
 FORMAT="png"

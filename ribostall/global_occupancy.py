@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-from functions_folder.functions_enrichment import bh_fdr
+from ribostall.enrichment import bh_fdr
 
 
 # ---------------------------------------------------------------------------
@@ -506,7 +506,7 @@ def parse_groups(groups_arg: str) -> dict:
 def aggregate_to_aa(codon_dict: dict) -> dict:
     """Aggregate a {codon: value} dict to {AA: value}, skipping stop codons."""
     from collections import defaultdict
-    from functions_folder.functions_AA import CODON2AA
+    from ribostall.amino_acids import CODON2AA
     aa_dict = defaultdict(float)
     for codon, val in codon_dict.items():
         aa = CODON2AA.get(codon.upper())

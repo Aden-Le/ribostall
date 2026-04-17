@@ -14,6 +14,22 @@ library(patchwork)
 library(dplyr)
 
 # ============================================================
+# Test Data
+# ============================================================
+
+INPUT_DIR <- "C:/Users/Aden Le/Documents/GitHub/ribostall/global_occupancy_results/analysis"
+OUTPUT_DIR <- "C:/Users/Aden Le/Documents/GitHub/ribostall/global_occupancy_results/fisher_output"
+args <- list(level = "aa",
+             input = file.path(INPUT_DIR, "aa_per_timepoint_fisher.csv"),
+             outdir = file.path(OUTPUT_DIR, "aa_per_timepoint"),
+             group_col = "timepoint",
+             comparison = "BWM vs Control",
+             format = "png",
+             dpi = 300L
+             )
+
+
+  # ============================================================
 # Argument Parsing
 # ============================================================
 
@@ -139,80 +155,107 @@ cat("  Axis limits -- x:", round(x_lim, 2), "| y: [0,", round(y_max, 2), "]\n")
 # Volcano Plot Function
 # ============================================================
 
+# Creates a volcano plot for amino acid enrichment/depletion analysis.
+# Each point represents one unit (e.g. codon or amino acid), plotted by
+# effect size (x) vs. statistical significance (y).
+#
+# Args:
+#   plot_data   : data frame with columns: log2_odds_ratio, neg_log10_p,
+#                 aa_class, significance (label), significant (logical), unit (label)
+#   x_lim       : numeric vector of length 2, x-axis limits e.g. c(-3, 3)
+#   y_max       : numeric, upper limit of y-axis
+#   title       : string, plot title
+#   show_legend : logical, whether to show the legend (default TRUE)
+
 make_volcano <- function(plot_data, x_lim, y_max, title,
                          show_legend = TRUE) {
-
+  
+  # --- Base layer: scatter plot ---
+  # Points colored by amino acid class, shaped by significance status
   p <- ggplot(plot_data,
               aes(x = log2_odds_ratio,
                   y = neg_log10_p)) +
-
     geom_point(aes(color = aa_class, shape = significance),
                alpha = 0.8, size = 2.5) +
-
+    
+    # Dashed vertical lines mark the effect size thresholds (|log2 OR| = 0.5)
     geom_vline(xintercept = c(-0.5, 0.5),
                linetype = "dashed", color = "gray50", alpha = 0.5) +
-
+    
+    # Dashed horizontal line marks the significance threshold (FDR = 0.05)
     geom_hline(yintercept = -log10(0.05),
                linetype = "dashed", color = "gray50", alpha = 0.5) +
-
+    
+    # Dotted vertical line marks the null effect (OR = 1, log2 OR = 0)
     geom_vline(xintercept = 0,
                linetype = "dotted", color = "black", alpha = 0.3)
-
+  
+  # --- Labels: only annotate statistically significant points ---
+  # Filtered separately to avoid passing the full dataset to geom_text_repel
   sig_data <- plot_data |> filter(significant)
-
+  
   p <- p +
     geom_text_repel(
       data = sig_data,
       aes(label = unit, color = aa_class),
       size = 3.5,
-      box.padding = 0.5,
-      point.padding = 0.3,
-      force = 3,
-      max.overlaps = 15,
+      box.padding = 0.5,       # Padding around label bounding box
+      point.padding = 0.3,     # Padding between label and point
+      force = 3,               # Repulsion strength between labels
+      max.overlaps = 15,       # Max overlaps allowed before a label is dropped
       segment.color = "gray50",
-      segment.size = 0.2,
-      min.segment.length = 0,
-      show.legend = FALSE
+      segment.size = 0.2,      # Thickness of leader lines
+      min.segment.length = 0,  # Always draw leader lines, even for close labels
+      show.legend = FALSE      # Suppress text layer from appearing in legend
     ) +
-
+    
+    # --- Scales ---
+    # Use predefined color palette for amino acid classes
     scale_color_manual(values = CLASS_COLORS, name = NULL) +
-
+    # Triangle (17) = significant, circle (16) = not significant
     scale_shape_manual(
       name = NULL,
       values = c("Significant (FDR < 0.05)" = 17, "Not significant" = 16)
     ) +
-
+    
+    # Lock axis ranges to ensure consistent layout across panels/comparisons
     coord_cartesian(xlim = x_lim, ylim = c(0, y_max)) +
-
+    
+    # --- Theme ---
     theme_classic(base_size = 12) +
     theme(
-      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
-      legend.position = if (show_legend) "bottom" else "none",
-      legend.box = "vertical",
-      legend.box.just = "center",
-      legend.box.spacing = unit(0.1, "cm"),
-      legend.title = element_text(size = 11, face = "bold"),
-      legend.text = element_text(size = 10),
-      legend.background = element_rect(fill = "white", color = NA),
-      legend.key.size = unit(0.5, "cm"),
-      legend.spacing.y = unit(0.05, "cm"),
-      legend.margin = margin(t = 0, b = 0, unit = "cm"),
-      axis.title = element_text(size = 12, face = "bold"),
-      axis.text = element_text(size = 10),
-      plot.margin = margin(1, 1, 0.5, 1, "cm")
+      plot.title     = element_text(hjust = 0.5, size = 14, face = "bold"),
+      
+      # Conditionally show/hide legend based on show_legend argument
+      legend.position    = if (show_legend) "bottom" else "none",
+      legend.box         = "vertical",        # Stack color and shape legends vertically
+      legend.box.just    = "center",
+      legend.box.spacing = unit(0.1, "cm"),   # Gap between the two legend boxes
+      legend.title       = element_text(size = 11, face = "bold"),
+      legend.text        = element_text(size = 10),
+      legend.background  = element_rect(fill = "white", color = NA),
+      legend.key.size    = unit(0.5, "cm"),
+      legend.spacing.y   = unit(0.05, "cm"),  # Vertical spacing between legend items
+      legend.margin      = margin(t = 0, b = 0, unit = "cm"),  # Remove excess legend margin
+      
+      axis.title  = element_text(size = 12, face = "bold"),
+      axis.text   = element_text(size = 10),
+      plot.margin = margin(1, 1, 0.5, 1, "cm")  # top, right, bottom, left
     ) +
-
+    
+    # --- Axis labels: formatted with subscripts using plotmath expressions ---
     labs(
       title = title,
       x = expression(bold("Log"[2] ~ "(Odds Ratio)")),
       y = expression(bold("-Log"[10] ~ "(FDR)"))
     ) +
-
+    
+    # --- Legend order: color (aa class) first, then shape (significance) ---
     guides(
       color = guide_legend(order = 1),
       shape = guide_legend(order = 2)
     )
-
+  
   return(p)
 }
 
@@ -240,24 +283,27 @@ dir.create(file.path(args$outdir, "individual"),
 dir.create(file.path(args$outdir, "composite"),
            recursive = TRUE, showWarnings = FALSE)
 
-# ============================================================
+  # ============================================================
 # Generate Individual Plots
 # ============================================================
 
 cat("\nGenerating individual plots...\n")
 
 group_values <- unique(data[[group_col]])
+# Group values are like day_0, day_5, day_10
 group_values <- group_values[order(as.numeric(gsub("[^0-9]", "", group_values)))]
 plot_count <- 0
 
+# For each group value
 for (gv in group_values) {
+  # Filter so that we get the column of the specific day comparison
   plot_data <- data |> filter(.data[[group_col]] == gv)
 
   group_label <- gsub("_", " ", gv)
   group_label <- gsub("day ", "Day ", group_label)
   title <- paste0(level_label, " Occupancy | ", group_label,
                   " (", args$comparison_label, ")")
-
+  # Generte the graph
   p <- make_volcano(
     plot_data,
     x_lim = x_lim,
@@ -272,6 +318,7 @@ for (gv in group_values) {
             format = args$format, dpi = args$dpi)
   plot_count <- plot_count + 1
 }
+p
 
 cat("  Saved", plot_count, "individual plots\n")
 
@@ -281,8 +328,10 @@ cat("  Saved", plot_count, "individual plots\n")
 
 cat("Generating composite plot...\n")
 
+# Stores the plots
 plot_list <- list()
 
+# For each day, make a  plot
 for (gv in group_values) {
   plot_data <- data |> filter(.data[[group_col]] == gv)
 
@@ -301,6 +350,7 @@ for (gv in group_values) {
   plot_list[[length(plot_list) + 1]] <- p
 }
 
+# Geenerate the composite plot
 n_groups <- length(group_values)
 composite <- wrap_plots(plot_list, ncol = n_groups, nrow = 1) +
   plot_layout(guides = "collect") +

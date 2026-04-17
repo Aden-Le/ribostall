@@ -25,7 +25,7 @@ echo "  Format: $FORMAT"
 echo "  DPI:    $DPI"
 echo "=============================================="
 
-CMD=(Rscript R_scripts/per_timepoint_fisher_volcano.R \
+CMD=(Rscript R_scripts/stall_sites_per_timepoint_fisher_volcano.R \
   --input "$INPUT_CSV" \
   --outdir "$OUTPUT_DIR" \
   --format "$FORMAT" \

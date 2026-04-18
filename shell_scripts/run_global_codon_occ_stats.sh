@@ -15,10 +15,6 @@ OUT_DIR="./results/global_occupancy"
 
 # ===============================================
 
-# Activate conda/env if you use one
-source ${HOME}/miniconda3/etc/profile.d/conda.sh
-conda activate ribostall_env
-
 # Navigate to repo root (one level up from shell_scripts/)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/.."

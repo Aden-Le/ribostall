@@ -12,10 +12,6 @@ FORMAT="png"       # pdf, png, or both
 DPI=300
 # ===============================================
 
-# Activate conda/env if you use one
-source ${HOME}/miniconda3/etc/profile.d/conda.sh
-conda activate ribostall_env
-
 # Navigate to repo root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/.."

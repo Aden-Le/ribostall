@@ -3,17 +3,25 @@ import pandas as pd
 import bisect
 from typing import Dict, List, Iterable, Any
 
-def filter_tx(cov_by_exp: dict, reps: list[str], min_reps: int = 2, threshold: float = 1.0):
+def filter_tx(cov_by_exp: dict, reps: list[str], min_reps: int = 2, threshold: float = 1.0,
+              trim_start: int = 0, trim_stop: int = 0):
     """
     Keep transcripts where at least `min_reps` of the given replicates
-    have mean coverage per-nt > threshold.
+    have mean coverage per-nt > threshold over the elongation body
+    (CDS with the first `trim_start` and last `trim_stop` codons removed,
+    matching the window used by `call_stalls`).
     """
-    # Gets the set of transcripts that are present in all replicates
     common = set.intersection(*(set(cov_by_exp[r].keys()) for r in reps))
+    trim_start_nt = trim_start * 3
+    trim_stop_nt = trim_stop * 3
     keep = []
     for tx in common:
-        # For each transcript, count how many replicates have mean coverage > threshold
-        n_pass = sum(np.asarray(cov_by_exp[r][tx], float).mean() > threshold for r in reps)
+        n_pass = 0
+        for r in reps:
+            arr = np.asarray(cov_by_exp[r][tx], float)
+            body = arr[trim_start_nt : len(arr) - trim_stop_nt] if len(arr) > trim_start_nt + trim_stop_nt else arr[:0]
+            if body.size and body.mean() > threshold:
+                n_pass += 1
         if n_pass >= min_reps:
             keep.append(tx)
     return keep

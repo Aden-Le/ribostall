@@ -140,7 +140,8 @@ def main():
     # --- end logging ---
 
     filt_tx_dict = {
-        group: filter_tx(cov, reps, min_reps=args.tx_min_reps, threshold=args.tx_threshold)
+        group: filter_tx(cov, reps, min_reps=args.tx_min_reps, threshold=args.tx_threshold,
+                         trim_start=args.trim_start, trim_stop=args.trim_stop)
         for group, reps in groups.items()
     }
     # --- logging only ---

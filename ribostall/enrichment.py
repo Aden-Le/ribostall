@@ -352,20 +352,37 @@ def per_timepoint_fisher(
 # ---------------------------------------------------------------------------
 # Coverage density plot
 # ---------------------------------------------------------------------------
-def plot_coverage_density(cov, groups, out_dir):
+def plot_coverage_density(cov, groups, out_dir, trim_start: int = 0, trim_stop: int = 0):
     """
     Plot KDE density curves of per-transcript average coverage (reads/nt)
     for every replicate on a single composite figure.
 
+    The per-transcript mean is computed on the elongation body — the CDS with
+    the first ``trim_start`` and last ``trim_stop`` codons removed — to mirror
+    the window used by ``filter_tx`` and ``call_stalls``.
+
     Parameters
     ----------
     cov : dict
-        {replicate: {transcript: np.ndarray of per-nt counts}}
+        {replicate: {transcript: np.ndarray of per-nt counts, CDS-only}}
     groups : dict
         {group_name: [rep1, rep2, ...]}
     out_dir : str
         Directory to save the output figure (coverage_density.png).
+    trim_start, trim_stop : int
+        Number of codons to drop from the start / end of each CDS before
+        computing the per-transcript mean.
     """
+    trim_start_nt = trim_start * 3
+    trim_stop_nt = trim_stop * 3
+
+    def _body_mean(arr):
+        arr = np.asarray(arr, float)
+        if len(arr) <= trim_start_nt + trim_stop_nt:
+            return 0.0
+        body = arr[trim_start_nt : len(arr) - trim_stop_nt]
+        return body.mean() if body.size else 0.0
+
     fig, ax = plt.subplots(figsize=(10, 6))
 
     group_list = list(groups.keys())
@@ -379,7 +396,7 @@ def plot_coverage_density(cov, groups, out_dir):
             if rep not in cov:
                 continue
             tx_dict = cov[rep]
-            means = np.array([np.asarray(v, float).mean() for v in tx_dict.values()])
+            means = np.array([_body_mean(v) for v in tx_dict.values()])
             means = means[means > 0]
             if len(means) < 2:
                 continue
@@ -397,7 +414,10 @@ def plot_coverage_density(cov, groups, out_dir):
 
     ax.set_xlabel("log10(Mean coverage per transcript, reads/nt)")
     ax.set_ylabel("Density")
-    ax.set_title("Per-transcript average coverage distribution")
+    ax.set_title(
+        f"Per-transcript average coverage distribution\n"
+        f"(elongation body: first {trim_start} and last {trim_stop} codons removed)"
+    )
     ax.legend(fontsize=7, loc="upper right")
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)

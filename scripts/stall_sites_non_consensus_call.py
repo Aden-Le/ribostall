@@ -135,29 +135,35 @@ def main():
     # ------------------------------------------------------------------
     # Total number of transcripts before filtering (for reporting how many were lost).
     n_before = len(next(iter(cov.values())))
+    trim_start_nt = args.trim_start * 3
+    trim_stop_nt = args.trim_stop * 3
+
+    def _body(arr):
+        arr = np.asarray(arr, float)
+        if len(arr) <= trim_start_nt + trim_stop_nt:
+            return arr[:0]
+        return arr[trim_start_nt : len(arr) - trim_stop_nt]
+
     print(f"\n{'='*60}\nTRANSCRIPT FILTERING (per-group, no intersection)\n{'='*60}")
     print(f"Transcripts before filtering: {n_before}")
-    print(f"\n  {'Replicate':<25} {'Group':<15} {'Avg cov/tx (reads/nt)':>22} {'SD':>10} {'Total coverage':>16}")
-    print(f"  {'-'*25} {'-'*15} {'-'*22} {'-'*10} {'-'*16}")
-    
-    # For each group
+    print(f"Body window: first {args.trim_start} and last {args.trim_stop} codons removed")
+    print(f"\n  {'Replicate':<25} {'Group':<15} {'Avg body cov/tx (reads/nt)':>28} {'SD':>10} {'Total body coverage':>20}")
+    print(f"  {'-'*25} {'-'*15} {'-'*28} {'-'*10} {'-'*20}")
+
     for group, reps in groups.items():
-        # For each replicate
         for rep in reps:
             tx_dict = cov[rep]
-            # Get a list of mean coverage per transcript
-            means = [np.asarray(v, float).mean() for v in tx_dict.values()]
-            # Get the average of all the means
+            bodies = [_body(v) for v in tx_dict.values()]
+            means = [b.mean() for b in bodies if b.size]
             avg_cov = np.mean(means) if means else 0.0
-            # Get the standard deviation of all the means
             sd_cov = np.std(means) if means else 0.0
-            total_cov = sum(np.asarray(v, float).sum() for v in tx_dict.values())
-            # Get the total coverage
-            print(f"  {rep:<25} {group:<15} {avg_cov:>22.4f} {sd_cov:>10.4f} {total_cov:>16,.0f}")
+            total_cov = sum(b.sum() for b in bodies if b.size)
+            print(f"  {rep:<25} {group:<15} {avg_cov:>28.4f} {sd_cov:>10.4f} {total_cov:>20,.0f}")
     print()
 
     os.makedirs(args.out_dir, exist_ok=True)
-    plot_coverage_density(cov, groups, args.out_dir)
+    plot_coverage_density(cov, groups, args.out_dir,
+                          trim_start=args.trim_start, trim_stop=args.trim_stop)
     logging.info(f"Saved coverage density plot to {args.out_dir}/coverage_density.png")
 
     # ------------------------------------------------------------------

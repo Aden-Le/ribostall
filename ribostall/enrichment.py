@@ -23,19 +23,9 @@ from scipy import stats
 def bh_fdr(p_values: np.ndarray) -> np.ndarray:
     """Benjamini-Hochberg FDR correction. Returns adjusted p-values."""
     p = np.asarray(p_values, dtype=float)
-    n = len(p)
-    if n == 0:
+    if p.size == 0:
         return p.copy()
-    order = np.argsort(p)
-    ranks = np.empty_like(order)
-    ranks[order] = np.arange(1, n + 1)
-    adjusted = p * n / ranks
-    # enforce monotonicity (largest rank first)
-    adjusted_sorted = adjusted[order]
-    for i in range(n - 2, -1, -1):
-        adjusted_sorted[i] = min(adjusted_sorted[i], adjusted_sorted[i + 1])
-    adjusted[order] = adjusted_sorted
-    return np.clip(adjusted, 0.0, 1.0)
+    return stats.false_discovery_control(p, method="bh")
 
 
 # ---------------------------------------------------------------------------
@@ -70,13 +60,15 @@ def within_condition_enrichment(
         condition, group, site, amino_acid, stall_count, total_n, stall_freq,
         bg_freq, log2_enrichment, weighted_log2_enrichment, p_value, p_adj
     """
+    # Get all groups present in the replicate counts: Ex: "control_day_0", "BWM_day_5", etc.
     groups = sorted(set(rep_to_group[r] for r in replicate_counts if r in rep_to_group))
+
     rows = []
 
     for group in groups:
         # Background frequencies for this group
         bg_freq = bg_freq_per_group[group]
-        # Replicates in this group | Ex: "control_day_0" -> ["ctrl_rep1", "ctrl_rep2"]
+        # Replicates in this group | Ex: "control_day_0" -> ["control_day_0_rep1", "control_day_0_rep2"]
         group_reps = [r for r in replicate_counts if rep_to_group.get(r) == group]
         # Condition for this group (e.g. "control" or "BWM")
         condition = rep_to_condition.get(group_reps[0], "") if group_reps else ""
@@ -85,6 +77,7 @@ def within_condition_enrichment(
             # Pool counts across replicates in this group
             pooled = None
             for rep in group_reps:
+                # counts is a Series of AA->count for this replicate and site
                 counts = replicate_counts[rep][site]
                 if pooled is None:
                     pooled = counts.copy()
@@ -94,22 +87,23 @@ def within_condition_enrichment(
             if pooled is None:
                 continue
             
-            # Total n is the total count of all amino acids at this site in this group (not background)
+            # Total n is the total count of all amino acids/codons at this site in this group (not background)
             total_n = int(pooled.sum())
             if total_n == 0:
                 continue
 
             for aa in pooled.index:
-                # k is the sum of target aa
+                # k is the sum of target aa/codon for both replicates at this site
                 k = int(pooled[aa])
                 # p_bg is the background frequency of this aa in this group (with small pseudocount to avoid zero)
                 p_bg = float(bg_freq.get(aa, 1e-6))
+
+                result = stats.binomtest(k, total_n, p_bg, alternative="two-sided")
+                
                 # freq is the observed frequency of this aa at this site in this group
                 freq = k / total_n
                 log2_enrich = np.log2(freq / p_bg) if freq > 0 and p_bg > 0 else 0.0
                 weighted_log2 = freq * log2_enrich
-
-                result = stats.binomtest(k, total_n, p_bg, alternative="two-sided")
 
                 # For output, we want the raw p-value. Multiple testing correction will be done later per group.
                 rows.append({

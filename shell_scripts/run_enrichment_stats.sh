@@ -34,6 +34,7 @@ echo "=============================================="
 for LEVEL in aa codon; do
   python3 scripts/stall_sites_non_consensus_stats.py \
     --stall-sites "$OUT_ENRICHMENT/stall_sites_${LEVEL}.csv" \
+    --background "$OUT_ENRICHMENT/per_group_background_${LEVEL}.csv" \
     --groups "$EXP_GROUPS" \
     --out-dir "$OUT_ENRICHMENT"
 done

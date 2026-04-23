@@ -54,9 +54,8 @@ def parse_args():
                         help="Path to stall_sites_codon.csv or stall_sites_aa.csv")
     parser.add_argument("--groups", required=True,
                         help="Experimental groups, e.g. 'groupA:rep1,rep2;groupB:rep3,rep4'")
-    parser.add_argument("--background",
-                        help="Path to per_group_background_{level}.csv written by the call script. "
-                             "If omitted, defaults to <stall-sites directory>/per_group_background_{level}.csv.")
+    parser.add_argument("--background", required=True,
+                        help="Path to per_group_background_{level}.csv written by the call script.")
     parser.add_argument("--out-dir", default="results/stall_sites/enrichment",
                         help="Output directory for enrichment CSVs")
     return parser.parse_args()
@@ -105,6 +104,7 @@ def main():
     stall_path = Path(args.stall_sites)
     logging.info(f"Loading stall sites from {stall_path} ...")
     df = pd.read_csv(stall_path)
+    # level = "codon" or "aa"; site_cols = (E_col, P_col, A_col); alphabet = list of codons or AAs; feature_col = "codon" or "amino_acid"
     level, site_cols, alphabet, feature_col = detect_level(df)
     suffix = level  # "codon" or "aa"
     logging.info(f"Detected level: {level} ({len(alphabet)} categories; feature column '{feature_col}')")
@@ -113,10 +113,12 @@ def main():
     # Groups, condition, timepoint mappings
     # --------------------------------------------------------------
     groups = parse_groups(args.groups)
+    # Map reps to groups
     rep_to_group = {rep: grp for grp, reps in groups.items() for rep in reps}
     rep_to_condition = {}
     rep_to_timepoint = {}
     for rep, grp in rep_to_group.items():
+        # BWM_day_0 → condition = BWM, timepoint = day_0
         parts = grp.split("_", 1)
         rep_to_condition[rep] = parts[0]
         rep_to_timepoint[rep] = parts[1] if len(parts) > 1 else grp
@@ -124,7 +126,11 @@ def main():
     # --------------------------------------------------------------
     # Per-replicate counts
     # --------------------------------------------------------------
+    # Returns the amino acid or codon stall site count for each replicate at each site (E, P, A).
     replicate_counts = build_replicate_counts(df, site_cols, alphabet)
+
+    # Print total counts per site across replicates (for sanity check)
+    print(f"\n{'='*60}\nTOTAL STALL SITE COUNTS PER SITE (summed across replicates)\n{'='*60}")
     for rep, site_counts in replicate_counts.items():
         totals = {s: int(site_counts[s].sum()) for s in ("E", "P", "A")}
         print(f"  [{rep}] counts per site: {totals}")
@@ -132,12 +138,15 @@ def main():
     # --------------------------------------------------------------
     # Load per-group background frequencies (written by the call script)
     # --------------------------------------------------------------
-    bg_path = Path(args.background) if args.background else stall_path.parent / f"per_group_background_{suffix}.csv"
-    logging.info(f"Loading per-group {level} backgrounds from {bg_path} ...")
-    bg_df = pd.read_csv(bg_path)
+    bg_path = Path(args.background)
     bg_freq_per_group = {}
     bg_counts_per_group = {}
+
+    logging.info(f"Loading per-group {level} backgrounds from {bg_path} ...")
+    bg_df = pd.read_csv(bg_path)
+
     print(f"\n{'='*60}\nBACKGROUND {level.upper()} FREQUENCIES (per group)\n{'='*60}")
+    
     for grp, sub in bg_df.groupby("group"):
         freq = sub.set_index(feature_col)["bg_freq"].reindex(alphabet).astype(float)
         counts = sub.set_index(feature_col)["bg_count"].reindex(alphabet).fillna(0).astype(int)

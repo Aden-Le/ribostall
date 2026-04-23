@@ -61,7 +61,7 @@ Stall-site analysis is split into two scripts. `stall_sites_non_consensus_call.p
 `stall_sites_consensus.py` is the sibling consensus-based pipeline; it finds stall sites from coverage data with applied P-site offsets. This is done by:
 1. **Transcript filtering**: For each transcript, the average reads per nucleotide is computed. Transcripts with coverage below `--tx_threshold` in fewer than `--tx_min_rep` are excluded.
 2. **Codonize read counts**: An array of the number of reads per codon. `0` corresponds to the start codon.
-3. **z-score calculation**: Coverage per codon is converted to `log2(x + pseudocount)` to stabilize variance and handle zeros. Compute transcript-wide z-scores. Codons with z-scores ≥ `--min_z` and reads ≥ `--min_reads` are considered candidate stalls. The first and last `--trim_edges` codons are ignored.
+3. **z-score calculation**: The first and last `--trim_edges` codons (initiation ramp and termination region) are dropped first, so their pileups don't inflate the null. The remaining elongation body is converted to `log2(x + pseudocount)` to stabilize variance and handle zeros, and transcript-wide z-scores are computed on that trimmed body. Codons with z-scores ≥ `--min_z` and reads ≥ `--min_reads` are considered candidate stalls.
 4. **Consensus stall sites**: A site must appear in at least `--min-support` replicates to be reported. If there are >1 stall sites within `--min_sep` codons, the most downstream stall site is reported.
 5. **Output**: List of stall sites `{"group": "group", "transcript": "transcript", "tx_id": "tx_id", "gene": "gene", "pos_codon", 1}`
 

@@ -8,9 +8,11 @@ def filter_tx(cov_by_exp: dict, reps: list[str], min_reps: int = 2, threshold: f
     Keep transcripts where at least `min_reps` of the given replicates
     have mean coverage per-nt > threshold.
     """
+    # Gets the set of transcripts that are present in all replicates
     common = set.intersection(*(set(cov_by_exp[r].keys()) for r in reps))
     keep = []
     for tx in common:
+        # For each transcript, count how many replicates have mean coverage > threshold
         n_pass = sum(np.asarray(cov_by_exp[r][tx], float).mean() > threshold for r in reps)
         if n_pass >= min_reps:
             keep.append(tx)
@@ -25,18 +27,21 @@ def codonize_counts_cds(x_nt: np.ndarray, frame: int = 0):
 
     Returns:
       x_codon: float array of length = number of full codons
-      map_codon_to_nt: list of (lo, hi) nt index slices in the original x_nt
     """
     assert x_nt.ndim == 1, "x_nt must be 1D"
+    # Frame is generally 0
     frame = int(frame) % 3
     # Align start by frame and trim tail to multiple of 3
     start = frame
+    # Floor division, so rounds down to last full codon
     usable_len = ((len(x_nt) - start) // 3) * 3
     if usable_len <= 0:
-        return np.zeros(0, dtype=float), []
+        return np.zeros(0, dtype=float)
     stop = start + usable_len
     cds_slice = x_nt[start:stop]                # length is multiple of 3
+    # Reshapes into a 2D array where each row is a codon (3 nts), then sums across columns to get codon counts
     x3 = cds_slice.reshape(-1, 3)               # (codons, 3)
+    # Sums across each row to get total counts per codon, resulting in a 1D array of codon counts
     x_codon = x3.sum(axis=1).astype(float)
     return x_codon
 
@@ -60,6 +65,12 @@ def call_stalls(
 ):
     """
     Keep any codon with global z >= min_z and obs >= min_obs (no local filters).
+
+    The initiation ramp and termination region are excluded BEFORE the z-score
+    is computed, so the null distribution (mean, sd) reflects only the
+    elongation body of the CDS. Returned `index` values refer to positions in
+    the original (untrimmed) x_codon array.
+
     trim_start: exclude first N codons (initiation ramp).
     trim_stop:  exclude last N codons (termination region).
     trim_edges: legacy parameter — if provided, sets both trim_start and trim_stop.
@@ -72,19 +83,17 @@ def call_stalls(
     n = x.size
     if n == 0:
         return []
-    z = global_z_log(x, pseudocount=pseudocount)
     lo, hi = trim_start, n - trim_stop
     if hi <= lo:
         return []
-    cand = np.flatnonzero((z >= min_z) & (x >= min_obs) & (np.arange(n) >= lo) & (np.arange(n) < hi))
-    return [dict(index=int(i), obs=float(x[i]), z=float(z[i])) for i in cand]
-
-def _indices_from_stalls(stalls):
-    return sorted({int(d["index"]) for d in stalls})
-
-import numpy as np
-import bisect
-from typing import Dict, List
+    # Trim first, then z-score: keeps initiation / termination peaks out of
+    # the null so mid-CDS stalls aren't measured against an inflated std.
+    x_body = x[lo:hi]
+    z_body = global_z_log(x_body, pseudocount=pseudocount)
+    # Return indices where z >= min_z and obs >= min_obs, adjusting index back to original x_codon coordinates
+    cand = np.flatnonzero((z_body >= min_z) & (x_body >= min_obs))
+    # Each candidate is returned as a dict with the original index (adjusted for trimming), observed count, and z-score.
+    return [dict(index=int(i + lo), obs=float(x_body[i]), z=float(z_body[i])) for i in cand]
 
 def consensus_stalls_across_reps(
     stalls_by_exp: Dict[str, dict],
@@ -214,49 +223,65 @@ def stalls_to_long_df(stalls_by_exp: dict, rep_to_group: Dict[str, str] | None =
     """
     Flatten per-replicate stall calls into a long dataframe.
 
-    Columns:
-      group, replicate, transcript, tx_id, gene, pos_codon, obs (optional), z (optional)
+    `stalls_by_exp` is the nested structure produced by `call_stalls`, shaped
+    {replicate_name: {transcript_key: [stall_dict, ...]}}. Each stall_dict has
+    keys {"index", "obs", "z"}; the position key is also looked up under a few
+    aliases (e.g. "idx", "pos", "codon_idx") for upstream flexibility.
+
+    Columns (always present, in this order):
+      group, replicate, gene, tx_id, transcript, pos_codon, obs, z
     """
     rows = []
+
     for rep, tx_map in stalls_by_exp.items():
+        # Get Group for Replicate
         grp = rep_to_group.get(rep) if rep_to_group else None
+
+        # For each transcript in this replicate, extract stall information and append to rows
         for tx_key, stall_list in tx_map.items():
             tx_str, tx_id, gene = parse_key(tx_key)
 
-            # Common case: list of dicts from call_stalls()
-            if isinstance(stall_list, list) and stall_list and isinstance(stall_list[0], dict):
-                # accept any alias for the index key
-                idx_keys = ["index", "idx", "pos", "position", "codon", "codon_idx", "codon_index"]
-                for d in stall_list:
-                    if d is None:
-                        continue
-                    # find the index
-                    idx_key = next((k for k in idx_keys if k in d), None)
-                    if idx_key is None:
-                        continue
-                    rows.append({
-                        "group": grp,
-                        "replicate": rep,
-                        "transcript": tx_str,
-                        "tx_id": tx_id,
-                        "gene": gene,
-                        "pos_codon": int(d[idx_key]),
-                        "obs": float(d.get("obs")) if "obs" in d else None,
-                        "z": float(d.get("z")) if "z" in d else None,
-                    })
-            else:
-                # Fallback: use indices only
-                for p in _indices_from_stalls(stall_list):
-                    rows.append({
-                        "group": grp,
-                        "replicate": rep,
-                        "transcript": tx_str,
-                        "tx_id": tx_id,
-                        "gene": gene,
-                        "pos_codon": int(p),
-                        "obs": None,
-                        "z": None,
-                    })
+            #-----------------------------------
+            # Ignore this, just error safety net
+            if not isinstance(stall_list, list) or (stall_list and not isinstance(stall_list[0], dict)):
+                raise TypeError(
+                    f"stalls_to_long_df expected list[dict] for rep={rep!r}, "
+                    f"tx={tx_key!r}; got {type(stall_list).__name__}"
+                    + (f" of {type(stall_list[0]).__name__}" if stall_list else "")
+                )
+            #-----------------------------------
+
+            # Upstream callers may use different names for the codon position;
+            # try each known alias and use the first one present in the dict.
+            idx_keys = ["index", "idx", "pos", "position", "codon", "codon_idx", "codon_index"]
+            # If stall_list is empty, skip it
+            for d in stall_list:
+                if d is None:
+                    continue
+                idx_key = next((k for k in idx_keys if k in d), None)
+
+
+                #-----------------------------------
+                # Ignore this, just error safety net
+                if idx_key is None:
+                    raise KeyError(
+                        f"stall dict for rep={rep!r}, tx={tx_key!r} has no "
+                        f"recognisable position key. Expected one of {idx_keys}, "
+                        f"got keys: {list(d.keys())}"
+                    )
+                #-----------------------------------
+                
+                
+                rows.append({
+                    "group": grp,
+                    "replicate": rep,
+                    "transcript": tx_str,
+                    "tx_id": tx_id,
+                    "gene": gene,
+                    "pos_codon": int(d[idx_key]),
+                    "obs": float(d.get("obs")) if "obs" in d else None,
+                    "z": float(d.get("z")) if "z" in d else None,
+                })
 
     cols = ["group","replicate","gene","tx_id","transcript","pos_codon","obs","z"]
     return pd.DataFrame(rows)[cols].sort_values(["group","replicate","gene","tx_id","pos_codon"])

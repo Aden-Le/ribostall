@@ -104,10 +104,13 @@ def count_matrix(win_list, aa_order=AA_ORDER, flank_left=10, flank_right=10):
     return counts
 
 def background_aa_freq(transcripts: dict, cds_range: dict, sequence: dict,
-                       aa_order=AA_ORDER):
+                       aa_order=AA_ORDER, *, trim_start: int = 0, trim_stop: int = 0):
     """
     Background AA frequency across callable CDS of the same transcripts.
     Returns a Series over aa_order that sums to 1.
+
+    ``trim_start`` / ``trim_stop`` drop the first / last N codons of each CDS
+    so the background mirrors the elongation body used by ``call_stalls``.
     """
     bg_counts = Counter()
     for tx in transcripts:
@@ -119,7 +122,11 @@ def background_aa_freq(transcripts: dict, cds_range: dict, sequence: dict,
         cds_nt = sequence[tx][start:stop]
         # Gets the amino acid sequence for the CDS (X for unknown, * for stop)
         aa_seq = translate_cds_nt_to_aa(cds_nt)
-        for aa in aa_seq:
+        lo = trim_start
+        hi = len(aa_seq) - trim_stop
+        if hi <= lo:
+            continue
+        for aa in aa_seq[lo:hi]:
             if aa in aa_order:
                 bg_counts[aa] += 1
     # Series of the counts, aligned to aa_order (missing AAs get 0)
@@ -305,6 +312,7 @@ def annotate_stalls_epa(
     codon_cache: dict[str, list[str]] = {}
 
     def _get_codons(tx: str):
+        # Returns a list of codons in order for the given transcript
         cached = codon_cache.get(tx)
         if cached is not None:
             return cached
@@ -322,7 +330,8 @@ def annotate_stalls_epa(
     e_cod_out, p_cod_out, a_cod_out = [], [], []
     e_aa_out, p_aa_out, a_aa_out = [], [], []
     keep = []
-
+    
+    # for each stall site, get the transcript and codon position, compute E/P/A codon and AA based on offsets,
     for row in df.itertuples(index=False):
         tx = getattr(row, "transcript")
         i = int(getattr(row, "pos_codon")) + psite_offset_codons
@@ -364,10 +373,14 @@ def annotate_stalls_epa(
 
 
 def background_codon_freq(transcripts, cds_range: dict, sequence: dict,
-                          codon_order=SENSE_CODONS):
+                          codon_order=SENSE_CODONS, *,
+                          trim_start: int = 0, trim_stop: int = 0):
     """
     Background codon-usage frequency across callable CDS of ``transcripts``.
     Mirrors ``background_aa_freq`` but at codon granularity.
+
+    ``trim_start`` / ``trim_stop`` drop the first / last N codons of each CDS
+    so the background mirrors the elongation body used by ``call_stalls``.
 
     Returns (bg_freq_series, bg_counts_series) both indexed by ``codon_order``.
     """
@@ -379,8 +392,13 @@ def background_codon_freq(transcripts, cds_range: dict, sequence: dict,
             continue
         start, stop = cds_range[key]
         cds_nt = sequence[tx][start:stop].upper().replace("U", "T")
-        for i in range(0, len(cds_nt) - (len(cds_nt) % 3), 3):
-            cod = cds_nt[i:i + 3]
+        n_codons = len(cds_nt) // 3
+        lo = trim_start
+        hi = n_codons - trim_stop
+        if hi <= lo:
+            continue
+        for c_idx in range(lo, hi):
+            cod = cds_nt[3 * c_idx : 3 * c_idx + 3]
             if cod in codon_set:
                 bg_counts[cod] += 1
     counts = pd.Series({c: bg_counts.get(c, 0) for c in codon_order}, dtype=float)

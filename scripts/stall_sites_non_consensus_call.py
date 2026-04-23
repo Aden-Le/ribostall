@@ -101,12 +101,13 @@ def parse_groups(groups_arg):
 def main():
     args = parse_args()
 
+    # Parse the groups argument into a dict of {group: [rep1, rep2, ...]} and also build a reverse mapping of {rep: group}.
     groups = parse_groups(args.groups)
     logging.info(f"Parsed {len(groups)} groups: {list(groups.keys())}")
     rep_to_group = {rep: grp for grp, reps in groups.items() for rep in reps}
 
     # ------------------------------------------------------------------
-    # Load inputs
+    # Load inputs (Loads Coverage & Ribo object)
     # ------------------------------------------------------------------
     logging.info(f"Loading coverage from {args.pickle} ...")
     with gzip.open(args.pickle, "rb") as f:
@@ -116,25 +117,42 @@ def main():
     logging.info(f"Loading ribo object from {args.ribo} ...")
     ribo_object = Ribo(args.ribo, alias=None)
 
+    print(f"\n{'='*60}\nLOADING SEQUENCES\n{'='*60}")
+    logging.info("Looking up CDS ranges ...")
+    cds_range = get_cds_range_lookup(ribo_object)
+    print(f"  CDS ranges: {len(cds_range)} transcripts")
+    logging.info(f"Loading sequences from {args.reference} ...")
+    sequence = get_sequence(ribo_object, args.reference, alias=ribopy.api.alias.apris_human_alias)
+    print(f"  Sequences: {len(sequence)} transcripts")
+    print(f"{'='*60}\n")
+
     missing = [r for rs in groups.values() for r in rs if r not in cov]
     if missing:
         print("Warning: the following replicates are missing from coverage:", ", ".join(missing))
 
     # ------------------------------------------------------------------
-    # Per-group transcript filter + coverage density plot
+    # coverage density plot
     # ------------------------------------------------------------------
+    # Total number of transcripts before filtering (for reporting how many were lost).
     n_before = len(next(iter(cov.values())))
     print(f"\n{'='*60}\nTRANSCRIPT FILTERING (per-group, no intersection)\n{'='*60}")
     print(f"Transcripts before filtering: {n_before}")
     print(f"\n  {'Replicate':<25} {'Group':<15} {'Avg cov/tx (reads/nt)':>22} {'SD':>10} {'Total coverage':>16}")
     print(f"  {'-'*25} {'-'*15} {'-'*22} {'-'*10} {'-'*16}")
+    
+    # For each group
     for group, reps in groups.items():
+        # For each replicate
         for rep in reps:
             tx_dict = cov[rep]
+            # Get a list of mean coverage per transcript
             means = [np.asarray(v, float).mean() for v in tx_dict.values()]
+            # Get the average of all the means
             avg_cov = np.mean(means) if means else 0.0
+            # Get the standard deviation of all the means
             sd_cov = np.std(means) if means else 0.0
             total_cov = sum(np.asarray(v, float).sum() for v in tx_dict.values())
+            # Get the total coverage
             print(f"  {rep:<25} {group:<15} {avg_cov:>22.4f} {sd_cov:>10.4f} {total_cov:>16,.0f}")
     print()
 
@@ -142,25 +160,66 @@ def main():
     plot_coverage_density(cov, groups, args.out_dir)
     logging.info(f"Saved coverage density plot to {args.out_dir}/coverage_density.png")
 
+    # ------------------------------------------------------------------
+    # Transcript filtering (per-group, no intersection)
+    # ------------------------------------------------------------------
+
+    # Returns a dict of {group: set(transcripts)} passing the filter.
     filt_tx_dict = {
         group: set(filter_tx(cov, reps, min_reps=args.tx_min_reps, threshold=args.tx_threshold))
         for group, reps in groups.items()
     }
+
     for group, txs in filt_tx_dict.items():
         print(f"  Per-group filter [{group}]: {len(txs)} transcripts  (lost {n_before - len(txs)})")
 
+    # ------------------------------------------------------------------
+    # Sanity check: every filtered transcript must resolve to both a CDS
+    # range and a FASTA sequence, otherwise annotate_stalls_epa and the
+    # background helpers will silently drop it.
+    # ------------------------------------------------------------------
+    print(f"\n{'='*60}\nSEQUENCE RESOLUTION SANITY CHECK\n{'='*60}")
+    any_missing = False
+    for group, txs in filt_tx_dict.items():
+        missing_cds, missing_seq = [], []
+        for tx in txs:
+            key = tx if tx in cds_range else (tx.split("|")[4] if "|" in tx else tx)
+            if key not in cds_range:
+                missing_cds.append(tx)
+            if tx not in sequence:
+                missing_seq.append(tx)
+        resolved = len(txs) - len(set(missing_cds) | set(missing_seq))
+        print(f"  [{group}] {resolved}/{len(txs)} resolved  "
+              f"(missing CDS range: {len(missing_cds)}, missing sequence: {len(missing_seq)})")
+        if missing_cds:
+            any_missing = True
+            print(f"    first few missing CDS: {missing_cds[:5]}")
+        if missing_seq:
+            any_missing = True
+            print(f"    first few missing seq: {missing_seq[:5]}")
+    if not any_missing:
+        print("  All filtered transcripts resolved to both CDS range and sequence.")
+    print(f"{'='*60}\n")
+
     cov_filt = {}
     for exp, tx_dict in cov.items():
+        # Gets the group for this replicate (BWM or Control)
         grp = rep_to_group.get(exp)
         if grp is None:
             continue
+        # Gets the set of transcripts that passed the filter for this group
         grp_txs = filt_tx_dict[grp]
+        # For each experiment, keep only the transcripts that passed the filter for its group
         cov_filt[exp] = {tx: arr for tx, arr in tx_dict.items() if tx in grp_txs}
+
+
+        
 
     # ------------------------------------------------------------------
     # Codonize + call stalls
     # ------------------------------------------------------------------
     logging.info("Codonizing coverage arrays ...")
+    # Returns the coverage but codonized (i.e. summed in-frame) and filtered to the transcripts that passed the tx filter.
     codon_cov = {
         exp: {tx: codonize_counts_cds(arr) for tx, arr in tx_dict.items()}
         for exp, tx_dict in cov_filt.items()
@@ -170,6 +229,7 @@ def main():
         f"Calling stall sites (min_z={args.min_z}, min_reads={args.min_reads}, "
         f"trim_start={args.trim_start}, trim_stop={args.trim_stop}) ..."
     )
+    # Get the stall sites per transcript per experiment, applying the specified parameters for calling.
     stalls = {
         exp: {
             tx: call_stalls(
@@ -185,6 +245,7 @@ def main():
         for exp, tx_dict in codon_cov.items()
     }
 
+    # Print some summary stats about the stall sites called per experiment. (logging only)
     print(f"\n{'='*60}\nSTALL SITE CALLING\n{'='*60}")
     total_counts = {
         exp: sum(len(idxs) for idxs in tx_stalls.values())
@@ -224,17 +285,8 @@ def main():
     logging.info(f"Long-format dataframe: {len(df)} rows")
 
     # ------------------------------------------------------------------
-    # Load sequences and annotate each stall with E/P/A codon + AA
+    # Annotate each stall with E/P/A codon + AA
     # ------------------------------------------------------------------
-    print(f"\n{'='*60}\nLOADING SEQUENCES\n{'='*60}")
-    logging.info("Looking up CDS ranges ...")
-    cds_range = get_cds_range_lookup(ribo_object)
-    print(f"  CDS ranges: {len(cds_range)} transcripts")
-    logging.info(f"Loading sequences from {args.reference} ...")
-    sequence = get_sequence(ribo_object, args.reference, alias=ribopy.api.alias.apris_human_alias)
-    print(f"  Sequences: {len(sequence)} transcripts")
-    print(f"{'='*60}\n")
-
     logging.info("Annotating stalls with E/P/A codons and amino acids ...")
     df_codon, df_aa = annotate_stalls_epa(
         df, cds_range, sequence,
@@ -267,7 +319,10 @@ def main():
     ):
         rows = []
         for grp, grp_txs in filt_tx_dict.items():
-            bg_freq, bg_counts = helper(grp_txs, cds_range, sequence, alphabet)
+            bg_freq, bg_counts = helper(
+                grp_txs, cds_range, sequence, alphabet,
+                trim_start=args.trim_start, trim_stop=args.trim_stop,
+            )
             print(f"  [{grp}] ({level}) {len(grp_txs)} transcripts, {int(bg_counts.sum())} total {level}s")
             for feat in bg_freq.index:
                 rows.append({

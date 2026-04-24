@@ -18,6 +18,7 @@ from ribostall.sequence import get_cds_range_lookup, get_sequence
 from ribostall.amino_acids import CODON2AA, AA_ORDER
 from ribostall.global_occupancy import (
     iter_trimmed_codons,
+    iter_trimmed_site_counts,
     parse_groups,
     aggregate_to_aa,
 )
@@ -29,6 +30,82 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s  %(levelname)s  %(processName)s  %(message)s",
 )
+
+# Ribosomal sites listed in biological order E -> P -> A (5' -> 3' on mRNA).
+# SITE_SHIFT is the nt offset from the P-site codon to the site codon in the
+# CDS: E is 1 codon upstream (-3), A is 1 codon downstream (+3). Matches
+# annotate_stalls_epa's e_rel=-1, p_rel=0, a_rel=+1.
+SITES = ("E", "P", "A")
+SITE_SHIFT = {"E": -3, "P": 0, "A": 3}
+
+
+def build_codon_df(codon_occ_by_exp, transcriptome_codon_counts, ordered_codons):
+    """Build codon-level occupancy dataframe for one site; codon_occ_by_exp is {exp: {codon: count}}."""
+    total_reads_per_exp = {exp: sum(codon_occ_by_exp[exp].values())
+                           for exp in codon_occ_by_exp}
+    exp_codon_rate_sums = {
+        exp: sum(
+            codon_occ_by_exp[exp].get(c, 0.0) / transcriptome_codon_counts[c]
+            for c in ordered_codons
+            if transcriptome_codon_counts.get(c, 0) > 0
+        )
+        for exp in codon_occ_by_exp
+    }
+
+    rows = []
+    for codon in ordered_codons:
+        bg_count = transcriptome_codon_counts.get(codon, 0)
+        row = OrderedDict()
+        row["Codon"] = codon
+        row["AminoAcid"] = CODON2AA.get(codon.upper(), "X")
+        row["Transcriptome"] = bg_count
+        for exp in sorted(codon_occ_by_exp.keys()):
+            raw = codon_occ_by_exp[exp].get(codon, 0.0)
+            rate = raw / bg_count if bg_count > 0 else 0.0
+            rate_sum = exp_codon_rate_sums.get(exp, 0)
+            proportion = rate / rate_sum if rate_sum > 0 else 0.0
+            total = total_reads_per_exp.get(exp, 0)
+            rpm = (raw / total) * 1e6 if total > 0 else 0.0
+            row[f"{exp}_raw"] = raw
+            row[f"{exp}_rate"] = rate
+            row[f"{exp}_proportion"] = proportion
+            row[f"{exp}_rpm"] = rpm
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def build_aa_df(aa_occ_by_exp, transcriptome_aa_counts):
+    """Build AA-level occupancy dataframe for one site; aa_occ_by_exp is {exp: {aa: count}}."""
+    total_reads_per_exp = {exp: sum(aa_occ_by_exp[exp].values())
+                           for exp in aa_occ_by_exp}
+    exp_aa_rate_sums = {
+        exp: sum(
+            aa_occ_by_exp[exp].get(aa, 0.0) / transcriptome_aa_counts[aa]
+            for aa in AA_ORDER
+            if transcriptome_aa_counts.get(aa, 0) > 0
+        )
+        for exp in aa_occ_by_exp
+    }
+
+    rows = []
+    for aa in AA_ORDER:
+        bg_count = transcriptome_aa_counts.get(aa, 0)
+        row = OrderedDict()
+        row["AminoAcid"] = aa
+        row["Transcriptome"] = bg_count
+        for exp in sorted(aa_occ_by_exp.keys()):
+            raw = aa_occ_by_exp[exp].get(aa, 0.0)
+            rate = raw / bg_count if bg_count > 0 else 0.0
+            rate_sum = exp_aa_rate_sums.get(exp, 0)
+            proportion = rate / rate_sum if rate_sum > 0 else 0.0
+            total = total_reads_per_exp.get(exp, 0)
+            rpm = (raw / total) * 1e6 if total > 0 else 0.0
+            row[f"{exp}_raw"] = raw
+            row[f"{exp}_rate"] = rate
+            row[f"{exp}_proportion"] = proportion
+            row[f"{exp}_rpm"] = rpm
+        rows.append(row)
+    return pd.DataFrame(rows)
 
 
 def parse_args():
@@ -94,129 +171,61 @@ def main():
         for codon, _ in iter_trimmed_codons(cds_seq, args.trim_start, args.trim_stop):
             transcriptome_codon_counts[codon] += 1
 
-    # Creates dictionary of form {exp: {codon: count}} for each experiment
-    codon_occ_by_exp = {exp: defaultdict(float) for exp in coverage_dict}
+    # Creates dictionary of form {exp: {site: {codon: count}}} for each experiment.
+    # Sites ordered E -> P -> A to match biological layout on mRNA (5' -> 3').
+    # For each ribosome whose P-site is at cds_nt_idx, the P-site coverage
+    # window cov[cds_nt_idx:cds_nt_idx+3] is attributed to its E, P, and A
+    # codons (identities shifted by SITE_SHIFT).
+    codon_occ_by_exp = {exp: {site: defaultdict(float) for site in SITES}
+                        for exp in coverage_dict}
 
     # per-experiment counts
-    logging.info("Computing per-experiment codon occupancy ...")
+    logging.info("Computing per-experiment codon occupancy for sites %s ...", SITES)
     for exp, tx_map in coverage_dict.items():
         for tx, cov in tx_map.items():
             # If no coverage skip or if transcript not in CDS range skip
             if cov is None or tx not in cds_range:
                 continue
-            # Gets CDS sequence and iterates over codons, applying trimming if specified
+            # Gets CDS sequence; iter_trimmed_site_counts handles trimming
             start, stop = cds_range[tx]
             cds_seq = sequence[tx][start:stop]
-            # Returns the 3 nt and their index relative to the CDS start (0-based) for each codon in the trimmed CDS sequence
-            for codon, cds_nt_idx in iter_trimmed_codons(cds_seq, args.trim_start, args.trim_stop):
-                cov_start = cds_nt_idx
-                cov_end = cov_start + 3
-                if cov_end <= len(cov):
-                    # Sums the coverage for the 3 nucleotides of the codon
-                    count = cov[cov_start:cov_end].sum()
+            for site in SITES:
+                # Yields (site_codon, count) per P-site position: the site codon
+                # is shifted from the P-site codon by SITE_SHIFT[site], while
+                # the count comes from the P-site coverage window.
+                for site_codon, count in iter_trimmed_site_counts(
+                    cds_seq, cov, args.trim_start, args.trim_stop, SITE_SHIFT[site]
+                ):
                     if count > 0:
-                        codon_occ_by_exp[exp][codon] += float(count)
+                        codon_occ_by_exp[exp][site][site_codon] += count
 
     # =========================================================================
-    # Build codon-level output
+    # Build and save per-site outputs
     # =========================================================================
     # Gets all the codons in the transcriptome
     ordered_codons = sorted(set(transcriptome_codon_counts))
 
-    # Compute total reads per experiment (for RPM normalization)
-    total_reads_per_exp = {}
-    for exp in codon_occ_by_exp:
-        total_reads_per_exp[exp] = sum(codon_occ_by_exp[exp].values())
-
-    # Pre-compute per-experiment rate sums for within-replicate proportion normalization
-    # Sum of (codon occupancy / transcriptome codon count) across all codons for each experiment
-    exp_codon_rate_sums = {}
-    for exp in codon_occ_by_exp:
-        exp_codon_rate_sums[exp] = sum(
-            codon_occ_by_exp[exp].get(c, 0.0) / transcriptome_codon_counts[c]
-            for c in ordered_codons
-        )
-
-    # Codon occupancy CSV: raw counts + per-instance rate + within-rep proportion + RPM
-    # Centered around codons
-    codon_rows = []
-    for codon in ordered_codons:
-        bg_count = transcriptome_codon_counts.get(codon, 0)
-        row = OrderedDict()
-        row["Codon"] = codon
-        row["AminoAcid"] = CODON2AA.get(codon.upper(), "X")
-        row["Transcriptome"] = bg_count
-        for exp in sorted(codon_occ_by_exp.keys()):
-            raw = codon_occ_by_exp[exp].get(codon, 0.0)
-            rate = raw / bg_count if bg_count > 0 else 0.0
-            rate_sum = exp_codon_rate_sums.get(exp, 0)
-            proportion = rate / rate_sum if rate_sum > 0 else 0.0
-            total = total_reads_per_exp.get(exp, 1)
-            rpm = (raw / total) * 1e6 if total > 0 else 0.0
-            row[f"{exp}_raw"] = raw
-            row[f"{exp}_rate"] = rate
-            row[f"{exp}_proportion"] = proportion
-            row[f"{exp}_rpm"] = rpm
-        codon_rows.append(row)
-    df_codon = pd.DataFrame(codon_rows)
-
-    # =========================================================================
-    # Build amino acid-level output
-    # =========================================================================
     logging.info("Aggregating to amino acid level ...")
-    # Aggregate transcriptome codon counts to amino acid counts for background
+    # Aggregate transcriptome codon counts to amino acid counts (shared background)
     transcriptome_aa_counts = aggregate_to_aa(dict(transcriptome_codon_counts))
 
-    # Aggregate each experiment's codon counts to amino acid counts
-    aa_occ_by_exp = {}
-    for exp in codon_occ_by_exp:
-        aa_occ_by_exp[exp] = aggregate_to_aa(dict(codon_occ_by_exp[exp]))
-
-    # Pre-compute per-experiment AA rate sums for within-replicate proportion normalisation
-    exp_aa_rate_sums = {}
-    for exp in aa_occ_by_exp:
-        exp_aa_rate_sums[exp] = sum(
-            aa_occ_by_exp[exp].get(aa, 0.0) / transcriptome_aa_counts[aa]
-            for aa in AA_ORDER
-            if transcriptome_aa_counts.get(aa, 0) > 0
-        )
-
-    # Builds Dataframe with rows for each amino acid
-    aa_rows = []
-    for aa in AA_ORDER:
-        bg_count = transcriptome_aa_counts.get(aa, 0)
-        row = OrderedDict()
-        row["AminoAcid"] = aa
-        row["Transcriptome"] = bg_count
-        for exp in sorted(aa_occ_by_exp.keys()):
-            raw = aa_occ_by_exp[exp].get(aa, 0.0)
-            rate = raw / bg_count if bg_count > 0 else 0.0
-            rate_sum = exp_aa_rate_sums.get(exp, 0)
-            proportion = rate / rate_sum if rate_sum > 0 else 0.0
-            total = total_reads_per_exp.get(exp, 1)
-            rpm = (raw / total) * 1e6 if total > 0 else 0.0
-            row[f"{exp}_raw"] = raw
-            row[f"{exp}_rate"] = rate
-            row[f"{exp}_proportion"] = proportion
-            row[f"{exp}_rpm"] = rpm
-        aa_rows.append(row)
-    df_aa = pd.DataFrame(aa_rows)
-
-    # =========================================================================
-    # Save base CSVs
-    # =========================================================================
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     raw_dir = out_dir / "raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
 
-    codon_path = raw_dir / "codon_occupancy.csv"
-    df_codon.to_csv(codon_path, index=False)
-    logging.info(f"Saved {codon_path}")
+    for site in SITES:
+        codon_site = {exp: codon_occ_by_exp[exp][site] for exp in codon_occ_by_exp}
+        df_codon = build_codon_df(codon_site, transcriptome_codon_counts, ordered_codons)
+        codon_path = raw_dir / f"codon_occupancy_{site}.csv"
+        df_codon.to_csv(codon_path, index=False)
+        logging.info(f"Saved {codon_path}")
 
-    aa_path = raw_dir / "aa_occupancy.csv"
-    df_aa.to_csv(aa_path, index=False)
-    logging.info(f"Saved {aa_path}")
+        aa_site = {exp: aggregate_to_aa(dict(codon_site[exp])) for exp in codon_site}
+        df_aa = build_aa_df(aa_site, transcriptome_aa_counts)
+        aa_path = raw_dir / f"aa_occupancy_{site}.csv"
+        df_aa.to_csv(aa_path, index=False)
+        logging.info(f"Saved {aa_path}")
 
     logging.info("Done.")
 

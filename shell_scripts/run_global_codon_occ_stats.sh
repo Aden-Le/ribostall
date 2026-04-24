@@ -24,7 +24,7 @@ echo "GLOBAL CODON & AMINO ACID OCCUPANCY — STEP 2"
 echo "Statistical tests on base CSVs"
 echo "=============================================="
 echo "Input directory:  $OUT_DIR/raw/"
-echo "Output directory: $OUT_DIR/analysis/"
+echo "Output directory: $OUT_DIR/analysis/{E,P,A}/"
 echo "Groups:           $EXP_GROUPS"
 echo "=============================================="
 
@@ -37,6 +37,6 @@ echo "Running: ${CMD[@]}"
 
 echo ""
 echo "=============================================="
-echo "Done. Results written to $OUT_DIR/analysis/"
+echo "Done. Results written to $OUT_DIR/analysis/{E,P,A}/"
 date
 echo "=============================================="

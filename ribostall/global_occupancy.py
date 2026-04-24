@@ -10,6 +10,8 @@ Four analyses:
 Each test is run independently for codon-level and amino acid-level occupancy.
 """
 
+import logging
+
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -492,6 +494,93 @@ def iter_trimmed_codons(seq: str, trim_start_codons: int, trim_stop_codons: int)
         codon = seq[i:i + 3]
         if len(codon) == 3 and "N" not in codon.upper():
             yield codon, i
+
+
+def iter_trimmed_site_counts(
+    cds_seq: str,
+    cov,
+    trim_start_codons: int,
+    trim_stop_codons: int,
+    site_shift: int,
+):
+    """Yield (site_codon, count) for each P-site codon in the trimmed CDS.
+
+    The mental model
+    ----------------
+    Coverage here is P-site offset: the value at ``cov[X:X+3]`` is the number
+    of reads from ribosomes whose P-site sits on the codon at CDS nt position
+    X. For each such ribosome, three codons matter biologically — the codon
+    in its E-site (1 codon upstream), P-site (on the codon), and A-site (1
+    codon downstream). All three share the SAME read count (the ribosome is
+    one ribosome); only the codon identity differs.
+
+    So this function:
+      * walks over every P-site position ``cds_nt_idx`` in the trimmed CDS,
+      * reads the ribosome count at that position (always
+        ``cov[cds_nt_idx:cds_nt_idx+3]`` — the P-site window),
+      * picks which codon to report using ``site_shift``:
+            -3  -> E-site codon (1 codon upstream of the P-site)
+             0  -> P-site codon (the P-site itself)
+            +3  -> A-site codon (1 codon downstream of the P-site)
+
+    Example: at ``cds_nt_idx = 300`` with ``site_shift = -3`` (E-site),
+    we return the codon at ``cds_seq[297:300]`` together with the read
+    count from ``cov[300:303]``. The caller calls the function three
+    times (once per site) to accumulate E/P/A totals.
+
+    Skips positions where:
+      * the P-site coverage window runs past the end of ``cov``,
+      * the shifted site codon would fall outside the CDS (e.g. E-site at
+        the very first P-site codon has no codon upstream),
+      * the site codon contains an N (ambiguous base).
+    """
+    # CDS and coverage are expected to be the same length (one-to-one
+    # nt mapping). If they disagree something upstream went wrong — warn
+    # once per call and let the per-position bounds checks below silently
+    # skip the positions that can't be read.
+    n_seq = len(cds_seq)
+    n_cov = len(cov)
+    if n_seq != n_cov:
+        logging.warning(
+            "iter_trimmed_site_counts: CDS length (%d) != coverage length (%d); ",
+            n_seq, n_cov,
+        )
+
+    # Convert codon-level trim into nt-level trim. trim_start_codons=10
+    # means "skip the first 10 codons" = skip the first 30 nt, so we start
+    # iterating P-site positions at nt index 30.
+    start_nt = trim_start_codons * 3
+    end_nt = n_seq - (trim_stop_codons * 3)
+    
+    if start_nt >= end_nt:
+        return
+    
+    # Guard against a CDS length that isn't a multiple of 3 by rounding
+    # down to the last full codon boundary inside the trimmed range.
+    last_full = end_nt - ((end_nt - start_nt) % 3)
+
+    for cds_nt_idx in range(start_nt, last_full, 3):
+
+        # Need a full 3-nt P-site window in the coverage array.
+        if cds_nt_idx + 3 > n_cov:
+            continue
+
+        # Compute where the site codon lives in the CDS.
+        site_start = cds_nt_idx + site_shift
+        site_end = site_start + 3
+
+        # The site codon has to be fully inside the CDS.
+        if site_start < 0 or site_end > n_seq:
+            continue
+
+        site_codon = cds_seq[site_start:site_end]
+        # Defensive: guard against length-2 slices at the end of the CDS, and skip codons with ambiguous bases.
+        if len(site_codon) != 3 or "N" in site_codon.upper():
+            continue
+
+        # Count is the ribosome's P-site signal — same value no matter what
+        count = float(cov[cds_nt_idx:cds_nt_idx + 3].sum())
+        yield site_codon, count
 
 
 def parse_groups(groups_arg: str) -> dict:

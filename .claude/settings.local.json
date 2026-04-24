@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(python -c \"from ribostall.amino_acids import annotate_stalls_epa, background_codon_freq, SENSE_CODONS; print\\(len\\(SENSE_CODONS\\), SENSE_CODONS[:5]\\)\")",
-      "Bash(python -m py_compile ribostall/amino_acids.py ribostall/enrichment.py scripts/stall_sites_non_consensus_call.py scripts/stall_sites_non_consensus_stats.py)"
+      "Bash(python -m py_compile ribostall/amino_acids.py ribostall/enrichment.py scripts/stall_sites_non_consensus_call.py scripts/stall_sites_non_consensus_stats.py)",
+      "Read(//c/Users/Aden Le/Documents/GitHub/claude-command-center/agents/bill_nye/**)"
     ]
   }
 }

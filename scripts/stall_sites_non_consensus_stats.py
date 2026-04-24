@@ -199,32 +199,8 @@ def main():
     df_wilcox.to_csv(wilcox_path, index=False)
     df_fisher.to_csv(fisher_path, index=False)
 
-    # Per-replicate frequencies at this level
-    freq_rows = []
-    for rep, site_counts in replicate_counts.items():
-        grp = rep_to_group.get(rep, "")
-        cond = rep_to_condition.get(rep, "")
-        tp = rep_to_timepoint.get(rep, "")
-        for site_name in ("E", "P", "A"):
-            counts = site_counts[site_name]
-            total = int(counts.sum())
-            for feat in counts.index:
-                freq_rows.append({
-                    "replicate": rep,
-                    "group": grp,
-                    "condition": cond,
-                    "timepoint": tp,
-                    "site": site_name,
-                    feature_col: feat,
-                    "stall_count": int(counts[feat]),
-                    "total_stall_sites": total,
-                    "stall_freq": counts[feat] / total if total > 0 else 0.0,
-                })
-    freq_path = out_dir / f"replicate_{suffix}_frequencies.csv"
-    pd.DataFrame(freq_rows).to_csv(freq_path, index=False)
-
     print(f"\nSaved:")
-    for p in (within_path, wilcox_path, fisher_path, freq_path):
+    for p in (within_path, wilcox_path, fisher_path):
         print(f"  {p}")
     logging.info(f"All {level}-level enrichment results saved to {out_dir}")
 

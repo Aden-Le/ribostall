@@ -145,8 +145,9 @@ def between_condition_wilcoxon(
     feature_col: str = "amino_acid",
 ) -> pd.DataFrame:
     """
-    For each AA at each E/P/A site, compare per-replicate stall frequencies
-    between conditions using Wilcoxon rank-sum (Mann-Whitney U).
+    For each feature (amino acid or codon) at each E/P/A site, compare
+    per-replicate stall frequencies between conditions using Wilcoxon
+    rank-sum (Mann-Whitney U).
 
     Parameters
     ----------
@@ -154,11 +155,13 @@ def between_condition_wilcoxon(
         {replicate: {"E": Series, "P": Series, "A": Series}}
     rep_to_condition : dict
         {replicate: "control" or "BWM"}
+    feature_col : str
+        Output column name for the feature level (e.g. "amino_acid" or "codon").
 
     Returns
     -------
     pd.DataFrame with columns:
-        site, amino_acid, median_control, median_BWM, log2_FC, U_stat, p_value, p_adj
+        site, <feature_col>, median_<cond_a>, median_<cond_b>, log2_FC, U_stat, p_value, p_adj
     """
     conditions = sorted(set(rep_to_condition.values()))
     if len(conditions) != 2:
@@ -167,40 +170,37 @@ def between_condition_wilcoxon(
     cond_a, cond_b = conditions  # alphabetical: BWM, control
 
     # Compute per-replicate frequencies
+    # Example: rep_freqs = {
+    #   "control_day_0_rep1": {"E": Series(unit->freq), "P": Series(unit->freq), "A": Series(unit->freq)},
+    #   "control_day_0_rep2": {"E": Series(unit->freq), "P": Series(unit->freq), "A": Series(unit->freq)},
+    #   ...
     rep_freqs = {}
     for rep, site_counts in replicate_counts.items():
         rep_freqs[rep] = {}
         for site in ("E", "P", "A"):
-            # Gets each AA counts for each site
+            # Gets each unit's counts for this site
             counts = site_counts[site]
-            # Gets the total counts of all AAs at this site in this replicate
+            # Gets the total counts of all units at this site in this replicate
             total = counts.sum()
-            # Converts them into frequencies for each AA at this site in this replicate
+            # Converts them into frequencies for each unit at this site in this replicate
             rep_freqs[rep][site] = counts / total if total > 0 else counts * 0.0
 
-    # Get amino acid list from first replicate
+    # Get unit list from first replicate
     first_rep = next(iter(replicate_counts))
-    aa_list = list(replicate_counts[first_rep]["E"].index)
+    unit_list = list(replicate_counts[first_rep]["E"].index)
 
     rows = []
     for site in ("E", "P", "A"):
-        for aa in aa_list:
-            # Get frequencies for this AA at this site across replicates in each condition
-            freqs_a = [rep_freqs[r][site][aa] for r in rep_freqs if rep_to_condition.get(r) == cond_a]
-            freqs_b = [rep_freqs[r][site][aa] for r in rep_freqs if rep_to_condition.get(r) == cond_b]
+        for unit in unit_list:
+            # Get frequencies for this unit at this site across replicates in each condition
+            freqs_a = [rep_freqs[r][site][unit] for r in rep_freqs if rep_to_condition.get(r) == cond_a]
+            freqs_b = [rep_freqs[r][site][unit] for r in rep_freqs if rep_to_condition.get(r) == cond_b]
             # Convert to numpy arrays for median and stats functions
             freqs_a = np.array(freqs_a, dtype=float)
             freqs_b = np.array(freqs_b, dtype=float)
-            # Get the median frequency for this AA at this site in each condition for fold change calculation
+            # Get the median frequency for this unit at this site in each condition for fold change calculation
             med_a = float(np.median(freqs_a))
             med_b = float(np.median(freqs_b))
-
-            # log2 fold change: cond_b / cond_a  (control / BWM if alphabetical)
-            # Use BWM / control for biological interpretation
-            if med_a > 0 and med_b > 0:
-                log2_fc = np.log2(med_a / med_b)  # BWM / control
-            else:
-                log2_fc = 0.0
 
             if len(freqs_a) >= 2 and len(freqs_b) >= 2:
                 try:
@@ -210,9 +210,15 @@ def between_condition_wilcoxon(
             else:
                 u_stat, p_val = np.nan, 1.0
 
+            # log2 fold change: cond_a / cond_b (e.g. BWM / control if alphabetical)
+            if med_a > 0 and med_b > 0:
+                log2_fc = np.log2(med_a / med_b)
+            else:
+                log2_fc = 0.0
+
             rows.append({
                 "site": site,
-                feature_col: aa,
+                feature_col: unit,
                 f"median_{cond_a}": med_a,
                 f"median_{cond_b}": med_b,
                 "log2_FC": log2_fc,
@@ -239,7 +245,7 @@ def per_timepoint_fisher(
 ) -> pd.DataFrame:
     """
     For each timepoint, pool 2 reps per condition and run Fisher's exact test
-    on each AA at each E/P/A site.
+    on each unit (amino acid or codon) at each E/P/A site.
 
     NOTE: pooling 2 biological replicates is pseudoreplication. P-values should
     be interpreted cautiously.
@@ -252,20 +258,22 @@ def per_timepoint_fisher(
         {replicate: "control" or "BWM"}
     rep_to_timepoint : dict
         {replicate: "day_0", "day_5", or "day_10"}
+    feature_col : str
+        Output column name for the feature level (e.g. "amino_acid" or "codon").
 
     Returns
     -------
     pd.DataFrame with columns:
-        timepoint, site, amino_acid, control_count, control_total,
-        BWM_count, BWM_total, odds_ratio, p_value, p_adj
+        timepoint, site, <feature_col>, <cond>_count, <cond>_total,
+        odds_ratio, p_value, p_adj
     """
     # All the conditions and timepoints present in the data, sorted for consistent output
-    conditions = sorted(set(rep_to_condition.values()))
-    timepoints = sorted(set(rep_to_timepoint.values()))
+    conditions = sorted(set(rep_to_condition.values())) # e.g. ["BWM", "control"]
+    timepoints = sorted(set(rep_to_timepoint.values())) # e.g. ["day_0", "day_5", "day_10"]
 
-    # Gets the AA list using the first replicate (assumes all replicates have the same AA index)
+    # Gets the unit list using the first replicate (assumes all replicates have the same index)
     first_rep = next(iter(replicate_counts))
-    aa_list = list(replicate_counts[first_rep]["E"].index)
+    unit_list = list(replicate_counts[first_rep]["E"].index)
 
     rows = []
     # For each time point, day0, day5, day10
@@ -280,7 +288,7 @@ def per_timepoint_fisher(
                     # if this replicate doesn't match the current condition and timepoint, skip it
                     if rep_to_condition.get(rep) != cond or rep_to_timepoint.get(rep) != tp:
                         continue
-                    # The counts of all AAs at this site in this replicate
+                    # The counts of all units at this site in this replicate
                     counts = replicate_counts[rep][site]
                     if pooled is None:
                         pooled = counts.copy()
@@ -292,24 +300,24 @@ def per_timepoint_fisher(
             # Check both conditions have data
             if any(v is None for v in pooled_by_cond.values()):
                 continue
-            
-            # For each amino acid, build the 2x2 contingency table and run Fisher's exact test
-            for aa in aa_list:
-                # 2x2 table: [[cond_a_AA, cond_a_notAA], [cond_b_AA, cond_b_notAA]]
+
+            # For each unit, build the 2x2 contingency table and run Fisher's exact test
+            for unit in unit_list:
+                # 2x2 table: [[cond_a_unit, cond_a_notUnit], [cond_b_unit, cond_b_notUnit]]
                 counts_list = []
                 totals = {}
                 for cond in conditions:
-                    # The count of this AA at this site in this condition (pooled across replicates)
-                    aa_count = int(pooled_by_cond[cond].get(aa, 0))
-                    # The total count of all AAs at this site in this condition (pooled across replicates)
+                    # The count of this unit at this site in this condition (pooled across replicates)
+                    unit_count = int(pooled_by_cond[cond].get(unit, 0))
+                    # The total count of all units at this site in this condition (pooled across replicates)
                     total = int(pooled_by_cond[cond].sum())
-                    # The count of all other AAs at this site in this condition is total - aa_count
-                    not_aa = total - aa_count
+                    # The count of all other units at this site in this condition is total - unit_count
+                    not_unit = total - unit_count
                     # appends the counts for this condition to the contingency table list
-                    counts_list.append([aa_count, not_aa])
+                    counts_list.append([unit_count, not_unit])
                     totals[cond] = total
 
-                # Table Looks like this: [[BWM_AA, BWM_notAA], [control_AA, control_notAA]]
+                # Table looks like this: [[BWM_unit, BWM_notUnit], [control_unit, control_notUnit]]
                 table = np.array(counts_list)
                 try:
                     odds_ratio, p_val = stats.fisher_exact(table, alternative="two-sided")
@@ -319,12 +327,12 @@ def per_timepoint_fisher(
                 row = {
                     "timepoint": tp,
                     "site": site,
-                    feature_col: aa,
+                    feature_col: unit,
                     "odds_ratio": odds_ratio,
                     "p_value": p_val,
                 }
                 for cond in conditions:
-                    row[f"{cond}_count"] = int(pooled_by_cond[cond].get(aa, 0))
+                    row[f"{cond}_count"] = int(pooled_by_cond[cond].get(unit, 0))
                     row[f"{cond}_total"] = totals[cond]
                 rows.append(row)
 

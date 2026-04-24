@@ -17,6 +17,7 @@ EXP_GROUPS='control_day_0:control_day0_rep2,control_day0_rep3;control_day_5:cont
 # Directory containing stall_sites_{codon,aa}.csv and
 # per_group_background_{codon,aa}.csv from run_enrichment.sh
 OUT_ENRICHMENT="./results/stall_sites/enrichment"
+OUT_DIR="./results/stall_sites/enrichment/analysis_stats"
 
 # ===============================================
 
@@ -36,7 +37,7 @@ for LEVEL in aa codon; do
     --stall-sites "$OUT_ENRICHMENT/stall_sites_${LEVEL}.csv" \
     --background "$OUT_ENRICHMENT/per_group_background_${LEVEL}.csv" \
     --groups "$EXP_GROUPS" \
-    --out-dir "$OUT_ENRICHMENT"
+    --out-dir "$OUT_DIR"
 done
 
 echo ""

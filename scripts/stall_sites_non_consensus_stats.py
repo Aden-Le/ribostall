@@ -36,6 +36,8 @@ from ribostall.amino_acids import AA_ORDER, SENSE_CODONS
 from ribostall.enrichment import (
     within_condition_enrichment,
     between_condition_wilcoxon,
+    between_timepoint_wilcoxon,
+    between_timepoint_fisher_within_condition,
     per_timepoint_fisher,
 )
 
@@ -177,9 +179,52 @@ def main():
     print(f"  Tests: {len(df_wilcox)}  |  Significant (p_adj<0.05): {n_sig}")
 
     # --------------------------------------------------------------
-    # Analysis 3: Per-timepoint Fisher's
+    # Analysis 3: Between-timepoint (Wilcoxon pooled across conditions
+    #             + Fisher's within each condition)
     # --------------------------------------------------------------
-    print(f"\n{'='*60}\nANALYSIS 3: PER-TIMEPOINT FISHER'S EXACT\n"
+    print(f"\n{'='*60}\nANALYSIS 3: BETWEEN-TIMEPOINT\n{'='*60}")
+
+    # Mirrors the three pairwise day comparisons in global_codon_occ_stats.py.
+    # Each pair runs (a) Wilcoxon pooled across conditions and (b) Fisher's
+    # within each condition (pooled replicates).
+    timepoint_pairs = [
+        ("day_10", "day_0", "d10_vs_d0"),
+        ("day_10", "day_5", "d10_vs_d5"),
+        ("day_5",  "day_0", "d5_vs_d0"),
+    ]
+
+    timepoint_results = {}  # tag -> (df_wilcox_tp, df_fisher_tp)
+    for time_a, time_b, tag in timepoint_pairs:
+        print(f"\n--- {time_a} vs {time_b} ---")
+
+        # 3a/c/e: Wilcoxon (pooled across conditions, n=4 vs n=4)
+        print(f"  Wilcoxon (pooled across conditions, n=4 vs n=4)")
+        df_w_tp = between_timepoint_wilcoxon(
+            replicate_counts, rep_to_timepoint,
+            feature_col=feature_col, time_a=time_a, time_b=time_b,
+        )
+        n_sig = (df_w_tp["p_adj"] < 0.05).sum() if not df_w_tp.empty else 0
+        print(f"    Tests: {len(df_w_tp)}  |  Significant (p_adj<0.05): {n_sig}")
+
+        # 3b/d/f: Fisher's within each condition (pool replicates)
+        print(f"  Fisher's exact (within each condition, pooled replicates)")
+        print(f"  WARNING: Pooling biological replicates is pseudoreplication.")
+        print(f"           P-values are anti-conservative and should be interpreted cautiously.")
+        df_f_tp = between_timepoint_fisher_within_condition(
+            replicate_counts, rep_to_condition, rep_to_timepoint,
+            feature_col=feature_col, time_a=time_a, time_b=time_b,
+        )
+        for cond in sorted(df_f_tp["condition"].unique()) if not df_f_tp.empty else []:
+            cond_df = df_f_tp[df_f_tp["condition"] == cond]
+            n_sig_c = (cond_df["p_adj"] < 0.05).sum()
+            print(f"    [{cond}] {len(cond_df)} tests, {n_sig_c} significant")
+
+        timepoint_results[tag] = (df_w_tp, df_f_tp)
+
+    # --------------------------------------------------------------
+    # Analysis 4: Per-timepoint Fisher's
+    # --------------------------------------------------------------
+    print(f"\n{'='*60}\nANALYSIS 4: PER-TIMEPOINT FISHER'S EXACT\n"
           f"  NOTE: pooling replicates is pseudoreplication — interpret cautiously\n{'='*60}")
     df_fisher = per_timepoint_fisher(
         replicate_counts, rep_to_condition, rep_to_timepoint, feature_col=feature_col,
@@ -199,8 +244,16 @@ def main():
     df_wilcox.to_csv(wilcox_path, index=False)
     df_fisher.to_csv(fisher_path, index=False)
 
+    timepoint_paths = []
+    for tag, (df_w_tp, df_f_tp) in timepoint_results.items():
+        w_path = out_dir / f"between_timepoint_wilcoxon_{tag}_{suffix}.csv"
+        f_path = out_dir / f"timepoint_fisher_within_condition_{tag}_{suffix}.csv"
+        df_w_tp.to_csv(w_path, index=False)
+        df_f_tp.to_csv(f_path, index=False)
+        timepoint_paths.extend([w_path, f_path])
+
     print(f"\nSaved:")
-    for p in (within_path, wilcox_path, fisher_path):
+    for p in (within_path, wilcox_path, *timepoint_paths, fisher_path):
         print(f"  {p}")
     logging.info(f"All {level}-level enrichment results saved to {out_dir}")
 

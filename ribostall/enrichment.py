@@ -1,10 +1,11 @@
 """
 Statistical enrichment tests for amino acid composition at ribosome stall sites.
 
-Three analyses:
+Four analyses:
   1. Within-condition enrichment (binomial test vs genome background)
   2. Between-condition overall (Wilcoxon rank-sum, n=6 vs n=6)
-  3. Between-condition per-timepoint (Fisher's exact test)
+  3. Between-timepoint (Wilcoxon pooled across conditions + Fisher's within condition)
+  4. Between-condition per-timepoint (Fisher's exact test)
 
 Each E/P/A site is tested INDEPENDENTLY — never accumulated across sites.
 """
@@ -234,7 +235,220 @@ def between_condition_wilcoxon(
 
 
 # ---------------------------------------------------------------------------
-# Analysis 3: Per-timepoint between-condition (Fisher's exact test)
+# Analysis 3a: Between-timepoint Wilcoxon (pooled across conditions)
+# ---------------------------------------------------------------------------
+def between_timepoint_wilcoxon(
+    replicate_counts: dict,
+    rep_to_timepoint: dict,
+    *,
+    feature_col: str = "amino_acid",
+    time_a: str = "day_10",
+    time_b: str = "day_0",
+) -> pd.DataFrame:
+    """
+    For each (site, feature), compare per-replicate stall frequencies between
+    two timepoints, pooling across conditions. Day_a reps (n=4) vs Day_b reps
+    (n=4) when both BWM and control replicates exist at each timepoint.
+
+    Parameters
+    ----------
+    replicate_counts : dict
+        {replicate: {"E": Series, "P": Series, "A": Series}}
+    rep_to_timepoint : dict
+        {replicate: "day_0", "day_5", or "day_10"}
+    feature_col : str
+        Output column name for the feature level (e.g. "amino_acid" or "codon").
+    time_a, time_b : str
+        The two timepoints to compare.
+
+    Returns
+    -------
+    pd.DataFrame with columns:
+        site, <feature_col>, median_<time_a>, median_<time_b>, log2_FC,
+        U_stat, p_value, p_adj
+    """
+    # Compute per-replicate frequencies (same logic as between_condition_wilcoxon)
+    # Example: rep_freqs = {
+    #   "BWM_day_0_rep1": {"E": Series(unit->freq), "P": Series(unit->freq), "A": Series(unit->freq)},
+    #   ...
+    # }
+
+    # Turns raw counts into frequencies for each replicate and site
+    rep_freqs = {}
+    for rep, site_counts in replicate_counts.items():
+        rep_freqs[rep] = {}
+        for site in ("E", "P", "A"):
+            counts = site_counts[site]
+            total = counts.sum()
+            rep_freqs[rep][site] = counts / total if total > 0 else counts * 0.0
+
+    # Get unit list from first replicate
+    first_rep = next(iter(replicate_counts))
+    unit_list = list(replicate_counts[first_rep]["E"].index)
+
+    rows = []
+    for site in ("E", "P", "A"):
+        for unit in unit_list:
+            # All reps with timepoint == time_a, pooled across conditions (n=4 typically)
+            freqs_a = np.array(
+                [rep_freqs[r][site][unit] for r in rep_freqs if rep_to_timepoint.get(r) == time_a],
+                dtype=float,
+            )
+            # All reps with timepoint == time_b, pooled across conditions (n=4 typically)
+            freqs_b = np.array(
+                [rep_freqs[r][site][unit] for r in rep_freqs if rep_to_timepoint.get(r) == time_b],
+                dtype=float,
+            )
+
+            med_a = float(np.median(freqs_a)) if len(freqs_a) > 0 else 0.0
+            med_b = float(np.median(freqs_b)) if len(freqs_b) > 0 else 0.0
+
+            if len(freqs_a) >= 2 and len(freqs_b) >= 2:
+                try:
+                    u_stat, p_val = stats.mannwhitneyu(freqs_a, freqs_b, alternative="two-sided")
+                except ValueError:
+                    u_stat, p_val = np.nan, 1.0
+            else:
+                u_stat, p_val = np.nan, 1.0
+
+            # log2 fold change: time_a / time_b (e.g. day_10 / day_0)
+            if med_a > 0 and med_b > 0:
+                log2_fc = np.log2(med_a / med_b)
+            else:
+                log2_fc = 0.0
+
+            rows.append({
+                "site": site,
+                feature_col: unit,
+                f"median_{time_a}": med_a,
+                f"median_{time_b}": med_b,
+                "log2_FC": log2_fc,
+                "U_stat": u_stat,
+                "p_value": p_val,
+            })
+
+    df = pd.DataFrame(rows)
+    if df.empty:
+        return df
+    df["p_adj"] = bh_fdr(df["p_value"].values)
+    return df.sort_values(["site", "p_adj"])
+
+
+# ---------------------------------------------------------------------------
+# Analysis 3b: Between-timepoint Fisher's (within each condition)
+# ---------------------------------------------------------------------------
+def between_timepoint_fisher_within_condition(
+    replicate_counts: dict,
+    rep_to_condition: dict,
+    rep_to_timepoint: dict,
+    *,
+    feature_col: str = "amino_acid",
+    time_a: str = "day_10",
+    time_b: str = "day_0",
+) -> pd.DataFrame:
+    """
+    Within each condition × site, pool replicates at time_a and time_b and
+    run Fisher's exact test on each unit (amino acid or codon).
+
+    NOTE: pooling biological replicates is pseudoreplication. P-values should
+    be interpreted cautiously.
+
+    Parameters
+    ----------
+    replicate_counts : dict
+        {replicate: {"E": Series, "P": Series, "A": Series}}
+    rep_to_condition : dict
+        {replicate: "control" or "BWM"}
+    rep_to_timepoint : dict
+        {replicate: "day_0", "day_5", or "day_10"}
+    feature_col : str
+        Output column name for the feature level (e.g. "amino_acid" or "codon").
+    time_a, time_b : str
+        The two timepoints to compare.
+
+    Returns
+    -------
+    pd.DataFrame with columns:
+        condition, site, <feature_col>, <time_a>_count, <time_a>_total,
+        <time_b>_count, <time_b>_total, odds_ratio, p_value, p_adj
+    """
+    # All conditions present, sorted alphabetically (e.g. ["BWM", "control"])
+    conditions = sorted(set(rep_to_condition.values()))
+
+    # Unit list from first replicate
+    first_rep = next(iter(replicate_counts))
+    unit_list = list(replicate_counts[first_rep]["E"].index)
+
+    rows = []
+    # For each condition (BWM, control)
+    for cond in conditions:
+        for site in ("E", "P", "A"):
+            # Pool counts across reps at this (condition, site) for each timepoint
+            pooled_by_tp = {}
+            for tp in (time_a, time_b):
+                pooled = None
+                for rep in replicate_counts:
+                    if rep_to_condition.get(rep) != cond or rep_to_timepoint.get(rep) != tp:
+                        continue
+                    counts = replicate_counts[rep][site]
+                    if pooled is None:
+                        pooled = counts.copy()
+                    else:
+                        pooled = pooled.add(counts, fill_value=0)
+                pooled_by_tp[tp] = pooled
+
+            # Skip if either timepoint has no replicates for this condition
+            if any(v is None for v in pooled_by_tp.values()):
+                continue
+
+            total_a = int(pooled_by_tp[time_a].sum())
+            total_b = int(pooled_by_tp[time_b].sum())
+            if total_a == 0 or total_b == 0:
+                continue
+
+            for unit in unit_list:
+                count_a = int(pooled_by_tp[time_a].get(unit, 0))
+                count_b = int(pooled_by_tp[time_b].get(unit, 0))
+                not_a = total_a - count_a
+                not_b = total_b - count_b
+
+                # 2x2 table: [[time_a_unit, time_a_notUnit], [time_b_unit, time_b_notUnit]]
+                table = np.array([[count_a, not_a], [count_b, not_b]])
+                try:
+                    odds_ratio, p_val = stats.fisher_exact(table, alternative="two-sided")
+                except ValueError:
+                    odds_ratio, p_val = np.nan, 1.0
+
+                rows.append({
+                    "condition": cond,
+                    "site": site,
+                    feature_col: unit,
+                    f"{time_a}_count": count_a,
+                    f"{time_a}_total": total_a,
+                    f"{time_b}_count": count_b,
+                    f"{time_b}_total": total_b,
+                    "odds_ratio": odds_ratio,
+                    "p_value": p_val,
+                })
+
+    df = pd.DataFrame(rows)
+    if df.empty:
+        return df
+
+    # BH-FDR correction per condition (lumping all 3 sites together within a condition),
+    # matching the global-occupancy analogue.
+    dfs = []
+    for cond in conditions:
+        mask = df["condition"] == cond
+        sub = df.loc[mask].copy()
+        sub["p_adj"] = bh_fdr(sub["p_value"].values)
+        dfs.append(sub)
+    df = pd.concat(dfs, ignore_index=True)
+    return df.sort_values(["condition", "site", "p_adj"])
+
+
+# ---------------------------------------------------------------------------
+# Analysis 4: Per-timepoint between-condition (Fisher's exact test)
 # ---------------------------------------------------------------------------
 def per_timepoint_fisher(
     replicate_counts: dict,

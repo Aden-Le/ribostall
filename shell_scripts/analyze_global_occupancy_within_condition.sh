@@ -10,7 +10,7 @@ export PATH="$PATH:/c/Program Files/R/R-4.4.2/bin"
 # ============== CONFIG: edit these ==============
 
 # Input directory containing the binomial CSVs
-INPUT_DIR="./results/global_occupancy/analysis"
+INPUT_DIR="./results/global_occupancy/analysis_corrected"
 
 # Output directory for plots
 OUTPUT_DIR="./results/global_occupancy/plots/within_condition"

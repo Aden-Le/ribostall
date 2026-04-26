@@ -73,6 +73,7 @@ args <- parser$parse_args()
 # ============================================================
 
 PAL <- c("Enriched" = "#2E86AB", "Depleted" = "#E84855")
+SITE_LABELS <- c("E" = "E-site", "P" = "P-site", "A" = "A-site")
 
 level_label <- ifelse(args$level == "aa", "Amino Acid", "Codon")
 
@@ -83,7 +84,8 @@ level_label <- ifelse(args$level == "aa", "Amino Acid", "Codon")
 cat("Reading input:", args$input, "\n")
 data <- read.csv(args$input, stringsAsFactors = FALSE)
 
-cat("  Rows:", nrow(data), "| Groups:", length(unique(data$group)), "\n")
+cat("  Rows:", nrow(data), "| Groups:", length(unique(data$group)),
+    "| Sites:", paste(unique(data$site), collapse = ", "), "\n")
 
 data <- data |>
   mutate(
@@ -276,36 +278,39 @@ panel_h <- 5
 cat("\nGenerating individual plots...\n")
 # Gets the conditions
 groups <- sort(unique(data$group))
+sites  <- c("E", "P", "A")
 plot_count <- 0
 
 # For unweighted, weighted, or both
 for (etype in names(enrichment_configs)) {
   # The data
   cfg <- enrichment_configs[[etype]]
-  
-  # For each condition
+
+  # For each condition × site
   for (grp in groups) {
-    plot_data <- data |> filter(group == grp)
+    for (st in sites) {
+      plot_data <- data |> filter(group == grp, site == st)
 
-    day_str    <- gsub(".*_(day)", "\\1", grp)
-    day_label  <- gsub("day ", "Day ", gsub("_", " ", day_str))
-    cond_label <- gsub("_day.*", "", grp)
-    title <- paste0(level_label, " Occupancy ", cfg$label,
-                    " | ", cond_label, " ", day_label)
+      day_str    <- gsub(".*_(day)", "\\1", grp)
+      day_label  <- gsub("day ", "Day ", gsub("_", " ", day_str))
+      cond_label <- gsub("_day.*", "", grp)
+      title <- paste0(SITE_LABELS[st], " ", level_label, " Occupancy ",
+                      cfg$label, " | ", cond_label, " ", day_label)
 
-    p <- make_barplot(plot_data,
-                      x_col       = cfg$x_col,
-                      y_lim       = cfg$y_lim,
-                      y_breaks    = cfg$y_breaks,
-                      title       = title,
-                      y_label     = cfg$y_label,
-                      show_legend = TRUE)
+      p <- make_barplot(plot_data,
+                        x_col       = cfg$x_col,
+                        y_lim       = cfg$y_lim,
+                        y_breaks    = cfg$y_breaks,
+                        title       = title,
+                        y_label     = cfg$y_label,
+                        show_legend = TRUE)
 
-    filepath <- file.path(args$outdir, "individual", etype,
-                          paste0(grp, "_barplot"))
-    save_plot(p, filepath, width = panel_w, height = panel_h + 1,
-              format = args$format, dpi = args$dpi)
-    plot_count <- plot_count + 1
+      filepath <- file.path(args$outdir, "individual", etype,
+                            paste0(grp, "_", st, "_barplot"))
+      save_plot(p, filepath, width = panel_w, height = panel_h + 1,
+                format = args$format, dpi = args$dpi)
+      plot_count <- plot_count + 1
+    }
   }
 }
 
@@ -323,37 +328,40 @@ conditions      <- sort(unique(data$condition))
 days            <- unique(data$timepoint)[order(as.numeric(gsub("\\D", "", unique(data$timepoint))))]
 composite_count <- 0
 
-# For Unweighted or Weighted 
+# For Unweighted or Weighted
 for (etype in names(enrichment_configs)) {
   # Get data
   cfg <- enrichment_configs[[etype]]
-  
-  # For each condition
+
+  # For each condition: build a (rows = days) × (cols = sites) grid
   for (cond in conditions) {
     plot_list <- list()
-    
-    # For each day
+
+    # For each day × site (row-major: day outer, site inner → cols = sites)
     for (d in days) {
-      # Ex: BWM_day_0 
       grp       <- paste0(cond, "_", d)
-      plot_data <- data |> filter(group == grp)
       day_label <- gsub("day ", "Day ", gsub("_", " ", d))
-      
-      # each plot will have the identifier, 1, 2, 3
-      plot_list[[length(plot_list) + 1]] <- make_barplot(
-        plot_data,
-        x_col       = cfg$x_col,
-        y_lim       = cfg$y_lim,
-        y_breaks    = cfg$y_breaks,
-        title       = day_label,
-        y_label     = cfg$y_label,
-        show_legend = FALSE
-      )
+
+      for (st in sites) {
+        plot_data <- data |> filter(group == grp, site == st)
+        panel_title <- paste0(SITE_LABELS[st], " | ", day_label)
+
+        plot_list[[length(plot_list) + 1]] <- make_barplot(
+          plot_data,
+          x_col       = cfg$x_col,
+          y_lim       = cfg$y_lim,
+          y_breaks    = cfg$y_breaks,
+          title       = panel_title,
+          y_label     = cfg$y_label,
+          show_legend = FALSE
+        )
+      }
     }
 
-    n_days <- length(days)
-    # 3 Columns 1 Day composite
-    composite <- wrap_plots(plot_list, ncol = n_days, nrow = 1) +
+    n_days  <- length(days)
+    n_sites <- length(sites)
+    # rows = days, cols = sites
+    composite <- wrap_plots(plot_list, ncol = n_sites, nrow = n_days) +
       plot_layout(guides = "collect") +
       plot_annotation(
         title = paste0(cond, ": ", cfg$label, " Global ",
@@ -368,7 +376,8 @@ for (etype in names(enrichment_configs)) {
     filepath <- file.path(args$outdir, "composite", etype,
                           paste0(cond, "_barplot_grid"))
     save_plot(composite, filepath,
-              width = panel_w * n_days, height = panel_h + 1.5,
+              width  = panel_w * n_sites,
+              height = (panel_h + 1) * n_days,
               format = args$format, dpi = args$dpi)
     composite_count <- composite_count + 1
   }
@@ -387,32 +396,36 @@ for (etype in names(enrichment_configs)) {
   # Gets the data
   cfg <- enrichment_configs[[etype]]
 
-  # For each day
+  # For each day: build a (rows = conditions) × (cols = sites) grid
   for (d in days) {
     plot_list <- list()
-    
-    # For each condition
-    for (cond in conditions) {
-      # BWM_day_0
-      grp       <- paste0(cond, "_", d)
-      plot_data <- data |> filter(group == grp)
 
-      plot_list[[length(plot_list) + 1]] <- make_barplot(
-        plot_data,
-        x_col       = cfg$x_col,
-        y_lim       = cfg$y_lim,
-        y_breaks    = cfg$y_breaks,
-        title       = cond,
-        y_label     = cfg$y_label,
-        show_legend = FALSE
-      )
+    # For each condition × site (row-major: condition outer, site inner)
+    for (cond in conditions) {
+      grp <- paste0(cond, "_", d)
+
+      for (st in sites) {
+        plot_data <- data |> filter(group == grp, site == st)
+        panel_title <- paste0(SITE_LABELS[st], " | ", cond)
+
+        plot_list[[length(plot_list) + 1]] <- make_barplot(
+          plot_data,
+          x_col       = cfg$x_col,
+          y_lim       = cfg$y_lim,
+          y_breaks    = cfg$y_breaks,
+          title       = panel_title,
+          y_label     = cfg$y_label,
+          show_legend = FALSE
+        )
+      }
     }
 
     day_label <- gsub("day ", "Day ", gsub("_", " ", d))
     n_conds   <- length(conditions)
-    
-    # Composite by 2 columns
-    composite <- wrap_plots(plot_list, ncol = n_conds, nrow = 1) +
+    n_sites   <- length(sites)
+
+    # rows = conditions, cols = sites
+    composite <- wrap_plots(plot_list, ncol = n_sites, nrow = n_conds) +
       plot_layout(guides = "collect") +
       plot_annotation(
         title = paste0(day_label, ": ", cfg$label, " Global ",
@@ -427,7 +440,8 @@ for (etype in names(enrichment_configs)) {
     filepath <- file.path(args$outdir, "composite", etype,
                           paste0(d, "_barplot_grid"))
     save_plot(composite, filepath,
-              width = panel_w * n_conds, height = panel_h + 1.5,
+              width  = panel_w * n_sites,
+              height = (panel_h + 1) * n_conds,
               format = args$format, dpi = args$dpi)
     composite_day_count <- composite_day_count + 1
   }
@@ -446,28 +460,36 @@ for (etype in names(enrichment_configs)) {
   cfg <- enrichment_configs[[etype]]
   plot_list <- list()
 
+  # rows = group (cond \u00d7 day), cols = sites
   for (cond in conditions) {
     for (d in days) {
       grp       <- paste0(cond, "_", d)
-      plot_data <- data |> filter(group == grp)
       day_label <- gsub("day ", "Day ", gsub("_", " ", d))
 
-      plot_list[[length(plot_list) + 1]] <- make_barplot(
-        plot_data,
-        x_col       = cfg$x_col,
-        y_lim       = cfg$y_lim,
-        y_breaks    = cfg$y_breaks,
-        title       = paste0(cond, " \u2013 ", day_label),
-        y_label     = cfg$y_label,
-        show_legend = FALSE
-      )
+      for (st in sites) {
+        plot_data <- data |> filter(group == grp, site == st)
+
+        plot_list[[length(plot_list) + 1]] <- make_barplot(
+          plot_data,
+          x_col       = cfg$x_col,
+          y_lim       = cfg$y_lim,
+          y_breaks    = cfg$y_breaks,
+          title       = paste0(SITE_LABELS[st], " | ", cond, " \u2013 ", day_label),
+          y_label     = cfg$y_label,
+          show_legend = FALSE
+        )
+      }
     }
   }
 
-  mega <- wrap_plots(plot_list, ncol = length(days), nrow = length(conditions)) +
+  n_groups <- length(conditions) * length(days)
+  n_sites  <- length(sites)
+
+  mega <- wrap_plots(plot_list, ncol = n_sites, nrow = n_groups) +
     plot_layout(guides = "collect") +
     plot_annotation(
-      title = paste0(cfg$label, " Global ", level_label, " Occupancy Enrichment \u2013 All Groups"),
+      title = paste0(cfg$label, " Global ", level_label,
+                     " Occupancy Enrichment \u2013 All Groups"),
       theme = theme(
         plot.title = element_text(hjust = 0.5, size = 20, face = "bold")
       )
@@ -477,8 +499,8 @@ for (etype in names(enrichment_configs)) {
 
   filepath <- file.path(args$outdir, "composite", etype, "all_groups_barplot_grid")
   save_plot(mega, filepath,
-            width  = panel_w * length(days),
-            height = (panel_h + 1) * length(conditions),
+            width  = panel_w * n_sites,
+            height = (panel_h + 1) * n_groups,
             format = args$format, dpi = args$dpi)
   mega_count <- mega_count + 1
 }

@@ -67,6 +67,7 @@ args <- parser$parse_args()
 # ============================================================
 
 PAL <- c("Enriched" = "#2E86AB", "Depleted" = "#E84855")
+SITE_LABELS <- c("E" = "E-site", "P" = "P-site", "A" = "A-site")
 
 level_label <- ifelse(args$level == "aa", "Amino Acid", "Codon")
 
@@ -79,9 +80,9 @@ data <- read.csv(args$input, stringsAsFactors = FALSE)
 
 # Select relevant columns
 data <- data |>
-  select(unit, log2_FC, p_adj)
+  select(site, unit, log2_FC, p_adj)
 
-cat("  Rows:", nrow(data), "\n")
+cat("  Rows:", nrow(data), "| Sites:", paste(unique(data$site), collapse = ", "), "\n")
 
 # ============================================================
 # Compute Uniform Y-Axis Limits
@@ -207,39 +208,89 @@ save_plot <- function(p, filepath, width, height, format, dpi) {
 }
 
 # ============================================================
-# Create Output Directories & Generate Plot
+# Create Output Directories
 # ============================================================
 
 dir.create(file.path(args$outdir, "individual"),
            recursive = TRUE, showWarnings = FALSE)
-file.path(args$outdir, "individual")
-cat("\nGenerating bar plot...\n")
+dir.create(file.path(args$outdir, "composite"),
+           recursive = TRUE, showWarnings = FALSE)
 
 comparison_label <- gsub("_", " ", args$comparison)
-
-title <- paste0("Global ", level_label, " Occupancy \u2013 ", comparison_label)
-
-p <- make_barplot(data, title = title,
-                  y_limits = y_limits, y_breaks = y_breaks,
-                  show_legend = TRUE)
 
 # Wider plot for codons (64 bars)
 plot_width <- if (args$level == "codon") 14 else 7
 
-filepath <- file.path(args$outdir, "individual",
-                      paste0(args$level, "_", args$comparison, "_barplot"))
+sites <- c("E", "P", "A")
 
-save_plot(p, filepath, width = plot_width, height = 5,
+# ============================================================
+# Generate Individual Plots (per-site)
+# ============================================================
+
+cat("\nGenerating individual plots...\n")
+plot_count <- 0
+
+for (st in sites) {
+  plot_data <- data |> filter(site == st)
+
+  title <- paste0(SITE_LABELS[st], " \u2013 Global ", level_label,
+                  " Occupancy \u2013 ", comparison_label)
+
+  p <- make_barplot(plot_data, title = title,
+                    y_limits = y_limits, y_breaks = y_breaks,
+                    show_legend = TRUE)
+
+  filepath <- file.path(args$outdir, "individual",
+                        paste0("site_", st, "_", args$level, "_",
+                               args$comparison, "_barplot"))
+  save_plot(p, filepath, width = plot_width, height = 5,
+            format = args$format, dpi = args$dpi)
+  plot_count <- plot_count + 1
+
+  cat("  Saved:", SITE_LABELS[st], "\n")
+}
+
+# ============================================================
+# Composite Plot: E | P | A
+# ============================================================
+
+cat("Generating composite plot...\n")
+
+plot_list <- list()
+for (st in sites) {
+  plot_data <- data |> filter(site == st)
+  plot_list[[st]] <- make_barplot(plot_data,
+                                  title = SITE_LABELS[st],
+                                  y_limits = y_limits, y_breaks = y_breaks,
+                                  show_legend = FALSE)
+}
+
+composite <- (plot_list[["E"]] | plot_list[["P"]] | plot_list[["A"]]) +
+  plot_layout(guides = "collect") +
+  plot_annotation(
+    title = paste0("Global ", level_label, " Occupancy \u2013 ", comparison_label),
+    theme = theme(
+      plot.title = element_text(hjust = 0.5, size = 18, face = "bold")
+    )
+  ) &
+  theme(legend.position = "bottom",
+        legend.text = element_markdown(size = 11))
+
+filepath <- file.path(args$outdir, "composite",
+                      paste0("EPA_", args$level, "_", args$comparison,
+                             "_barplot_composite"))
+save_plot(composite, filepath, width = plot_width * 3, height = 6,
           format = args$format, dpi = args$dpi)
 
-cat("  Saved bar plot\n")
-p
+cat("  Saved composite plot\n")
+
 # ============================================================
 # Summary
 # ============================================================
 
+total <- plot_count + 1
 cat("\n============================================\n")
-cat("Done! Generated 1 plot file\n")
+cat("Done! Generated", total, "total plot files\n")
 cat("Output directory:", args$outdir, "\n")
 cat("Level:", args$level, "\n")
 cat("Comparison:", args$comparison, "\n")

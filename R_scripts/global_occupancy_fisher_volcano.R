@@ -90,6 +90,8 @@ CLASS_COLORS <- c(
   "Neutral"     = "#FF7F00"
 )
 
+SITE_LABELS <- c("E" = "E-site", "P" = "P-site", "A" = "A-site")
+
 level_label <- ifelse(args$level == "aa", "Amino Acid", "Codon")
 
 # ============================================================
@@ -100,7 +102,8 @@ cat("Reading input:", args$input, "\n")
 data <- read.csv(args$input, stringsAsFactors = FALSE)
 
 group_col <- args$group_col
-cat("  Rows:", nrow(data), "| Groups:", paste(unique(data[[group_col]]), collapse = ", "), "\n")
+cat("  Rows:", nrow(data), "| Groups:", paste(unique(data[[group_col]]), collapse = ", "),
+    "| Sites:", paste(unique(data$site), collapse = ", "), "\n")
 
 # Compute log2 odds ratio and -log10 adjusted p-value
 data <- data |>
@@ -290,69 +293,77 @@ dir.create(file.path(args$outdir, "composite"),
 cat("\nGenerating individual plots...\n")
 
 group_values <- unique(data[[group_col]])
-# Group values are like day_0, day_5, day_10
-group_values <- group_values[order(as.numeric(gsub("[^0-9]", "", group_values)))]
+# Order numerically when group values look like day_0, day_5, day_10;
+# fall back to alphabetical for non-numeric labels (e.g. condition names).
+num_keys <- suppressWarnings(as.numeric(gsub("[^0-9]", "", group_values)))
+if (all(!is.na(num_keys)) && any(num_keys != 0)) {
+  group_values <- group_values[order(num_keys)]
+} else {
+  group_values <- sort(group_values)
+}
+sites <- c("E", "P", "A")
 plot_count <- 0
 
-# For each group value
+# For each group value × site
 for (gv in group_values) {
-  # Filter so that we get the column of the specific day comparison
-  plot_data <- data |> filter(.data[[group_col]] == gv)
+  for (st in sites) {
+    plot_data <- data |> filter(.data[[group_col]] == gv, site == st)
 
-  group_label <- gsub("_", " ", gv)
-  group_label <- gsub("day ", "Day ", group_label)
-  title <- paste0(level_label, " Occupancy | ", group_label,
-                  " (", args$comparison_label, ")")
-  # Generte the graph
-  p <- make_volcano(
-    plot_data,
-    x_lim = x_lim,
-    y_max = y_max,
-    title = title,
-    show_legend = TRUE
-  )
+    group_label <- gsub("_", " ", gv)
+    group_label <- gsub("day ", "Day ", group_label)
+    title <- paste0(SITE_LABELS[st], " | ", level_label, " Occupancy | ",
+                    group_label, " (", args$comparison_label, ")")
 
-  filepath <- file.path(args$outdir, "individual",
-                        paste0(gv, "_volcano"))
-  save_plot(p, filepath, width = 7, height = 6,
-            format = args$format, dpi = args$dpi)
-  plot_count <- plot_count + 1
+    p <- make_volcano(
+      plot_data,
+      x_lim = x_lim,
+      y_max = y_max,
+      title = title,
+      show_legend = TRUE
+    )
+
+    filepath <- file.path(args$outdir, "individual",
+                          paste0(gv, "_", st, "_volcano"))
+    save_plot(p, filepath, width = 7, height = 6,
+              format = args$format, dpi = args$dpi)
+    plot_count <- plot_count + 1
+  }
 }
-p
 
 cat("  Saved", plot_count, "individual plots\n")
 
 # ============================================================
-# Composite Plot
+# Composite Plot: Grid (rows = group_values, cols = sites)
 # ============================================================
 
 cat("Generating composite plot...\n")
 
-# Stores the plots
 plot_list <- list()
 
-# For each day, make a  plot
+# Row-major: group_value outer, site inner → cols = sites
 for (gv in group_values) {
-  plot_data <- data |> filter(.data[[group_col]] == gv)
-
   group_label <- gsub("_", " ", gv)
   group_label <- gsub("day ", "Day ", group_label)
-  subtitle <- group_label
 
-  p <- make_volcano(
-    plot_data,
-    x_lim = x_lim,
-    y_max = y_max,
-    title = subtitle,
-    show_legend = FALSE
-  )
+  for (st in sites) {
+    plot_data <- data |> filter(.data[[group_col]] == gv, site == st)
+    subtitle <- paste0(SITE_LABELS[st], " | ", group_label)
 
-  plot_list[[length(plot_list) + 1]] <- p
+    p <- make_volcano(
+      plot_data,
+      x_lim = x_lim,
+      y_max = y_max,
+      title = subtitle,
+      show_legend = FALSE
+    )
+
+    plot_list[[length(plot_list) + 1]] <- p
+  }
 }
 
-# Geenerate the composite plot
 n_groups <- length(group_values)
-composite <- wrap_plots(plot_list, ncol = n_groups, nrow = 1) +
+n_sites  <- length(sites)
+composite <- wrap_plots(plot_list, ncol = n_sites, nrow = n_groups) +
   plot_layout(guides = "collect") +
   plot_annotation(
     title = paste0("Global ", level_label, " Occupancy Fisher's Test (",
@@ -365,7 +376,9 @@ composite <- wrap_plots(plot_list, ncol = n_groups, nrow = 1) +
 
 filepath <- file.path(args$outdir, "composite",
                       paste0(args$level, "_fisher_composite"))
-save_plot(composite, filepath, width = 6 * n_groups, height = 7,
+save_plot(composite, filepath,
+          width  = 6 * n_sites,
+          height = 5.5 * n_groups + 1.5,
           format = args$format, dpi = args$dpi)
 
 cat("  Saved composite plot\n")

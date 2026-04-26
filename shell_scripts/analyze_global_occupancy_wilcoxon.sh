@@ -104,6 +104,34 @@ CMD=(Rscript R_scripts/global_occupancy_wilcoxon.R \
 echo "Running: ${CMD[@]}"
 "${CMD[@]}"
 
+# --- AA: Day 5 vs Day 0 ---
+echo ""
+echo "--- AA: Day 5 vs Day 0 ---"
+CMD=(Rscript R_scripts/global_occupancy_wilcoxon.R \
+  --input "$INPUT_DIR/aa_wilcoxon_timepoint_d5_vs_d0.csv" \
+  --outdir "$OUTPUT_DIR/aa_timepoint_d5_vs_d0" \
+  --level aa \
+  --comparison "Day5_vs_Day0" \
+  --format "$FORMAT" \
+  --dpi "$DPI")
+
+echo "Running: ${CMD[@]}"
+"${CMD[@]}"
+
+# --- Codon: Day 5 vs Day 0 ---
+echo ""
+echo "--- Codon: Day 5 vs Day 0 ---"
+CMD=(Rscript R_scripts/global_occupancy_wilcoxon.R \
+  --input "$INPUT_DIR/codon_wilcoxon_timepoint_d5_vs_d0.csv" \
+  --outdir "$OUTPUT_DIR/codon_timepoint_d5_vs_d0" \
+  --level codon \
+  --comparison "Day5_vs_Day0" \
+  --format "$FORMAT" \
+  --dpi "$DPI")
+
+echo "Running: ${CMD[@]}"
+"${CMD[@]}"
+
 echo ""
 echo "=============================================="
 echo "Done."

@@ -164,6 +164,24 @@ def main():
         time_a="day_10", time_b="day_5")
     save_csv(df, "timepoint_fisher_within_condition_d10_vs_d5.csv")
 
+    # --- Day 5 vs Day 0 ---
+    print(f"\n--- Day 5 vs Day 0 ---")
+
+    # 3e: Wilcoxon pooled across conditions (n=4 vs n=4)
+    print("\n  3e: Wilcoxon (pooled across conditions, n=4 vs n=4)")
+    df = between_timepoint_wilcoxon_occupancy(
+        rates_for_stats, rep_to_timepoint, time_a="day_5", time_b="day_0")
+    save_csv(df, "wilcoxon_timepoint_d5_vs_d0.csv")
+
+    # 3f: Fisher's within each condition (pool 2 reps)
+    print("\n  3f: Fisher's exact (within each condition, pooled replicates)")
+    print("  WARNING: Pooling 2 biological replicates is pseudoreplication.")
+    print("           P-values are anti-conservative and should be interpreted cautiously.")
+    df = between_timepoint_fisher_within_condition(
+        raw_for_stats, groups, rep_to_condition, rep_to_timepoint,
+        time_a="day_5", time_b="day_0")
+    save_csv(df, "timepoint_fisher_within_condition_d5_vs_d0.csv")
+
     # -----------------------------------------------------------------
     # Analysis 4: Per-timepoint Fisher's (BWM vs Control at each day) (Validated (AL) ~ 04/05/2026)
     # -----------------------------------------------------------------

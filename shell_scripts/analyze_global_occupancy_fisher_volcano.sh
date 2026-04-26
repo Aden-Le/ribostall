@@ -55,33 +55,67 @@ echo "Running: ${CMD[@]}"
 "${CMD[@]}"
 
 # =============================================
-# Within-Condition Timepoint (Day 0 vs Day 10)
+# Within-Condition Timepoint (Day 10 vs Day 0)
 # =============================================
 
-# --- AA: Within-condition timepoint ---
+# --- AA: Within-condition timepoint (Day 10 vs Day 0) ---
 echo ""
-echo "--- AA: Within-Condition Timepoint (Day 0 vs Day 10) ---"
+echo "--- AA: Within-Condition Timepoint (Day 10 vs Day 0) ---"
 CMD=(Rscript R_scripts/global_occupancy_fisher_volcano.R \
-  --input "$INPUT_DIR/aa_timepoint_fisher_within_condition.csv" \
-  --outdir "$OUTPUT_DIR/aa_within_condition_timepoint" \
+  --input "$INPUT_DIR/aa_timepoint_fisher_within_condition_d10_vs_d0.csv" \
+  --outdir "$OUTPUT_DIR/aa_within_condition_timepoint_d10_vs_d0" \
   --level aa \
   --group-col "condition" \
-  --comparison-label "Day 0 vs Day 10" \
+  --comparison-label "Day 10 vs Day 0" \
   --format "$FORMAT" \
   --dpi "$DPI")
 
 echo "Running: ${CMD[@]}"
 "${CMD[@]}"
 
-# --- Codon: Within-condition timepoint ---
+# --- Codon: Within-condition timepoint (Day 10 vs Day 0) ---
 echo ""
-echo "--- Codon: Within-Condition Timepoint (Day 0 vs Day 10) ---"
+echo "--- Codon: Within-Condition Timepoint (Day 10 vs Day 0) ---"
 CMD=(Rscript R_scripts/global_occupancy_fisher_volcano.R \
-  --input "$INPUT_DIR/codon_timepoint_fisher_within_condition.csv" \
-  --outdir "$OUTPUT_DIR/codon_within_condition_timepoint" \
+  --input "$INPUT_DIR/codon_timepoint_fisher_within_condition_d10_vs_d0.csv" \
+  --outdir "$OUTPUT_DIR/codon_within_condition_timepoint_d10_vs_d0" \
   --level codon \
   --group-col "condition" \
-  --comparison-label "Day 0 vs Day 10" \
+  --comparison-label "Day 10 vs Day 0" \
+  --format "$FORMAT" \
+  --dpi "$DPI")
+
+echo "Running: ${CMD[@]}"
+"${CMD[@]}"
+
+# =============================================
+# Within-Condition Timepoint (Day 10 vs Day 5)
+# =============================================
+
+# --- AA: Within-condition timepoint (Day 10 vs Day 5) ---
+echo ""
+echo "--- AA: Within-Condition Timepoint (Day 10 vs Day 5) ---"
+CMD=(Rscript R_scripts/global_occupancy_fisher_volcano.R \
+  --input "$INPUT_DIR/aa_timepoint_fisher_within_condition_d10_vs_d5.csv" \
+  --outdir "$OUTPUT_DIR/aa_within_condition_timepoint_d10_vs_d5" \
+  --level aa \
+  --group-col "condition" \
+  --comparison-label "Day 10 vs Day 5" \
+  --format "$FORMAT" \
+  --dpi "$DPI")
+
+echo "Running: ${CMD[@]}"
+"${CMD[@]}"
+
+# --- Codon: Within-condition timepoint (Day 10 vs Day 5) ---
+echo ""
+echo "--- Codon: Within-Condition Timepoint (Day 10 vs Day 5) ---"
+CMD=(Rscript R_scripts/global_occupancy_fisher_volcano.R \
+  --input "$INPUT_DIR/codon_timepoint_fisher_within_condition_d10_vs_d5.csv" \
+  --outdir "$OUTPUT_DIR/codon_within_condition_timepoint_d10_vs_d5" \
+  --level codon \
+  --group-col "condition" \
+  --comparison-label "Day 10 vs Day 5" \
   --format "$FORMAT" \
   --dpi "$DPI")
 

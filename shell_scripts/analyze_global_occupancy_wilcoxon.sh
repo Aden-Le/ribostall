@@ -48,28 +48,56 @@ CMD=(Rscript R_scripts/global_occupancy_wilcoxon.R \
 echo "Running: ${CMD[@]}"
 "${CMD[@]}"
 
-# --- AA: Day 0 vs Day 10 ---
+# --- AA: Day 10 vs Day 0 ---
 echo ""
-echo "--- AA: Day 0 vs Day 10 ---"
+echo "--- AA: Day 10 vs Day 0 ---"
 CMD=(Rscript R_scripts/global_occupancy_wilcoxon.R \
-  --input "$INPUT_DIR/aa_wilcoxon_timepoint.csv" \
-  --outdir "$OUTPUT_DIR/aa_timepoint" \
+  --input "$INPUT_DIR/aa_wilcoxon_timepoint_d10_vs_d0.csv" \
+  --outdir "$OUTPUT_DIR/aa_timepoint_d10_vs_d0" \
   --level aa \
-  --comparison "Day0_vs_Day10" \
+  --comparison "Day10_vs_Day0" \
   --format "$FORMAT" \
   --dpi "$DPI")
 
 echo "Running: ${CMD[@]}"
 "${CMD[@]}"
 
-# --- Codon: Day 0 vs Day 10 ---
+# --- Codon: Day 10 vs Day 0 ---
 echo ""
-echo "--- Codon: Day 0 vs Day 10 ---"
+echo "--- Codon: Day 10 vs Day 0 ---"
 CMD=(Rscript R_scripts/global_occupancy_wilcoxon.R \
-  --input "$INPUT_DIR/codon_wilcoxon_timepoint.csv" \
-  --outdir "$OUTPUT_DIR/codon_timepoint" \
+  --input "$INPUT_DIR/codon_wilcoxon_timepoint_d10_vs_d0.csv" \
+  --outdir "$OUTPUT_DIR/codon_timepoint_d10_vs_d0" \
   --level codon \
-  --comparison "Day0_vs_Day10" \
+  --comparison "Day10_vs_Day0" \
+  --format "$FORMAT" \
+  --dpi "$DPI")
+
+echo "Running: ${CMD[@]}"
+"${CMD[@]}"
+
+# --- AA: Day 10 vs Day 5 ---
+echo ""
+echo "--- AA: Day 10 vs Day 5 ---"
+CMD=(Rscript R_scripts/global_occupancy_wilcoxon.R \
+  --input "$INPUT_DIR/aa_wilcoxon_timepoint_d10_vs_d5.csv" \
+  --outdir "$OUTPUT_DIR/aa_timepoint_d10_vs_d5" \
+  --level aa \
+  --comparison "Day10_vs_Day5" \
+  --format "$FORMAT" \
+  --dpi "$DPI")
+
+echo "Running: ${CMD[@]}"
+"${CMD[@]}"
+
+# --- Codon: Day 10 vs Day 5 ---
+echo ""
+echo "--- Codon: Day 10 vs Day 5 ---"
+CMD=(Rscript R_scripts/global_occupancy_wilcoxon.R \
+  --input "$INPUT_DIR/codon_wilcoxon_timepoint_d10_vs_d5.csv" \
+  --outdir "$OUTPUT_DIR/codon_timepoint_d10_vs_d5" \
+  --level codon \
+  --comparison "Day10_vs_Day5" \
   --format "$FORMAT" \
   --dpi "$DPI")
 

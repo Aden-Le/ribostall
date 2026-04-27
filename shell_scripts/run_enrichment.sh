@@ -19,13 +19,20 @@ RIBO_FILE="$RIBO_DIR/C_elegan_all_02_04_2026.ribo"
 EXP_GROUPS='control_day_0:control_day0_rep2,control_day0_rep3;control_day_5:control_day5_rep2,control_day5_rep3;control_day_10:control_day10_rep2,control_day10_rep3;BWM_day_0:BWM_day0_rep2,BWM_day0_rep3;BWM_day_5:BWM_day5_rep2,BWM_day5_rep3;BWM_day_10:BWM_day10_rep2,BWM_day10_rep3'
 
 # Transcript filtering thresholds
-TX_THRESHOLD=1.0
+# Parameter set v2 (2026-04-27): TX_THRESHOLD lowered 1.0 -> 0.5 to retain more
+# transcripts in low-coverage groups (BWM_day_0, BWM_day_10 had only 51 / 36 tx
+# under v1). See docs/analysis_interpretation/parameter_decisions.md.
+TX_THRESHOLD=0.5
 TX_MIN_REPS=2
 
-# Stall site calling thresholds (raised defaults)
+# Stall site calling thresholds
+# Parameter set v2 (2026-04-27):
+#   MIN_READS raised 2 -> 5 (move off the noise floor)
+#   TRIM_START raised 10 -> 20 (match global script + better excludes initiation ramp)
+# See docs/analysis_interpretation/parameter_decisions.md.
 MIN_Z=1.0
-MIN_READS=2
-TRIM_START=10
+MIN_READS=5
+TRIM_START=20
 TRIM_STOP=10
 PSEUDOCOUNT=0.5
 

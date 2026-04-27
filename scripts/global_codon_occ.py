@@ -117,7 +117,6 @@ def parse_args():
                    help="Path to gzipped pickle with coverage dict: {exp: {tx: np.ndarray (CDS coverage)}}")
     p.add_argument("--reference", required=True,
                    help="Path to reference fasta/2bit/etc used by get_sequence()")
-    p.add_argument("--ofset", required=True, help="Offset applied to coverage data - P or A")
     p.add_argument("--out-dir", default="results/global_occupancy",
                    help="Output directory (default: results/global_occupancy)")
     p.add_argument("--trim-start", type=int, default=0,

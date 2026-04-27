@@ -29,6 +29,14 @@ TRIM_START=10
 TRIM_STOP=10
 PSEUDOCOUNT=0.5
 
+# E/P/A site geometry
+# BASIS: register for E/P/A offsets
+#   "P" -> E=-1 codon, P=0,    A=+1 codon (P-site coverage)
+#   "A" -> E=-2,       P=-1,   A=0       (A-site coverage)
+# PSITE_OFFSET: codon shift applied to each stall index before deriving E/P/A
+BASIS="P"
+PSITE_OFFSET=0
+
 # Reference file (required for enrichment analysis)
 REFERENCE_FILE="./reference/appris_celegans_v1_selected_new.fa"
 
@@ -61,6 +69,7 @@ echo "Ribo file: $RIBO_FILE"
 echo "Reference: $REFERENCE_FILE"
 echo "Groups: $EXP_GROUPS"
 echo "Parameters: min_z=$MIN_Z, min_reads=$MIN_READS, trim_start=$TRIM_START, trim_stop=$TRIM_STOP"
+echo "E/P/A geometry: basis=$BASIS, psite_offset=$PSITE_OFFSET"
 echo "Output enrichment: $OUT_ENRICHMENT"
 echo "=============================================="
 
@@ -76,6 +85,8 @@ python3 scripts/stall_sites_non_consensus_call.py \
   --trim-start "$TRIM_START" \
   --trim-stop "$TRIM_STOP" \
   --pseudocount "$PSEUDOCOUNT" \
+  --basis "$BASIS" \
+  --psite-offset "$PSITE_OFFSET" \
   --out-dir "$OUT_ENRICHMENT"
 
 echo ""

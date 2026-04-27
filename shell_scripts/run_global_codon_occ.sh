@@ -18,9 +18,6 @@ EXP_GROUPS='control_day_0:control_day0_rep2,control_day0_rep3;control_day_5:cont
 TRIM_START=20
 TRIM_STOP=10
 
-# Offset type
-OFFSET="P"
-
 # Reference file
 REFERENCE_FILE="./reference/appris_celegans_v1_selected_new.fa"
 
@@ -53,7 +50,7 @@ echo "Coverage pickle: $PICKLE"
 echo "Ribo file:       $RIBO_FILE"
 echo "Reference:       $REFERENCE_FILE"
 echo "Groups:          $EXP_GROUPS"
-echo "Parameters:      trim_start=$TRIM_START, trim_stop=$TRIM_STOP, offset=$OFFSET"
+echo "Parameters:      trim_start=$TRIM_START, trim_stop=$TRIM_STOP"
 echo "Output directory: $OUT_DIR"
 echo "=============================================="
 
@@ -61,7 +58,6 @@ CMD=(python3 scripts/global_codon_occ.py \
   --pickle "$PICKLE" \
   --ribo "$RIBO_FILE" \
   --reference "$REFERENCE_FILE" \
-  --ofset "$OFFSET" \
   --groups "$EXP_GROUPS" \
   --trim-start "$TRIM_START" \
   --trim-stop "$TRIM_STOP" \

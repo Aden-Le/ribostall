@@ -30,7 +30,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import numpy as np
 import pandas as pd
-import ribopy
 from ribopy import Ribo
 
 from ribostall.stall_sites import (
@@ -122,7 +121,7 @@ def main():
     cds_range = get_cds_range_lookup(ribo_object)
     print(f"  CDS ranges: {len(cds_range)} transcripts")
     logging.info(f"Loading sequences from {args.reference} ...")
-    sequence = get_sequence(ribo_object, args.reference, alias=ribopy.api.alias.apris_human_alias)
+    sequence = get_sequence(ribo_object, args.reference, alias=False)
     print(f"  Sequences: {len(sequence)} transcripts")
     print(f"{'='*60}\n")
 

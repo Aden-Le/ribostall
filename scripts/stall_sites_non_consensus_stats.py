@@ -237,7 +237,7 @@ def main():
     # --------------------------------------------------------------
     # Write outputs
     # --------------------------------------------------------------
-    within_path = out_dir / f"within_condition_enrichment_{suffix}.csv"
+    within_path = out_dir / f"within_condition_binomial_{suffix}.csv"
     wilcox_path = out_dir / f"between_condition_wilcoxon_{suffix}.csv"
     fisher_path = out_dir / f"per_timepoint_fisher_{suffix}.csv"
     df_within.to_csv(within_path, index=False)

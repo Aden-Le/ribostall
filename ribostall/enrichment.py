@@ -106,7 +106,7 @@ def within_condition_enrichment(
                 log2_enrich = np.log2(freq / p_bg) if freq > 0 and p_bg > 0 else 0.0
                 weighted_log2 = freq * log2_enrich
 
-                # For output, we want the raw p-value. Multiple testing correction will be done later per group.
+                # For output, we want the raw p-value. Multiple testing correction will be done later per (group, site).
                 rows.append({
                     "condition": condition,
                     "group": group,
@@ -125,11 +125,11 @@ def within_condition_enrichment(
     if df.empty:
         return df
 
-    # BH-FDR correction per group
+    # BH-FDR correction per (group, site): each E/P/A site is treated as its own
+    # family of hypotheses ("which AAs stand out at this position in this group?").
     dfs = []
-    for group in groups:
-        mask = df["group"] == group
-        sub = df.loc[mask].copy()
+    for (group, site), sub in df.groupby(["group", "site"], sort=False):
+        sub = sub.copy()
         sub["p_adj"] = bh_fdr(sub["p_value"].values)
         dfs.append(sub)
     df = pd.concat(dfs, ignore_index=True)
@@ -230,7 +230,13 @@ def between_condition_wilcoxon(
     df = pd.DataFrame(rows)
     if df.empty:
         return df
-    df["p_adj"] = bh_fdr(df["p_value"].values)
+    # BH-FDR correction per site: each E/P/A site is treated as its own family.
+    dfs = []
+    for site, sub in df.groupby("site", sort=False):
+        sub = sub.copy()
+        sub["p_adj"] = bh_fdr(sub["p_value"].values)
+        dfs.append(sub)
+    df = pd.concat(dfs, ignore_index=True)
     return df.sort_values(["site", "p_adj"])
 
 
@@ -330,7 +336,13 @@ def between_timepoint_wilcoxon(
     df = pd.DataFrame(rows)
     if df.empty:
         return df
-    df["p_adj"] = bh_fdr(df["p_value"].values)
+    # BH-FDR correction per site: each E/P/A site is treated as its own family.
+    dfs = []
+    for site, sub in df.groupby("site", sort=False):
+        sub = sub.copy()
+        sub["p_adj"] = bh_fdr(sub["p_value"].values)
+        dfs.append(sub)
+    df = pd.concat(dfs, ignore_index=True)
     return df.sort_values(["site", "p_adj"])
 
 
@@ -435,12 +447,11 @@ def between_timepoint_fisher_within_condition(
     if df.empty:
         return df
 
-    # BH-FDR correction per condition (lumping all 3 sites together within a condition),
-    # matching the global-occupancy analogue.
+    # BH-FDR correction per (condition, site): each E/P/A site within a condition
+    # is treated as its own family of hypotheses.
     dfs = []
-    for cond in conditions:
-        mask = df["condition"] == cond
-        sub = df.loc[mask].copy()
+    for (cond, site), sub in df.groupby(["condition", "site"], sort=False):
+        sub = sub.copy()
         sub["p_adj"] = bh_fdr(sub["p_value"].values)
         dfs.append(sub)
     df = pd.concat(dfs, ignore_index=True)
@@ -554,11 +565,11 @@ def per_timepoint_fisher(
     if df.empty:
         return df
 
-    # BH-FDR correction per timepoint
+    # BH-FDR correction per (timepoint, site): each E/P/A site within a timepoint
+    # is treated as its own family of hypotheses.
     dfs = []
-    for tp in timepoints:
-        mask = df["timepoint"] == tp
-        sub = df.loc[mask].copy()
+    for (tp, site), sub in df.groupby(["timepoint", "site"], sort=False):
+        sub = sub.copy()
         sub["p_adj"] = bh_fdr(sub["p_value"].values)
         dfs.append(sub)
     df = pd.concat(dfs, ignore_index=True)

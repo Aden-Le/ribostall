@@ -58,8 +58,8 @@ def within_condition_enrichment(
     Returns
     -------
     pd.DataFrame with columns:
-        condition, group, site, amino_acid, stall_count, total_n, stall_freq,
-        bg_freq, log2_enrichment, weighted_log2_enrichment, p_value, p_adj
+        site, group, condition, timepoint, <feature_col>, observed_count, total_n,
+        observed_freq, bg_freq, log2_enrichment, weighted_log2_enrichment, p_value, p_adj
     """
     # Get all groups present in the replicate counts: Ex: "control_day_0", "BWM_day_5", etc.
     groups = sorted(set(rep_to_group[r] for r in replicate_counts if r in rep_to_group))
@@ -73,6 +73,8 @@ def within_condition_enrichment(
         group_reps = [r for r in replicate_counts if rep_to_group.get(r) == group]
         # Condition for this group (e.g. "control" or "BWM")
         condition = rep_to_condition.get(group_reps[0], "") if group_reps else ""
+        parts = group.split("_", 1)
+        timepoint = parts[1] if len(parts) > 1 else group
 
         for site in ("E", "P", "A"):
             # Pool counts across replicates in this group
@@ -108,13 +110,14 @@ def within_condition_enrichment(
 
                 # For output, we want the raw p-value. Multiple testing correction will be done later per (group, site).
                 rows.append({
-                    "condition": condition,
-                    "group": group,
                     "site": site,
+                    "group": group,
+                    "condition": condition,
+                    "timepoint": timepoint,
                     feature_col: aa,
-                    "stall_count": k,
+                    "observed_count": k,
                     "total_n": total_n,
-                    "stall_freq": freq,
+                    "observed_freq": freq,
                     "bg_freq": p_bg,
                     "log2_enrichment": log2_enrich,
                     "weighted_log2_enrichment": weighted_log2,
@@ -432,8 +435,8 @@ def between_timepoint_fisher_within_condition(
                     odds_ratio, p_val = np.nan, 1.0
 
                 rows.append({
-                    "condition": cond,
                     "site": site,
+                    "condition": cond,
                     feature_col: unit,
                     f"{time_a}_count": count_a,
                     f"{time_a}_total": total_a,
@@ -550,8 +553,8 @@ def per_timepoint_fisher(
                     odds_ratio, p_val = np.nan, 1.0
 
                 row = {
-                    "timepoint": tp,
                     "site": site,
+                    "timepoint": tp,
                     feature_col: unit,
                     "odds_ratio": odds_ratio,
                     "p_value": p_val,

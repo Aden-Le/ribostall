@@ -27,6 +27,8 @@ def within_condition_binomial_occupancy(
     transcriptome_counts: dict,
     groups: dict,
     rep_to_group: dict,
+    *,
+    feature_col: str = "amino_acid",
 ) -> pd.DataFrame:
     """
     For each group, test whether each codon/AA's share of ribosome reads
@@ -42,12 +44,14 @@ def within_condition_binomial_occupancy(
         {group_name: [rep1, rep2, ...]}
     rep_to_group : dict
         {replicate: group_name}
+    feature_col : str
+        Output column name for the feature level (e.g. "amino_acid" or "codon").
 
     Returns
     -------
     pd.DataFrame with columns:
-        group, condition, timepoint, unit, observed_count, total_n,
-        observed_freq, bg_freq, log2_enrichment, weighted_log2,
+        group, condition, timepoint, <feature_col>, observed_count, total_n,
+        observed_freq, bg_freq, log2_enrichment, weighted_log2_enrichment,
         p_value, p_adj
     """
     # Background frequencies
@@ -100,13 +104,13 @@ def within_condition_binomial_occupancy(
                 "group": grp,
                 "condition": condition,
                 "timepoint": timepoint,
-                "unit": unit,
+                feature_col: unit,
                 "observed_count": k,
                 "total_n": int(round(total_n)),
                 "observed_freq": freq,
                 "bg_freq": p_bg,
                 "log2_enrichment": log2_enrich,
-                "weighted_log2": weighted_log2,
+                "weighted_log2_enrichment": weighted_log2,
                 "p_value": result.pvalue,
             })
 
@@ -131,6 +135,8 @@ def within_condition_binomial_occupancy(
 def between_condition_wilcoxon_occupancy(
     rates_by_exp: dict,
     rep_to_condition: dict,
+    *,
+    feature_col: str = "amino_acid",
 ) -> pd.DataFrame:
     """
     Compare per-replicate normalized occupancy rates between conditions
@@ -142,11 +148,13 @@ def between_condition_wilcoxon_occupancy(
         {experiment: {unit: normalized_rate}}
     rep_to_condition : dict
         {replicate: "control" or "BWM"}
+    feature_col : str
+        Output column name for the feature level (e.g. "amino_acid" or "codon").
 
     Returns
     -------
     pd.DataFrame with columns:
-        unit, median_{cond_a}, median_{cond_b}, log2_FC, U_stat, p_value, p_adj
+        <feature_col>, median_{cond_a}, median_{cond_b}, log2_FC, U_stat, p_value, p_adj
     """
     conditions = sorted(set(rep_to_condition.values()))
     if len(conditions) != 2:
@@ -187,7 +195,7 @@ def between_condition_wilcoxon_occupancy(
             u_stat, p_val = np.nan, 1.0
 
         rows.append({
-            "unit": unit,
+            feature_col: unit,
             f"median_{cond_a}": med_a,
             f"median_{cond_b}": med_b,
             "log2_FC": log2_fc,
@@ -210,6 +218,8 @@ def between_timepoint_wilcoxon_occupancy(
     rep_to_timepoint: dict,
     time_a: str = "day_10",
     time_b: str = "day_0",
+    *,
+    feature_col: str = "amino_acid",
 ) -> pd.DataFrame:
     """
     Compare occupancy rates between two timepoints, pooling across conditions.
@@ -223,11 +233,13 @@ def between_timepoint_wilcoxon_occupancy(
         {replicate: "day_0", "day_5", or "day_10"}
     time_a, time_b : str
         The two timepoints to compare.
+    feature_col : str
+        Output column name for the feature level (e.g. "amino_acid" or "codon").
 
     Returns
     -------
     pd.DataFrame with columns:
-        unit, median_{time_a}, median_{time_b}, log2_FC, U_stat, p_value, p_adj
+        <feature_col>, median_{time_a}, median_{time_b}, log2_FC, U_stat, p_value, p_adj
     """
     first_rep = next(iter(rates_by_exp))
     all_units = sorted(rates_by_exp[first_rep].keys())
@@ -259,7 +271,7 @@ def between_timepoint_wilcoxon_occupancy(
             u_stat, p_val = np.nan, 1.0
 
         rows.append({
-            "unit": unit,
+            feature_col: unit,
             f"median_{time_a}": med_a,
             f"median_{time_b}": med_b,
             "log2_FC": log2_fc,
@@ -284,6 +296,8 @@ def between_timepoint_fisher_within_condition(
     rep_to_timepoint: dict,
     time_a: str = "day_10",
     time_b: str = "day_0",
+    *,
+    feature_col: str = "amino_acid",
 ) -> pd.DataFrame:
     """
     Within each condition, pool Day 0 and Day 10 reps into counts and run
@@ -304,11 +318,13 @@ def between_timepoint_fisher_within_condition(
         {replicate: "day_0", "day_5", or "day_10"}
     time_a, time_b : str
         The two timepoints to compare.
+    feature_col : str
+        Output column name for the feature level (e.g. "amino_acid" or "codon").
 
     Returns
     -------
     pd.DataFrame with columns:
-        condition, unit, {time_a}_count, {time_a}_total,
+        condition, <feature_col>, {time_a}_count, {time_a}_total,
         {time_b}_count, {time_b}_total, odds_ratio, p_value, p_adj
     """
     # BWM and Control conditions sorted alphabetically
@@ -354,7 +370,7 @@ def between_timepoint_fisher_within_condition(
 
             rows.append({
                 "condition": cond,
-                "unit": unit,
+                feature_col: unit,
                 f"{time_a}_count": count_a,
                 f"{time_a}_total": int(round(total_a)),
                 f"{time_b}_count": count_b,
@@ -385,6 +401,8 @@ def per_timepoint_fisher_occupancy(
     raw_counts_by_exp: dict,
     rep_to_condition: dict,
     rep_to_timepoint: dict,
+    *,
+    feature_col: str = "amino_acid",
 ) -> pd.DataFrame:
     """
     For each timepoint, pool reps per condition and run Fisher's exact test
@@ -401,11 +419,13 @@ def per_timepoint_fisher_occupancy(
         {replicate: "control" or "BWM"}
     rep_to_timepoint : dict
         {replicate: "day_0", "day_5", or "day_10"}
+    feature_col : str
+        Output column name for the feature level (e.g. "amino_acid" or "codon").
 
     Returns
     -------
     pd.DataFrame with columns:
-        timepoint, unit, {cond_a}_count, {cond_a}_total,
+        timepoint, <feature_col>, {cond_a}_count, {cond_a}_total,
         {cond_b}_count, {cond_b}_total, odds_ratio, p_value, p_adj
     """
     # Conditions of interest sorted alphabetically (e.g. BWM, Control)
@@ -454,7 +474,7 @@ def per_timepoint_fisher_occupancy(
 
             row = {
                 "timepoint": tp,
-                "unit": unit,
+                feature_col: unit,
                 "odds_ratio": odds_ratio,
                 "p_value": p_val,
             }

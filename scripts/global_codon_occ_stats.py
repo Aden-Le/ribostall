@@ -72,8 +72,10 @@ def main():
     # Auto-detect feature column (Codon for codon-level, AminoAcid for AA-level)
     if "Codon" in df_csv.columns:
         feature_col = "Codon"
+        out_feature_col = "codon"
     elif "AminoAcid" in df_csv.columns:
         feature_col = "AminoAcid"
+        out_feature_col = "amino_acid"
     else:
         sys.exit(f"Input CSV must contain a 'Codon' or 'AminoAcid' column: {args.input_csv}")
     
@@ -108,7 +110,7 @@ def main():
     print(f"ANALYSIS 1: WITHIN-CONDITION ENRICHMENT (Binomial Test)")
     print(f"{'='*60}")
 
-    df = within_condition_binomial_occupancy(raw_for_stats, tc, groups, rep_to_group)
+    df = within_condition_binomial_occupancy(raw_for_stats, tc, groups, rep_to_group, feature_col=out_feature_col)
     save_csv(df, "within_condition_binomial.csv")
 
     # -----------------------------------------------------------------
@@ -118,7 +120,7 @@ def main():
     print(f"ANALYSIS 2: BETWEEN-CONDITION WILCOXON (BWM vs Control)")
     print(f"{'='*60}")
 
-    df = between_condition_wilcoxon_occupancy(rates_for_stats, rep_to_condition)
+    df = between_condition_wilcoxon_occupancy(rates_for_stats, rep_to_condition, feature_col=out_feature_col)
     save_csv(df, "wilcoxon_condition.csv")
 
     # -----------------------------------------------------------------
@@ -134,7 +136,8 @@ def main():
     # 3a: Wilcoxon pooled across conditions (n=4 vs n=4)
     print("\n  3a: Wilcoxon (pooled across conditions, n=4 vs n=4)")
     df = between_timepoint_wilcoxon_occupancy(
-        rates_for_stats, rep_to_timepoint, time_a="day_10", time_b="day_0")
+        rates_for_stats, rep_to_timepoint, time_a="day_10", time_b="day_0",
+        feature_col=out_feature_col)
     save_csv(df, "wilcoxon_timepoint_d10_vs_d0.csv")
 
     # 3b: Fisher's within each condition (pool 2 reps)
@@ -143,7 +146,7 @@ def main():
     print("           P-values are anti-conservative and should be interpreted cautiously.")
     df = between_timepoint_fisher_within_condition(
         raw_for_stats, groups, rep_to_condition, rep_to_timepoint,
-        time_a="day_10", time_b="day_0")
+        time_a="day_10", time_b="day_0", feature_col=out_feature_col)
     save_csv(df, "timepoint_fisher_within_condition_d10_vs_d0.csv")
 
     # --- Day 10 vs Day 5 ---
@@ -152,7 +155,8 @@ def main():
     # 3c: Wilcoxon pooled across conditions (n=4 vs n=4)
     print("\n  3c: Wilcoxon (pooled across conditions, n=4 vs n=4)")
     df = between_timepoint_wilcoxon_occupancy(
-        rates_for_stats, rep_to_timepoint, time_a="day_10", time_b="day_5")
+        rates_for_stats, rep_to_timepoint, time_a="day_10", time_b="day_5",
+        feature_col=out_feature_col)
     save_csv(df, "wilcoxon_timepoint_d10_vs_d5.csv")
 
     # 3d: Fisher's within each condition (pool 2 reps)
@@ -161,7 +165,7 @@ def main():
     print("           P-values are anti-conservative and should be interpreted cautiously.")
     df = between_timepoint_fisher_within_condition(
         raw_for_stats, groups, rep_to_condition, rep_to_timepoint,
-        time_a="day_10", time_b="day_5")
+        time_a="day_10", time_b="day_5", feature_col=out_feature_col)
     save_csv(df, "timepoint_fisher_within_condition_d10_vs_d5.csv")
 
     # --- Day 5 vs Day 0 ---
@@ -170,7 +174,8 @@ def main():
     # 3e: Wilcoxon pooled across conditions (n=4 vs n=4)
     print("\n  3e: Wilcoxon (pooled across conditions, n=4 vs n=4)")
     df = between_timepoint_wilcoxon_occupancy(
-        rates_for_stats, rep_to_timepoint, time_a="day_5", time_b="day_0")
+        rates_for_stats, rep_to_timepoint, time_a="day_5", time_b="day_0",
+        feature_col=out_feature_col)
     save_csv(df, "wilcoxon_timepoint_d5_vs_d0.csv")
 
     # 3f: Fisher's within each condition (pool 2 reps)
@@ -179,7 +184,7 @@ def main():
     print("           P-values are anti-conservative and should be interpreted cautiously.")
     df = between_timepoint_fisher_within_condition(
         raw_for_stats, groups, rep_to_condition, rep_to_timepoint,
-        time_a="day_5", time_b="day_0")
+        time_a="day_5", time_b="day_0", feature_col=out_feature_col)
     save_csv(df, "timepoint_fisher_within_condition_d5_vs_d0.csv")
 
     # -----------------------------------------------------------------
@@ -191,7 +196,7 @@ def main():
     print("WARNING: Pooling 2 biological replicates is pseudoreplication.")
     print("         P-values are anti-conservative and should be interpreted cautiously.")
 
-    df = per_timepoint_fisher_occupancy(raw_for_stats, rep_to_condition, rep_to_timepoint)
+    df = per_timepoint_fisher_occupancy(raw_for_stats, rep_to_condition, rep_to_timepoint, feature_col=out_feature_col)
     save_csv(df, "per_timepoint_fisher.csv")
 
     print(f"\n{'='*60}")

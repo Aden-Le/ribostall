@@ -1,10 +1,17 @@
 #!/usr/bin/env Rscript
 
 # ============================================================
-# Global Occupancy Wilcoxon Bar Plots
-# Reads Wilcoxon rank-sum test CSV and generates sorted bar
-# plots for codon/AA occupancy fold-change between groups.
-# Used for both between-condition and between-timepoint results.
+# Wilcoxon Bar Plots (unified)
+# Reads a Wilcoxon rank-sum CSV and generates sorted bar plots
+# of log2 fold-change per feature (codon or AA), per E/P/A site.
+#
+# Handles both datasets:
+#   - stall_sites (between-condition, between-timepoint)
+#   - global_occupancy (between-condition, between-timepoint)
+#
+# Schema expected: site, {amino_acid|codon}, median_<grpA>, median_<grpB>,
+# log2_FC, U_stat, p_value, p_adj. The two `median_*` columns are read
+# generically — the script does not care which two groups are compared.
 # ============================================================
 
 library(argparse)
@@ -14,31 +21,17 @@ library(dplyr)
 library(patchwork)
 
 # ============================================================
-# Test Input
-# ============================================================
-
-# INPUT_DIR <- "C:/Users/Aden Le/Documents/GitHub/ribostall/results/global_occupancy/analysis"
-# OUTPUT_DIR <- "C:/Users/Aden Le/Documents/GitHub/ribostall/results/global_occupancy/plots/wilcoxon"
-# args <- list(level = "aa",
-#              input = file.path(INPUT_DIR, "aa_wilcoxon_condition.csv"),
-#              outdir = file.path(OUTPUT_DIR, "aa_condition"),
-#              comparison = "BWM_vs_Control",
-#              format = "png",
-#              dpi = 300L
-#              )
-
-# ============================================================
 # Argument Parsing
 # ============================================================
 
-parser <- ArgumentParser(description = "Generate bar plots for global occupancy Wilcoxon results")
+parser <- ArgumentParser(description = "Generate bar plots for Wilcoxon enrichment results")
 
 parser$add_argument("--input",
                     required = TRUE,
                     help = "Path to Wilcoxon CSV (codon or AA level)")
 
 parser$add_argument("--outdir",
-                    default = "global_occupancy_wilcoxon_output",
+                    default = "wilcoxon_barplot_output",
                     help = "Output directory for plots")
 
 parser$add_argument("--level",
@@ -48,7 +41,7 @@ parser$add_argument("--level",
 
 parser$add_argument("--comparison",
                     default = "BWM_vs_Control",
-                    help = "Label for the comparison (used in titles)")
+                    help = "Label for the comparison (used in titles, file paths)")
 
 parser$add_argument("--format",
                     default = "both",
@@ -61,6 +54,8 @@ parser$add_argument("--dpi",
                     help = "DPI for PNG output")
 
 args <- parser$parse_args()
+
+feature_col <- ifelse(args$level == "aa", "amino_acid", "codon")
 
 # ============================================================
 # Constants
@@ -78,9 +73,16 @@ level_label <- ifelse(args$level == "aa", "Amino Acid", "Codon")
 cat("Reading input:", args$input, "\n")
 data <- read.csv(args$input, stringsAsFactors = FALSE)
 
-# Select relevant columns
+if (!feature_col %in% colnames(data)) {
+  stop(sprintf("Expected column '%s' not found in input CSV. Found: %s",
+               feature_col, paste(colnames(data), collapse = ", ")))
+}
+
+# Select relevant columns. Rename feature_col -> "feature" so the rest of
+# the script doesn't have to special-case AA vs codon.
 data <- data |>
-  select(site, unit, log2_FC, p_adj)
+  rename(feature = !!feature_col) |>
+  select(site, feature, log2_FC, p_adj)
 
 cat("  Rows:", nrow(data), "| Sites:", paste(unique(data$site), collapse = ", "), "\n")
 
@@ -104,7 +106,6 @@ compute_breaks <- function(y_lim, n = 6) {
   pretty(y_lim, n = n)
 }
 
-# Usage
 y_limits <- compute_limits(data$log2_FC)
 y_breaks <- compute_breaks(y_limits)
 
@@ -120,7 +121,7 @@ make_barplot <- function(plot_data, title, y_limits, y_breaks,
   plot_data <- plot_data |>
     arrange(desc(log2_FC)) |>
     mutate(
-      unit = factor(unit, levels = unit),
+      feature  = factor(feature, levels = feature),
       bar_fill = ifelse(log2_FC >= 0, "Enriched", "Depleted"),
       sig_label = case_when(
         p_adj < 0.001 ~ "***",
@@ -133,7 +134,7 @@ make_barplot <- function(plot_data, title, y_limits, y_breaks,
                       log2_FC - 0.02)
     )
 
-  p <- ggplot(plot_data, aes(x = unit, y = log2_FC, fill = bar_fill)) +
+  p <- ggplot(plot_data, aes(x = feature, y = log2_FC, fill = bar_fill)) +
 
     geom_col(width = 0.8, colour = "white", linewidth = 0.3) +
 
@@ -151,7 +152,7 @@ make_barplot <- function(plot_data, title, y_limits, y_breaks,
       values = PAL,
       name   = NULL,
       limits = c("Enriched", "Depleted"),
-      labels = c("Enriched" = "Enriched (log<sub>2</sub>FC \u2265 0)",
+      labels = c("Enriched" = "Enriched (log<sub>2</sub>FC ≥ 0)",
                  "Depleted"  = "Depleted (log<sub>2</sub>FC < 0)")
     ) +
 
@@ -163,7 +164,7 @@ make_barplot <- function(plot_data, title, y_limits, y_breaks,
 
     labs(
       title    = title,
-      subtitle = paste0("Bars sorted by log\u2082 fold-change (highest \u2192 lowest)"),
+      subtitle = paste0("Bars sorted by log₂ fold-change (highest → lowest)"),
       x        = level_label,
       y        = bquote(bold(log[2]~"Fold-Change"))
     ) +
@@ -233,8 +234,8 @@ plot_count <- 0
 for (st in sites) {
   plot_data <- data |> filter(site == st)
 
-  title <- paste0(SITE_LABELS[st], " \u2013 Global ", level_label,
-                  " Occupancy \u2013 ", comparison_label)
+  title <- paste0(SITE_LABELS[st], " – ", level_label,
+                  " – ", comparison_label)
 
   p <- make_barplot(plot_data, title = title,
                     y_limits = y_limits, y_breaks = y_breaks,
@@ -268,7 +269,7 @@ for (st in sites) {
 composite <- (plot_list[["E"]] | plot_list[["P"]] | plot_list[["A"]]) +
   plot_layout(guides = "collect") +
   plot_annotation(
-    title = paste0("Global ", level_label, " Occupancy \u2013 ", comparison_label),
+    title = paste0(level_label, " – ", comparison_label),
     theme = theme(
       plot.title = element_text(hjust = 0.5, size = 18, face = "bold")
     )

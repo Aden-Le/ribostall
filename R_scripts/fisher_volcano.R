@@ -1,10 +1,16 @@
 #!/usr/bin/env Rscript
 
 # ============================================================
-# Global Occupancy Fisher Volcano Plots
-# Reads Fisher's exact test CSV and generates volcano plots
-# for codon/AA occupancy differences.
-# Used for both per-timepoint and within-condition-timepoint results.
+# Fisher Volcano Plots (unified)
+# Reads a Fisher's exact test CSV and generates volcano plots
+# for codon/AA enrichment or depletion.
+#
+# Handles both datasets:
+#   - stall_sites (per-timepoint Fisher, within-condition timepoint Fisher)
+#   - global_occupancy (per-timepoint Fisher, within-condition timepoint Fisher)
+#
+# Level is selected with --level {aa,codon}. The CSV must contain a column
+# named `amino_acid` (level=aa) or `codon` (level=codon).
 # ============================================================
 
 library(argparse)
@@ -14,33 +20,17 @@ library(patchwork)
 library(dplyr)
 
 # ============================================================
-# Test Data
-# ============================================================
-
-# INPUT_DIR <- "C:/Users/Aden Le/Documents/GitHub/ribostall/results/global_occupancy/analysis"
-# OUTPUT_DIR <- "C:/Users/Aden Le/Documents/GitHub/ribostall/results/global_occupancy/plots/fisher"
-# args <- list(level = "aa",
-#              input = file.path(INPUT_DIR, "aa_per_timepoint_fisher.csv"),
-#              outdir = file.path(OUTPUT_DIR, "aa_per_timepoint"),
-#              group_col = "timepoint",
-#              comparison = "BWM vs Control",
-#              format = "png",
-#              dpi = 300L
-#              )
-
-
-  # ============================================================
 # Argument Parsing
 # ============================================================
 
-parser <- ArgumentParser(description = "Generate volcano plots for global occupancy Fisher results")
+parser <- ArgumentParser(description = "Generate volcano plots for Fisher enrichment results")
 
 parser$add_argument("--input",
                     required = TRUE,
                     help = "Path to Fisher CSV (codon or AA level)")
 
 parser$add_argument("--outdir",
-                    default = "global_occupancy_fisher_output",
+                    default = "fisher_volcano_output",
                     help = "Output directory for plots")
 
 parser$add_argument("--level",
@@ -50,7 +40,7 @@ parser$add_argument("--level",
 
 parser$add_argument("--group-col",
                     default = "timepoint",
-                    help = "Column to group by for individual/composite plots (timepoint or condition)")
+                    help = "Column to group by for individual/composite plots (e.g. timepoint or condition)")
 
 parser$add_argument("--comparison-label",
                     default = "BWM vs Control",
@@ -67,6 +57,9 @@ parser$add_argument("--dpi",
                     help = "DPI for PNG output")
 
 args <- parser$parse_args()
+
+# Feature column is amino_acid for AA level, codon for codon level
+feature_col <- ifelse(args$level == "aa", "amino_acid", "codon")
 
 # ============================================================
 # Constants
@@ -87,7 +80,8 @@ CLASS_COLORS <- c(
   "Basic"       = "#377EB8",
   "Hydrophobic" = "#4DAF4A",
   "Polar"       = "#984EA3",
-  "Neutral"     = "#FF7F00"
+  "Neutral"     = "#FF7F00",
+  "Stop"        = "#666666"
 )
 
 SITE_LABELS <- c("E" = "E-site", "P" = "P-site", "A" = "A-site")
@@ -101,6 +95,11 @@ level_label <- ifelse(args$level == "aa", "Amino Acid", "Codon")
 cat("Reading input:", args$input, "\n")
 data <- read.csv(args$input, stringsAsFactors = FALSE)
 
+if (!feature_col %in% colnames(data)) {
+  stop(sprintf("Expected column '%s' not found in input CSV. Found: %s",
+               feature_col, paste(colnames(data), collapse = ", ")))
+}
+
 group_col <- args$group_col
 cat("  Rows:", nrow(data), "| Groups:", paste(unique(data[[group_col]]), collapse = ", "),
     "| Sites:", paste(unique(data$site), collapse = ", "), "\n")
@@ -112,9 +111,10 @@ data <- data |>
     neg_log10_p = -log10(p_adj)
   )
 
-# Add classification and significance columns
+# Add classification column. For AA level, look up directly. For codon level,
+# decode to AA first, then classify.
 if (args$level == "aa") {
-  data <- data |> mutate(aa_class = AA_CLASS[unit])
+  data <- data |> mutate(aa_class = AA_CLASS[.data[[feature_col]]])
 } else {
   CODON2AA <- c(
     "GCT"="A","GCC"="A","GCA"="A","GCG"="A",
@@ -128,11 +128,12 @@ if (args$level == "aa") {
     "CCT"="P","CCC"="P","CCA"="P","CCG"="P",
     "TCT"="S","TCC"="S","TCA"="S","TCG"="S","AGT"="S","AGC"="S",
     "ACT"="T","ACC"="T","ACA"="T","ACG"="T","TGG"="W",
-    "TAT"="Y","TAC"="Y","GTT"="V","GTC"="V","GTA"="V","GTG"="V"
+    "TAT"="Y","TAC"="Y","GTT"="V","GTC"="V","GTA"="V","GTG"="V",
+    "TAA"="*","TAG"="*","TGA"="*"
   )
   data <- data |> mutate(
-    encoded_aa = CODON2AA[toupper(unit)],
-    aa_class = AA_CLASS[encoded_aa]
+    encoded_aa = CODON2AA[toupper(.data[[feature_col]])],
+    aa_class   = ifelse(encoded_aa == "*", "Stop", AA_CLASS[encoded_aa])
   )
 }
 
@@ -140,7 +141,10 @@ data <- data |>
   mutate(
     significant = p_adj < 0.05,
     significance = ifelse(significant, "Significant (FDR < 0.05)", "Not significant"),
-    neg_log10_p = pmin(neg_log10_p, 50)
+    neg_log10_p = pmin(neg_log10_p, 50),
+    # Cap log2 odds ratio to keep points with OR=0 or OR=Inf on-canvas instead
+    # of breaking axis limits. Cap mirrors the neg_log10_p cap above.
+    log2_odds_ratio = pmin(pmax(log2_odds_ratio, -10), 10)
   )
 
 # ============================================================
@@ -158,13 +162,14 @@ cat("  Axis limits -- x:", round(x_lim, 2), "| y: [0,", round(y_max, 2), "]\n")
 # Volcano Plot Function
 # ============================================================
 
-# Creates a volcano plot for amino acid enrichment/depletion analysis.
-# Each point represents one unit (e.g. codon or amino acid), plotted by
+# Creates a volcano plot for codon/amino-acid enrichment analysis.
+# Each point represents one feature (codon or amino acid), plotted by
 # effect size (x) vs. statistical significance (y).
 #
 # Args:
 #   plot_data   : data frame with columns: log2_odds_ratio, neg_log10_p,
-#                 aa_class, significance (label), significant (logical), unit (label)
+#                 aa_class, significance (label), significant (logical),
+#                 and the column named in `feature_col` (used as label).
 #   x_lim       : numeric vector of length 2, x-axis limits e.g. c(-3, 3)
 #   y_max       : numeric, upper limit of y-axis
 #   title       : string, plot title
@@ -172,7 +177,7 @@ cat("  Axis limits -- x:", round(x_lim, 2), "| y: [0,", round(y_max, 2), "]\n")
 
 make_volcano <- function(plot_data, x_lim, y_max, title,
                          show_legend = TRUE) {
-  
+
   # --- Base layer: scatter plot ---
   # Points colored by amino acid class, shaped by significance status
   p <- ggplot(plot_data,
@@ -180,85 +185,77 @@ make_volcano <- function(plot_data, x_lim, y_max, title,
                   y = neg_log10_p)) +
     geom_point(aes(color = aa_class, shape = significance),
                alpha = 0.8, size = 2.5) +
-    
+
     # Dashed vertical lines mark the effect size thresholds (|log2 OR| = 0.5)
     geom_vline(xintercept = c(-0.5, 0.5),
                linetype = "dashed", color = "gray50", alpha = 0.5) +
-    
+
     # Dashed horizontal line marks the significance threshold (FDR = 0.05)
     geom_hline(yintercept = -log10(0.05),
                linetype = "dashed", color = "gray50", alpha = 0.5) +
-    
+
     # Dotted vertical line marks the null effect (OR = 1, log2 OR = 0)
     geom_vline(xintercept = 0,
                linetype = "dotted", color = "black", alpha = 0.3)
-  
+
   # --- Labels: only annotate statistically significant points ---
   # Filtered separately to avoid passing the full dataset to geom_text_repel
   sig_data <- plot_data |> filter(significant)
-  
+
   p <- p +
     geom_text_repel(
       data = sig_data,
-      aes(label = unit, color = aa_class),
+      aes(label = .data[[feature_col]], color = aa_class),
       size = 3.5,
-      box.padding = 0.5,       # Padding around label bounding box
-      point.padding = 0.3,     # Padding between label and point
-      force = 3,               # Repulsion strength between labels
-      max.overlaps = 15,       # Max overlaps allowed before a label is dropped
+      box.padding = 0.5,
+      point.padding = 0.3,
+      force = 3,
+      max.overlaps = 15,
       segment.color = "gray50",
-      segment.size = 0.2,      # Thickness of leader lines
-      min.segment.length = 0,  # Always draw leader lines, even for close labels
-      show.legend = FALSE      # Suppress text layer from appearing in legend
+      segment.size = 0.2,
+      min.segment.length = 0,
+      show.legend = FALSE
     ) +
-    
+
     # --- Scales ---
-    # Use predefined color palette for amino acid classes
     scale_color_manual(values = CLASS_COLORS, name = NULL) +
-    # Triangle (17) = significant, circle (16) = not significant
     scale_shape_manual(
       name = NULL,
       values = c("Significant (FDR < 0.05)" = 17, "Not significant" = 16)
     ) +
-    
-    # Lock axis ranges to ensure consistent layout across panels/comparisons
+
     coord_cartesian(xlim = x_lim, ylim = c(0, y_max)) +
-    
+
     # --- Theme ---
     theme_classic(base_size = 12) +
     theme(
-      plot.title     = element_text(hjust = 0.5, size = 14, face = "bold"),
-      
-      # Conditionally show/hide legend based on show_legend argument
+      plot.title         = element_text(hjust = 0.5, size = 14, face = "bold"),
       legend.position    = if (show_legend) "bottom" else "none",
-      legend.box         = "vertical",        # Stack color and shape legends vertically
+      legend.box         = "vertical",
       legend.box.just    = "center",
-      legend.box.spacing = unit(0.1, "cm"),   # Gap between the two legend boxes
+      legend.box.spacing = unit(0.1, "cm"),
       legend.title       = element_text(size = 11, face = "bold"),
       legend.text        = element_text(size = 10),
       legend.background  = element_rect(fill = "white", color = NA),
       legend.key.size    = unit(0.5, "cm"),
-      legend.spacing.y   = unit(0.05, "cm"),  # Vertical spacing between legend items
-      legend.margin      = margin(t = 0, b = 0, unit = "cm"),  # Remove excess legend margin
-      
-      axis.title  = element_text(size = 12, face = "bold"),
-      axis.text   = element_text(size = 10),
-      plot.margin = margin(1, 1, 0.5, 1, "cm")  # top, right, bottom, left
+      legend.spacing.y   = unit(0.05, "cm"),
+      legend.margin      = margin(t = 0, b = 0, unit = "cm"),
+      axis.title         = element_text(size = 12, face = "bold"),
+      axis.text          = element_text(size = 10),
+      plot.margin        = margin(1, 1, 0.5, 1, "cm")
     ) +
-    
-    # --- Axis labels: formatted with subscripts using plotmath expressions ---
+
     labs(
       title = title,
       x = expression(bold("Log"[2] ~ "(Odds Ratio)")),
       y = expression(bold("-Log"[10] ~ "(FDR)"))
     ) +
-    
-    # --- Legend order: color (aa class) first, then shape (significance) ---
+
     guides(
       color = guide_legend(order = 1),
       shape = guide_legend(order = 2)
     )
-  
+
   return(p)
 }
 
@@ -286,7 +283,7 @@ dir.create(file.path(args$outdir, "individual"),
 dir.create(file.path(args$outdir, "composite"),
            recursive = TRUE, showWarnings = FALSE)
 
-  # ============================================================
+# ============================================================
 # Generate Individual Plots
 # ============================================================
 
@@ -311,7 +308,7 @@ for (gv in group_values) {
 
     group_label <- gsub("_", " ", gv)
     group_label <- gsub("day ", "Day ", group_label)
-    title <- paste0(SITE_LABELS[st], " | ", level_label, " Occupancy | ",
+    title <- paste0(SITE_LABELS[st], " | ", level_label, " | ",
                     group_label, " (", args$comparison_label, ")")
 
     p <- make_volcano(
@@ -366,8 +363,7 @@ n_sites  <- length(sites)
 composite <- wrap_plots(plot_list, ncol = n_sites, nrow = n_groups) +
   plot_layout(guides = "collect") +
   plot_annotation(
-    title = paste0("Global ", level_label, " Occupancy Fisher's Test (",
-                   args$comparison_label, ")"),
+    title = paste0(level_label, " Fisher's Test (", args$comparison_label, ")"),
     theme = theme(
       plot.title = element_text(hjust = 0.5, size = 18, face = "bold")
     )

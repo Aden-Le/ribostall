@@ -1,9 +1,18 @@
 #!/usr/bin/env Rscript
 
 # ============================================================
-# Within-Condition Enrichment Volcano Plots
-# Reads pre-computed enrichment CSV and generates volcano plots
-# for amino acid enrichment at ribosome stall sites.
+# Within-Condition Enrichment Volcano Plots (unified)
+# Reads pre-computed within-condition enrichment CSV and generates
+# volcano plots for codon/AA enrichment vs background frequency.
+#
+# Handles both datasets:
+#   - stall_sites (within_condition_binomial_{aa,codon}.csv)
+#   - global_occupancy (aa_within_condition_binomial.csv,
+#                       codon_within_condition_binomial.csv)
+#
+# Schema expected: site, group, condition, timepoint,
+# {amino_acid|codon}, observed_count, total_n, observed_freq,
+# bg_freq, log2_enrichment, weighted_log2_enrichment, p_value, p_adj.
 # ============================================================
 
 library(argparse)
@@ -16,20 +25,30 @@ library(dplyr)
 # Argument Parsing
 # ============================================================
 
-parser <- ArgumentParser(description = "Generate volcano plots for within-condition amino acid enrichment")
+parser <- ArgumentParser(description = "Generate volcano plots for within-condition enrichment")
 
 parser$add_argument("--input",
-                    default = "results/stall_sites/enrichment/within_condition_enrichment_aa.csv",
-                    help = "Path to within_condition_enrichment_{aa,codon}.csv (emit by stall_sites_non_consensus_stats.py)")
+                    required = TRUE,
+                    help = "Path to within-condition enrichment CSV (codon or AA level)")
 
 parser$add_argument("--outdir",
-                    default = "results/stall_sites/plots/within_condition",
+                    default = "within_condition_volcano_output",
                     help = "Output directory for plots")
+
+parser$add_argument("--level",
+                    default = "aa",
+                    choices = c("codon", "aa"),
+                    help = "Analysis level: codon or aa")
 
 parser$add_argument("--show-ci",
                     action = "store_true",
                     default = FALSE,
-                    help = "Show confidence interval error bars on plots")
+                    help = "Show Beta-Jeffreys confidence interval error bars on plots")
+
+parser$add_argument("--mega-composite",
+                    action = "store_true",
+                    default = FALSE,
+                    help = "Also emit an all-groups composite (rows = condition x timepoint, cols = sites)")
 
 parser$add_argument("--enrichment-type",
                     default = "both",
@@ -48,10 +67,12 @@ parser$add_argument("--dpi",
 
 parser$add_argument("--y-cap",
                     type = "double",
-                    default = NULL,
-                    help = "Cap -log10(p_adj) values at this maximum (clamps extreme values to compress the y-axis)")
+                    default = 50,
+                    help = "Cap -log10(p_adj) values at this maximum (clamps extreme values to compress the y-axis). Default 50; pass a smaller value to compress further. Cap is required because p_adj=0 yields -log10=Inf and breaks plotting.")
 
 args <- parser$parse_args()
+
+feature_col <- ifelse(args$level == "aa", "amino_acid", "codon")
 
 # ============================================================
 # Constants
@@ -72,10 +93,29 @@ CLASS_COLORS <- c(
   "Basic"       = "#377EB8",
   "Hydrophobic" = "#4DAF4A",
   "Polar"       = "#984EA3",
-  "Neutral"     = "#FF7F00"
+  "Neutral"     = "#FF7F00",
+  "Stop"        = "#666666"
+)
+
+CODON2AA <- c(
+  "GCT"="A","GCC"="A","GCA"="A","GCG"="A",
+  "CGT"="R","CGC"="R","CGA"="R","CGG"="R","AGA"="R","AGG"="R",
+  "AAT"="N","AAC"="N","GAT"="D","GAC"="D","TGT"="C","TGC"="C",
+  "GAA"="E","GAG"="E","CAA"="Q","CAG"="Q",
+  "GGT"="G","GGC"="G","GGA"="G","GGG"="G",
+  "CAT"="H","CAC"="H","ATT"="I","ATC"="I","ATA"="I",
+  "TTA"="L","TTG"="L","CTT"="L","CTC"="L","CTA"="L","CTG"="L",
+  "AAA"="K","AAG"="K","ATG"="M","TTT"="F","TTC"="F",
+  "CCT"="P","CCC"="P","CCA"="P","CCG"="P",
+  "TCT"="S","TCC"="S","TCA"="S","TCG"="S","AGT"="S","AGC"="S",
+  "ACT"="T","ACC"="T","ACA"="T","ACG"="T","TGG"="W",
+  "TAT"="Y","TAC"="Y","GTT"="V","GTC"="V","GTA"="V","GTG"="V",
+  "TAA"="*","TAG"="*","TGA"="*"
 )
 
 SITE_LABELS <- c("E" = "E-site", "P" = "P-site", "A" = "A-site")
+
+level_label <- ifelse(args$level == "aa", "Amino Acid", "Codon")
 
 # ============================================================
 # Read and Prepare Data
@@ -84,43 +124,69 @@ SITE_LABELS <- c("E" = "E-site", "P" = "P-site", "A" = "A-site")
 cat("Reading input:", args$input, "\n")
 data <- read.csv(args$input, stringsAsFactors = FALSE)
 
+if (!feature_col %in% colnames(data)) {
+  stop(sprintf("Expected column '%s' not found in input CSV. Found: %s",
+               feature_col, paste(colnames(data), collapse = ", ")))
+}
+
 cat("  Rows:", nrow(data), "| Groups:", length(unique(data$group)),
     "| Sites:", paste(unique(data$site), collapse = ", "), "\n")
 
-# Compute confidence intervals (Beta distribution, Jeffreys prior)
+# Compute Beta-Jeffreys CI on the underlying proportion (observed_count / total_n)
+# and propagate through the log2 enrichment transform.
 data <- data |>
   mutate(
-    ci_lower_prop = qbeta(0.025, stall_count + 0.5, total_n - stall_count + 0.5),
-    ci_upper_prop = qbeta(0.975, stall_count + 0.5, total_n - stall_count + 0.5),
-    ci_lower_log2 = log2(ci_lower_prop / bg_freq),
-    ci_upper_log2 = log2(ci_upper_prop / bg_freq),
-    ci_lower_weighted = stall_freq * ci_lower_log2,
-    ci_upper_weighted = stall_freq * ci_upper_log2
+    ci_lower_prop      = qbeta(0.025, observed_count + 0.5, total_n - observed_count + 0.5),
+    ci_upper_prop      = qbeta(0.975, observed_count + 0.5, total_n - observed_count + 0.5),
+    ci_lower_log2      = log2(ci_lower_prop / bg_freq),
+    ci_upper_log2      = log2(ci_upper_prop / bg_freq),
+    ci_lower_weighted  = observed_freq * ci_lower_log2,
+    ci_upper_weighted  = observed_freq * ci_upper_log2
   )
 
-# Add amino acid class and significance columns
+# Add classification (always via AA_CLASS; for codon level, decode first).
+if (args$level == "aa") {
+  data <- data |> mutate(aa_class = AA_CLASS[.data[[feature_col]]])
+} else {
+  data <- data |>
+    mutate(
+      encoded_aa = CODON2AA[toupper(.data[[feature_col]])],
+      aa_class   = ifelse(encoded_aa == "*", "Stop", AA_CLASS[encoded_aa])
+    )
+}
+
 data <- data |>
   mutate(
-    aa_class = AA_CLASS[amino_acid],
     significant = p_adj < 0.05,
     significance = ifelse(significant, "Significant (FDR < 0.05)", "Not significant"),
     neg_log10_p = -log10(p_adj)
   )
 
-# Cap extreme -log10 p-values for display (if --y-cap provided)
-if (!is.null(args$y_cap)) {
-  y_cap <- args$y_cap
-  capped_n <- sum(data$neg_log10_p > y_cap, na.rm = TRUE)
-  data <- data |>
-    mutate(neg_log10_p = pmin(neg_log10_p, y_cap))
-  cat("  Y-axis cap:", y_cap, "| Capped", capped_n, "points\n")
-}
+# Y-cap on -log10(p_adj). Required because p_adj=0 (saturated FDR) yields
+# Inf, which propagates into axis limits and breaks ggrepel.
+y_cap <- args$y_cap
+capped_n <- sum(data$neg_log10_p > y_cap, na.rm = TRUE)
+data <- data |>
+  mutate(neg_log10_p = pmin(neg_log10_p, y_cap))
+cat("  Y-axis cap:", y_cap, "| Capped", capped_n, "points\n")
+
+# Cap log2 enrichment values to keep ±Inf points on-canvas (mirrors the
+# defensive cap used in fisher_volcano.R for sparse codon data).
+data <- data |>
+  mutate(
+    log2_enrichment           = pmin(pmax(log2_enrichment,           -10), 10),
+    weighted_log2_enrichment  = pmin(pmax(weighted_log2_enrichment,  -10), 10),
+    ci_lower_log2             = pmin(pmax(ci_lower_log2,             -10), 10),
+    ci_upper_log2             = pmin(pmax(ci_upper_log2,             -10), 10),
+    ci_lower_weighted         = pmin(pmax(ci_lower_weighted,         -10), 10),
+    ci_upper_weighted         = pmin(pmax(ci_upper_weighted,         -10), 10)
+  )
 
 # ============================================================
 # Compute Uniform Axis Limits
 # ============================================================
 
-# Unweighted x-axis
+# Unweighted x-axis includes CI bounds so error bars never run off-canvas
 x_vals_uw <- c(data$log2_enrichment, data$ci_lower_log2, data$ci_upper_log2)
 x_abs_max_uw <- max(abs(x_vals_uw), na.rm = TRUE) * 1.1
 x_lim_uw <- c(-x_abs_max_uw, x_abs_max_uw)
@@ -133,7 +199,7 @@ x_lim_w <- c(-x_abs_max_w, x_abs_max_w)
 # Shared y-axis
 y_max <- max(data$neg_log10_p, na.rm = TRUE) * 1.1
 
-cat("  Axis limits — unweighted x:", round(x_lim_uw, 2),
+cat("  Axis limits -- unweighted x:", round(x_lim_uw, 2),
     "| weighted x:", round(x_lim_w, 2),
     "| y: [0,", round(y_max, 2), "]\n")
 
@@ -172,13 +238,13 @@ make_volcano <- function(plot_data, x_col, ci_lower_col, ci_upper_col,
       )
   }
 
-  # Labels for significant amino acids
+  # Labels for significant features
   sig_data <- plot_data |> filter(significant)
 
   p <- p +
     geom_text_repel(
       data = sig_data,
-      aes(label = amino_acid, color = aa_class),
+      aes(label = .data[[feature_col]], color = aa_class),
       size = 3.5,
       box.padding = 0.5,
       point.padding = 0.3,
@@ -201,20 +267,20 @@ make_volcano <- function(plot_data, x_col, ci_lower_col, ci_upper_col,
 
     theme_classic(base_size = 12) +
     theme(
-      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
-      legend.position = if (show_legend) "bottom" else "none",
-      legend.box = "vertical",
-      legend.box.just = "center",
+      plot.title         = element_text(hjust = 0.5, size = 14, face = "bold"),
+      legend.position    = if (show_legend) "bottom" else "none",
+      legend.box         = "vertical",
+      legend.box.just    = "center",
       legend.box.spacing = unit(0.1, "cm"),
-      legend.title = element_text(size = 11, face = "bold"),
-      legend.text = element_text(size = 10),
-      legend.background = element_rect(fill = "white", color = NA),
-      legend.key.size = unit(0.5, "cm"),
-      legend.spacing.y = unit(0.05, "cm"),
-      legend.margin = margin(t = 0, b = 0, unit = "cm"),
-      axis.title = element_text(size = 12, face = "bold"),
-      axis.text = element_text(size = 10),
-      plot.margin = margin(1, 1, 0.5, 1, "cm")
+      legend.title       = element_text(size = 11, face = "bold"),
+      legend.text        = element_text(size = 10),
+      legend.background  = element_rect(fill = "white", color = NA),
+      legend.key.size    = unit(0.5, "cm"),
+      legend.spacing.y   = unit(0.05, "cm"),
+      legend.margin      = margin(t = 0, b = 0, unit = "cm"),
+      axis.title         = element_text(size = 12, face = "bold"),
+      axis.text          = element_text(size = 10),
+      plot.margin        = margin(1, 1, 0.5, 1, "cm")
     ) +
 
     labs(
@@ -254,23 +320,23 @@ enrichment_configs <- list()
 
 if (args$enrichment_type %in% c("unweighted", "both")) {
   enrichment_configs[["unweighted"]] <- list(
-    x_col = "log2_enrichment",
+    x_col        = "log2_enrichment",
     ci_lower_col = "ci_lower_log2",
     ci_upper_col = "ci_upper_log2",
-    x_lim = x_lim_uw,
-    x_label = "Log2 Enrichment",
-    label = "Unweighted"
+    x_lim        = x_lim_uw,
+    x_label      = "Log2 Enrichment",
+    label        = "Unweighted"
   )
 }
 
 if (args$enrichment_type %in% c("weighted", "both")) {
   enrichment_configs[["weighted"]] <- list(
-    x_col = "weighted_log2_enrichment",
+    x_col        = "weighted_log2_enrichment",
     ci_lower_col = "ci_lower_weighted",
     ci_upper_col = "ci_upper_weighted",
-    x_lim = x_lim_w,
-    x_label = "Weighted Log2 Enrichment",
-    label = "Weighted"
+    x_lim        = x_lim_w,
+    x_label      = "Weighted Log2 Enrichment",
+    label        = "Weighted"
   )
 }
 
@@ -303,24 +369,23 @@ for (etype in names(enrichment_configs)) {
 
       plot_data <- data |> filter(group == grp, site == st)
 
-      # Format title: "E-site Enrichment | BWM Day 0"
       day_label <- gsub("_", " ", gsub(".*_(day)", "\\1", grp))
       day_label <- gsub("day ", "Day ", day_label)
       cond_label <- gsub("_day.*", "", grp)
-      title <- paste0(SITE_LABELS[st], " ", cfg$label, " Enrichment | ",
-                      cond_label, " ", day_label)
+      title <- paste0(SITE_LABELS[st], " ", level_label, " ", cfg$label,
+                      " Enrichment | ", cond_label, " ", day_label)
 
       p <- make_volcano(
         plot_data,
-        x_col = cfg$x_col,
+        x_col        = cfg$x_col,
         ci_lower_col = cfg$ci_lower_col,
         ci_upper_col = cfg$ci_upper_col,
-        x_lim = cfg$x_lim,
-        y_max = y_max,
-        title = title,
-        x_label = cfg$x_label,
-        show_ci = args$show_ci,
-        show_legend = TRUE
+        x_lim        = cfg$x_lim,
+        y_max        = y_max,
+        title        = title,
+        x_label      = cfg$x_label,
+        show_ci      = args$show_ci,
+        show_legend  = TRUE
       )
 
       filepath <- file.path(args$outdir, "individual", etype,
@@ -341,7 +406,14 @@ cat("  Saved", plot_count, "individual plots\n")
 cat("Generating composite plots by condition...\n")
 
 conditions <- sort(unique(data$condition))
-days <- c("day_0", "day_5", "day_10")
+# Order timepoints numerically (day_0, day_5, day_10) when possible.
+days_raw <- unique(data$timepoint)
+num_keys <- suppressWarnings(as.numeric(gsub("\\D", "", days_raw)))
+if (all(!is.na(num_keys))) {
+  days <- days_raw[order(num_keys)]
+} else {
+  days <- sort(days_raw)
+}
 composite_count <- 0
 
 for (etype in names(enrichment_configs)) {
@@ -363,26 +435,27 @@ for (etype in names(enrichment_configs)) {
 
         p <- make_volcano(
           plot_data,
-          x_col = cfg$x_col,
+          x_col        = cfg$x_col,
           ci_lower_col = cfg$ci_lower_col,
           ci_upper_col = cfg$ci_upper_col,
-          x_lim = cfg$x_lim,
-          y_max = y_max,
-          title = subtitle,
-          x_label = cfg$x_label,
-          show_ci = args$show_ci,
-          show_legend = FALSE
+          x_lim        = cfg$x_lim,
+          y_max        = y_max,
+          title        = subtitle,
+          x_label      = cfg$x_label,
+          show_ci      = args$show_ci,
+          show_legend  = FALSE
         )
 
         plot_list[[length(plot_list) + 1]] <- p
       }
     }
 
-    # Assemble 3x3 grid (rows = days, cols = sites)
-    composite <- wrap_plots(plot_list, ncol = 3, nrow = 3) +
+    n_days  <- length(days)
+    n_sites <- length(sites)
+    composite <- wrap_plots(plot_list, ncol = n_sites, nrow = n_days) +
       plot_layout(guides = "collect") +
       plot_annotation(
-        title = paste0(cond, ": ", cfg$label, " Amino Acid Enrichment at Stall Sites"),
+        title = paste0(cond, ": ", cfg$label, " ", level_label, " Enrichment"),
         theme = theme(
           plot.title = element_text(hjust = 0.5, size = 18, face = "bold")
         )
@@ -391,7 +464,9 @@ for (etype in names(enrichment_configs)) {
 
     filepath <- file.path(args$outdir, "composite", etype,
                           paste0(cond, "_volcano_grid"))
-    save_plot(composite, filepath, width = 18, height = 16,
+    save_plot(composite, filepath,
+              width  = 6 * n_sites,
+              height = 5.5 * n_days + 1.5,
               format = args$format, dpi = args$dpi)
     composite_count <- composite_count + 1
   }
@@ -423,15 +498,15 @@ for (etype in names(enrichment_configs)) {
 
         p <- make_volcano(
           plot_data,
-          x_col = cfg$x_col,
+          x_col        = cfg$x_col,
           ci_lower_col = cfg$ci_lower_col,
           ci_upper_col = cfg$ci_upper_col,
-          x_lim = cfg$x_lim,
-          y_max = y_max,
-          title = subtitle,
-          x_label = cfg$x_label,
-          show_ci = args$show_ci,
-          show_legend = FALSE
+          x_lim        = cfg$x_lim,
+          y_max        = y_max,
+          title        = subtitle,
+          x_label      = cfg$x_label,
+          show_ci      = args$show_ci,
+          show_legend  = FALSE
         )
 
         plot_list[[length(plot_list) + 1]] <- p
@@ -441,11 +516,12 @@ for (etype in names(enrichment_configs)) {
     day_label <- gsub("_", " ", d)
     day_label <- gsub("day ", "Day ", day_label)
 
-    # Assemble 2x3 grid (rows = conditions, cols = sites)
-    composite <- wrap_plots(plot_list, ncol = 3, nrow = 2) +
+    n_conds <- length(conditions)
+    n_sites <- length(sites)
+    composite <- wrap_plots(plot_list, ncol = n_sites, nrow = n_conds) +
       plot_layout(guides = "collect") +
       plot_annotation(
-        title = paste0(day_label, ": ", cfg$label, " Amino Acid Enrichment at Stall Sites"),
+        title = paste0(day_label, ": ", cfg$label, " ", level_label, " Enrichment"),
         theme = theme(
           plot.title = element_text(hjust = 0.5, size = 18, face = "bold")
         )
@@ -454,7 +530,9 @@ for (etype in names(enrichment_configs)) {
 
     filepath <- file.path(args$outdir, "composite", etype,
                           paste0(d, "_volcano_grid"))
-    save_plot(composite, filepath, width = 18, height = 11,
+    save_plot(composite, filepath,
+              width  = 6 * n_sites,
+              height = 5.5 * n_conds + 1.5,
               format = args$format, dpi = args$dpi)
     composite_day_count <- composite_day_count + 1
   }
@@ -463,14 +541,78 @@ for (etype in names(enrichment_configs)) {
 cat("  Saved", composite_day_count, "day composite plots\n")
 
 # ============================================================
+# Mega Composite: All Groups (rows = condition x day, cols = sites)
+# Optional, gated by --mega-composite to preserve parity with prior
+# stall_sites behaviour (which never produced this plot type).
+# ============================================================
+
+mega_count <- 0
+if (args$mega_composite) {
+  cat("Generating mega composite (all groups)...\n")
+
+  for (etype in names(enrichment_configs)) {
+    cfg <- enrichment_configs[[etype]]
+    plot_list <- list()
+
+    for (cond in conditions) {
+      for (d in days) {
+        grp <- paste0(cond, "_", d)
+        day_label <- gsub("_", " ", d)
+        day_label <- gsub("day ", "Day ", day_label)
+
+        for (st in sites) {
+          plot_data <- data |> filter(group == grp, site == st)
+
+          plot_list[[length(plot_list) + 1]] <- make_volcano(
+            plot_data,
+            x_col        = cfg$x_col,
+            ci_lower_col = cfg$ci_lower_col,
+            ci_upper_col = cfg$ci_upper_col,
+            x_lim        = cfg$x_lim,
+            y_max        = y_max,
+            title        = paste0(SITE_LABELS[st], " | ", cond, " - ", day_label),
+            x_label      = cfg$x_label,
+            show_ci      = args$show_ci,
+            show_legend  = FALSE
+          )
+        }
+      }
+    }
+
+    n_groups <- length(conditions) * length(days)
+    n_sites  <- length(sites)
+    mega <- wrap_plots(plot_list, ncol = n_sites, nrow = n_groups) +
+      plot_layout(guides = "collect") +
+      plot_annotation(
+        title = paste0(cfg$label, " ", level_label,
+                       " Enrichment - All Groups"),
+        theme = theme(
+          plot.title = element_text(hjust = 0.5, size = 20, face = "bold")
+        )
+      ) &
+      theme(legend.position = "bottom")
+
+    filepath <- file.path(args$outdir, "composite", etype, "all_groups_volcano_grid")
+    save_plot(mega, filepath,
+              width  = 6 * n_sites,
+              height = 5.5 * n_groups + 1.5,
+              format = args$format, dpi = args$dpi)
+    mega_count <- mega_count + 1
+  }
+  cat("  Saved", mega_count, "mega composite plots\n")
+}
+
+# ============================================================
 # Summary
 # ============================================================
 
-total <- plot_count + composite_count + composite_day_count
+total <- plot_count + composite_count + composite_day_count + mega_count
 cat("\n============================================\n")
 cat("Done! Generated", total, "total plot files\n")
 cat("Output directory:", args$outdir, "\n")
+cat("Level:", args$level, "\n")
 cat("Enrichment type(s):", args$enrichment_type, "\n")
 cat("Format:", args$format, "\n")
 cat("Confidence intervals:", ifelse(args$show_ci, "shown", "hidden"), "\n")
+cat("Mega composite:", ifelse(args$mega_composite, "yes", "no"), "\n")
 cat("============================================\n")

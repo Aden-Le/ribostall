@@ -45,8 +45,10 @@ echo "DPI:              $DPI"
 echo "Y-axis cap:       ${Y_CAP:-none}"
 echo "=============================================="
 
-# Build optional flags
-OPTIONAL_FLAGS=()
+# Build optional flags. Mega-composite preserves global's prior behaviour
+# (the old global bar plot rendered an all-groups grid; the unified volcano
+# script gates this behind a flag so stall_sites runs do not produce it).
+OPTIONAL_FLAGS=(--mega-composite)
 if [ -n "$Y_CAP" ]; then
   OPTIONAL_FLAGS+=(--y-cap "$Y_CAP")
 fi
@@ -54,7 +56,7 @@ fi
 # --- Amino acid level ---
 echo ""
 echo "--- Amino Acid Level ---"
-CMD=(Rscript R_scripts/global_occupancy_within_condition.R \
+CMD=(Rscript R_scripts/within_condition_volcano.R \
   --input "$INPUT_DIR/aa_within_condition_binomial.csv" \
   --outdir "$OUTPUT_DIR/aa" \
   --level aa \
@@ -69,7 +71,7 @@ echo "Running: ${CMD[@]}"
 # --- Codon level ---
 echo ""
 echo "--- Codon Level ---"
-CMD=(Rscript R_scripts/global_occupancy_within_condition.R \
+CMD=(Rscript R_scripts/within_condition_volcano.R \
   --input "$INPUT_DIR/codon_within_condition_binomial.csv" \
   --outdir "$OUTPUT_DIR/codon" \
   --level codon \

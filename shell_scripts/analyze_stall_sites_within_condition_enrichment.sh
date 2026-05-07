@@ -1,7 +1,8 @@
 #!/bin/bash
 #----------------------------------------------------
 # Bash script: generate within-condition enrichment
-# volcano plots via R
+# volcano plots via R (stall_sites)
+# Drives R_scripts/within_condition_volcano.R
 #----------------------------------------------------
 
 # Add R to PATH (Windows)
@@ -9,8 +10,8 @@ export PATH="$PATH:/c/Program Files/R/R-4.4.2/bin"
 
 # ============== CONFIG: edit these ==============
 
-# Input CSV from enrichment analysis
-INPUT_CSV="./results/stall_sites/enrichment/within_condition_enrichment_aa.csv"
+# Input directory (containing within_condition_binomial_{aa,codon}.csv)
+INPUT_DIR="./results/stall_sites/enrichment/analysis_stats"
 
 # Output directory for plots
 OUTPUT_DIR="./results/stall_sites/plots/within_condition"
@@ -28,7 +29,7 @@ FORMAT="png"
 DPI=300
 
 # Y-axis cap: clamp -log10(p_adj) values above this to compress the y-axis
-# Leave empty ("") to disable capping
+# Leave empty ("") to use the R script default (50)
 Y_CAP=25
 
 # ===============================================
@@ -38,30 +39,48 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/.."
 
 echo "=============================================="
-echo "WITHIN-CONDITION ENRICHMENT VOLCANO PLOTS"
+echo "STALL SITES WITHIN-CONDITION VOLCANO PLOTS"
 echo "=============================================="
-echo "Input CSV:        $INPUT_CSV"
+echo "Input directory:  $INPUT_DIR"
 echo "Output directory: $OUTPUT_DIR"
 echo "Enrichment type:  $ENRICHMENT_TYPE"
 echo "Format:           $FORMAT"
 echo "DPI:              $DPI"
 echo "Show CI:          ${SHOW_CI:-no}"
-echo "Y-axis cap:       ${Y_CAP:-none}"
+echo "Y-axis cap:       ${Y_CAP:-default}"
 echo "=============================================="
 
 # Build optional flags
-OPTIONAL_FLAGS="$SHOW_CI"
-if [ -n "$Y_CAP" ]; then
-  OPTIONAL_FLAGS="$OPTIONAL_FLAGS --y-cap $Y_CAP"
-fi
+OPTIONAL_FLAGS=()
+[ -n "$SHOW_CI" ] && OPTIONAL_FLAGS+=("$SHOW_CI")
+[ -n "$Y_CAP" ]   && OPTIONAL_FLAGS+=(--y-cap "$Y_CAP")
 
-CMD=(Rscript R_scripts/stall_sites_within_condition_enrichment.R \
-  --input "$INPUT_CSV" \
+# --- Amino acid level ---
+echo ""
+echo "--- Amino Acid Level ---"
+CMD=(Rscript R_scripts/within_condition_volcano.R \
+  --input "$INPUT_DIR/within_condition_binomial_aa.csv" \
   --outdir "$OUTPUT_DIR" \
+  --level aa \
   --enrichment-type "$ENRICHMENT_TYPE" \
   --format "$FORMAT" \
   --dpi "$DPI" \
-  $OPTIONAL_FLAGS)
+  "${OPTIONAL_FLAGS[@]}")
+
+echo "Running: ${CMD[@]}"
+"${CMD[@]}"
+
+# --- Codon level ---
+echo ""
+echo "--- Codon Level ---"
+CMD=(Rscript R_scripts/within_condition_volcano.R \
+  --input "$INPUT_DIR/within_condition_binomial_codon.csv" \
+  --outdir "$OUTPUT_DIR/codon" \
+  --level codon \
+  --enrichment-type "$ENRICHMENT_TYPE" \
+  --format "$FORMAT" \
+  --dpi "$DPI" \
+  "${OPTIONAL_FLAGS[@]}")
 
 echo "Running: ${CMD[@]}"
 "${CMD[@]}"

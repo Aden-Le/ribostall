@@ -23,7 +23,7 @@ echo "=============================================="
 # --- AA: BWM vs Control ---
 echo ""
 echo "--- AA: BWM vs Control ---"
-CMD=(Rscript R_scripts/global_occupancy_wilcoxon.R \
+CMD=(Rscript R_scripts/wilcoxon_barplot.R \
   --input "$INPUT_DIR/aa_wilcoxon_condition.csv" \
   --outdir "$OUTPUT_DIR/aa_condition" \
   --level aa \
@@ -37,7 +37,7 @@ echo "Running: ${CMD[@]}"
 # --- Codon: BWM vs Control ---
 echo ""
 echo "--- Codon: BWM vs Control ---"
-CMD=(Rscript R_scripts/global_occupancy_wilcoxon.R \
+CMD=(Rscript R_scripts/wilcoxon_barplot.R \
   --input "$INPUT_DIR/codon_wilcoxon_condition.csv" \
   --outdir "$OUTPUT_DIR/codon_condition" \
   --level codon \
@@ -51,7 +51,7 @@ echo "Running: ${CMD[@]}"
 # --- AA: Day 10 vs Day 0 ---
 echo ""
 echo "--- AA: Day 10 vs Day 0 ---"
-CMD=(Rscript R_scripts/global_occupancy_wilcoxon.R \
+CMD=(Rscript R_scripts/wilcoxon_barplot.R \
   --input "$INPUT_DIR/aa_wilcoxon_timepoint_d10_vs_d0.csv" \
   --outdir "$OUTPUT_DIR/aa_timepoint_d10_vs_d0" \
   --level aa \
@@ -65,7 +65,7 @@ echo "Running: ${CMD[@]}"
 # --- Codon: Day 10 vs Day 0 ---
 echo ""
 echo "--- Codon: Day 10 vs Day 0 ---"
-CMD=(Rscript R_scripts/global_occupancy_wilcoxon.R \
+CMD=(Rscript R_scripts/wilcoxon_barplot.R \
   --input "$INPUT_DIR/codon_wilcoxon_timepoint_d10_vs_d0.csv" \
   --outdir "$OUTPUT_DIR/codon_timepoint_d10_vs_d0" \
   --level codon \
@@ -79,7 +79,7 @@ echo "Running: ${CMD[@]}"
 # --- AA: Day 10 vs Day 5 ---
 echo ""
 echo "--- AA: Day 10 vs Day 5 ---"
-CMD=(Rscript R_scripts/global_occupancy_wilcoxon.R \
+CMD=(Rscript R_scripts/wilcoxon_barplot.R \
   --input "$INPUT_DIR/aa_wilcoxon_timepoint_d10_vs_d5.csv" \
   --outdir "$OUTPUT_DIR/aa_timepoint_d10_vs_d5" \
   --level aa \
@@ -93,7 +93,7 @@ echo "Running: ${CMD[@]}"
 # --- Codon: Day 10 vs Day 5 ---
 echo ""
 echo "--- Codon: Day 10 vs Day 5 ---"
-CMD=(Rscript R_scripts/global_occupancy_wilcoxon.R \
+CMD=(Rscript R_scripts/wilcoxon_barplot.R \
   --input "$INPUT_DIR/codon_wilcoxon_timepoint_d10_vs_d5.csv" \
   --outdir "$OUTPUT_DIR/codon_timepoint_d10_vs_d5" \
   --level codon \
@@ -107,7 +107,7 @@ echo "Running: ${CMD[@]}"
 # --- AA: Day 5 vs Day 0 ---
 echo ""
 echo "--- AA: Day 5 vs Day 0 ---"
-CMD=(Rscript R_scripts/global_occupancy_wilcoxon.R \
+CMD=(Rscript R_scripts/wilcoxon_barplot.R \
   --input "$INPUT_DIR/aa_wilcoxon_timepoint_d5_vs_d0.csv" \
   --outdir "$OUTPUT_DIR/aa_timepoint_d5_vs_d0" \
   --level aa \
@@ -121,7 +121,7 @@ echo "Running: ${CMD[@]}"
 # --- Codon: Day 5 vs Day 0 ---
 echo ""
 echo "--- Codon: Day 5 vs Day 0 ---"
-CMD=(Rscript R_scripts/global_occupancy_wilcoxon.R \
+CMD=(Rscript R_scripts/wilcoxon_barplot.R \
   --input "$INPUT_DIR/codon_wilcoxon_timepoint_d5_vs_d0.csv" \
   --outdir "$OUTPUT_DIR/codon_timepoint_d5_vs_d0" \
   --level codon \

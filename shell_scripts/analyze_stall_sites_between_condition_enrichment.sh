@@ -1,7 +1,8 @@
 #!/bin/bash
 #----------------------------------------------------
 # Bash script: generate between-condition enrichment
-# bar plots via R
+# bar plots via R (stall_sites; BWM vs Control).
+# Drives R_scripts/wilcoxon_barplot.R.
 #----------------------------------------------------
 
 # Add R to PATH (Windows)
@@ -9,8 +10,8 @@ export PATH="$PATH:/c/Program Files/R/R-4.4.2/bin"
 
 # ============== CONFIG: edit these ==============
 
-# Input CSV from enrichment analysis
-INPUT_CSV="./results/stall_sites/enrichment/between_condition_wilcoxon_aa.csv"
+# Input directory (containing between_condition_wilcoxon_{aa,codon}.csv)
+INPUT_DIR="./results/stall_sites/enrichment/analysis_stats"
 
 # Output directory for plots
 OUTPUT_DIR="./results/stall_sites/plots/between_condition"
@@ -28,17 +29,36 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/.."
 
 echo "=============================================="
-echo "BETWEEN-CONDITION ENRICHMENT BAR PLOTS"
+echo "STALL SITES BETWEEN-CONDITION BAR PLOTS"
 echo "=============================================="
-echo "Input CSV:        $INPUT_CSV"
+echo "Input directory:  $INPUT_DIR"
 echo "Output directory: $OUTPUT_DIR"
 echo "Format:           $FORMAT"
 echo "DPI:              $DPI"
 echo "=============================================="
 
-CMD=(Rscript R_scripts/stall_sites_between_condition_enrichment.R \
-  --input "$INPUT_CSV" \
+# --- AA: BWM vs Control ---
+echo ""
+echo "--- AA: BWM vs Control ---"
+CMD=(Rscript R_scripts/wilcoxon_barplot.R \
+  --input "$INPUT_DIR/between_condition_wilcoxon_aa.csv" \
   --outdir "$OUTPUT_DIR" \
+  --level aa \
+  --comparison "BWM_vs_Control" \
+  --format "$FORMAT" \
+  --dpi "$DPI")
+
+echo "Running: ${CMD[@]}"
+"${CMD[@]}"
+
+# --- Codon: BWM vs Control ---
+echo ""
+echo "--- Codon: BWM vs Control ---"
+CMD=(Rscript R_scripts/wilcoxon_barplot.R \
+  --input "$INPUT_DIR/between_condition_wilcoxon_codon.csv" \
+  --outdir "$OUTPUT_DIR/codon" \
+  --level codon \
+  --comparison "BWM_vs_Control" \
   --format "$FORMAT" \
   --dpi "$DPI")
 

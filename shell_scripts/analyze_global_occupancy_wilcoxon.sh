@@ -1,13 +1,17 @@
 #!/bin/bash
 #----------------------------------------------------
 # Bash script: generate Wilcoxon bar plots for global
-# codon and amino acid occupancy fold-change
-# Runs 4 combinations: (codon/aa) x (condition/timepoint)
+# codon and amino acid occupancy fold-change.
+# Runs both between-condition and between-timepoint Wilcoxons.
+# Drives R_scripts/wilcoxon_barplot.R.
 #----------------------------------------------------
+
+# Add R to PATH (Windows)
+export PATH="$PATH:/c/Program Files/R/R-4.4.2/bin"
 
 # ============== CONFIG: edit these ==============
 INPUT_DIR="./results/global_occupancy/analysis_corrected"
-OUTPUT_DIR="./results/global_occupancy/plots/wilcoxon"
+PLOTS_DIR="./results/global_occupancy/plots"
 FORMAT="png"       # pdf, png, or both
 DPI=300
 # ===============================================
@@ -20,117 +24,67 @@ echo "=============================================="
 echo "GLOBAL OCCUPANCY WILCOXON BAR PLOTS"
 echo "=============================================="
 
-# --- AA: BWM vs Control ---
+# =============================================
+# Between-Condition (BWM vs Control, pooled across timepoints)
+# Output: plots/between_condition/{,codon/}
+# =============================================
+
+BC_OUT="$PLOTS_DIR/between_condition"
+
 echo ""
 echo "--- AA: BWM vs Control ---"
 CMD=(Rscript R_scripts/wilcoxon_barplot.R \
   --input "$INPUT_DIR/aa_wilcoxon_condition.csv" \
-  --outdir "$OUTPUT_DIR/aa_condition" \
+  --outdir "$BC_OUT" \
   --level aa \
   --comparison "BWM_vs_Control" \
-  --format "$FORMAT" \
-  --dpi "$DPI")
-
+  --format "$FORMAT" --dpi "$DPI")
 echo "Running: ${CMD[@]}"
 "${CMD[@]}"
 
-# --- Codon: BWM vs Control ---
 echo ""
 echo "--- Codon: BWM vs Control ---"
 CMD=(Rscript R_scripts/wilcoxon_barplot.R \
   --input "$INPUT_DIR/codon_wilcoxon_condition.csv" \
-  --outdir "$OUTPUT_DIR/codon_condition" \
+  --outdir "$BC_OUT/codon" \
   --level codon \
   --comparison "BWM_vs_Control" \
-  --format "$FORMAT" \
-  --dpi "$DPI")
-
+  --format "$FORMAT" --dpi "$DPI")
 echo "Running: ${CMD[@]}"
 "${CMD[@]}"
 
-# --- AA: Day 10 vs Day 0 ---
-echo ""
-echo "--- AA: Day 10 vs Day 0 ---"
-CMD=(Rscript R_scripts/wilcoxon_barplot.R \
-  --input "$INPUT_DIR/aa_wilcoxon_timepoint_d10_vs_d0.csv" \
-  --outdir "$OUTPUT_DIR/aa_timepoint_d10_vs_d0" \
-  --level aa \
-  --comparison "Day10_vs_Day0" \
-  --format "$FORMAT" \
-  --dpi "$DPI")
+# =============================================
+# Between-Timepoint (day vs day, pooled across conditions)
+# Output: plots/between_timepoint/{comparison}/{,codon/}
+# =============================================
 
-echo "Running: ${CMD[@]}"
-"${CMD[@]}"
+BT_OUT="$PLOTS_DIR/between_timepoint"
 
-# --- Codon: Day 10 vs Day 0 ---
-echo ""
-echo "--- Codon: Day 10 vs Day 0 ---"
-CMD=(Rscript R_scripts/wilcoxon_barplot.R \
-  --input "$INPUT_DIR/codon_wilcoxon_timepoint_d10_vs_d0.csv" \
-  --outdir "$OUTPUT_DIR/codon_timepoint_d10_vs_d0" \
-  --level codon \
-  --comparison "Day10_vs_Day0" \
-  --format "$FORMAT" \
-  --dpi "$DPI")
+for comparison in d10_vs_d0 d10_vs_d5 d5_vs_d0; do
+  pretty=$(echo "$comparison" | sed 's/d\([0-9]\+\)/Day\1/g')
 
-echo "Running: ${CMD[@]}"
-"${CMD[@]}"
+  echo ""
+  echo "--- AA: $pretty ---"
+  CMD=(Rscript R_scripts/wilcoxon_barplot.R \
+    --input "$INPUT_DIR/aa_wilcoxon_timepoint_${comparison}.csv" \
+    --outdir "$BT_OUT/${comparison}" \
+    --level aa \
+    --comparison "$pretty" \
+    --format "$FORMAT" --dpi "$DPI")
+  echo "Running: ${CMD[@]}"
+  "${CMD[@]}"
 
-# --- AA: Day 10 vs Day 5 ---
-echo ""
-echo "--- AA: Day 10 vs Day 5 ---"
-CMD=(Rscript R_scripts/wilcoxon_barplot.R \
-  --input "$INPUT_DIR/aa_wilcoxon_timepoint_d10_vs_d5.csv" \
-  --outdir "$OUTPUT_DIR/aa_timepoint_d10_vs_d5" \
-  --level aa \
-  --comparison "Day10_vs_Day5" \
-  --format "$FORMAT" \
-  --dpi "$DPI")
-
-echo "Running: ${CMD[@]}"
-"${CMD[@]}"
-
-# --- Codon: Day 10 vs Day 5 ---
-echo ""
-echo "--- Codon: Day 10 vs Day 5 ---"
-CMD=(Rscript R_scripts/wilcoxon_barplot.R \
-  --input "$INPUT_DIR/codon_wilcoxon_timepoint_d10_vs_d5.csv" \
-  --outdir "$OUTPUT_DIR/codon_timepoint_d10_vs_d5" \
-  --level codon \
-  --comparison "Day10_vs_Day5" \
-  --format "$FORMAT" \
-  --dpi "$DPI")
-
-echo "Running: ${CMD[@]}"
-"${CMD[@]}"
-
-# --- AA: Day 5 vs Day 0 ---
-echo ""
-echo "--- AA: Day 5 vs Day 0 ---"
-CMD=(Rscript R_scripts/wilcoxon_barplot.R \
-  --input "$INPUT_DIR/aa_wilcoxon_timepoint_d5_vs_d0.csv" \
-  --outdir "$OUTPUT_DIR/aa_timepoint_d5_vs_d0" \
-  --level aa \
-  --comparison "Day5_vs_Day0" \
-  --format "$FORMAT" \
-  --dpi "$DPI")
-
-echo "Running: ${CMD[@]}"
-"${CMD[@]}"
-
-# --- Codon: Day 5 vs Day 0 ---
-echo ""
-echo "--- Codon: Day 5 vs Day 0 ---"
-CMD=(Rscript R_scripts/wilcoxon_barplot.R \
-  --input "$INPUT_DIR/codon_wilcoxon_timepoint_d5_vs_d0.csv" \
-  --outdir "$OUTPUT_DIR/codon_timepoint_d5_vs_d0" \
-  --level codon \
-  --comparison "Day5_vs_Day0" \
-  --format "$FORMAT" \
-  --dpi "$DPI")
-
-echo "Running: ${CMD[@]}"
-"${CMD[@]}"
+  echo ""
+  echo "--- Codon: $pretty ---"
+  CMD=(Rscript R_scripts/wilcoxon_barplot.R \
+    --input "$INPUT_DIR/codon_wilcoxon_timepoint_${comparison}.csv" \
+    --outdir "$BT_OUT/${comparison}/codon" \
+    --level codon \
+    --comparison "$pretty" \
+    --format "$FORMAT" --dpi "$DPI")
+  echo "Running: ${CMD[@]}"
+  "${CMD[@]}"
+done
 
 echo ""
 echo "=============================================="

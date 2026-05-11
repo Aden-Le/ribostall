@@ -53,12 +53,12 @@ if [ -n "$Y_CAP" ]; then
   OPTIONAL_FLAGS+=(--y-cap "$Y_CAP")
 fi
 
-# --- Amino acid level ---
+# --- Amino acid level (AA plots at the within_condition/ root) ---
 echo ""
 echo "--- Amino Acid Level ---"
 CMD=(Rscript R_scripts/within_condition_volcano.R \
   --input "$INPUT_DIR/aa_within_condition_binomial.csv" \
-  --outdir "$OUTPUT_DIR/aa" \
+  --outdir "$OUTPUT_DIR" \
   --level aa \
   --enrichment-type "$ENRICHMENT_TYPE" \
   --format "$FORMAT" \
@@ -68,7 +68,7 @@ CMD=(Rscript R_scripts/within_condition_volcano.R \
 echo "Running: ${CMD[@]}"
 "${CMD[@]}"
 
-# --- Codon level ---
+# --- Codon level (codon/ subdir) ---
 echo ""
 echo "--- Codon Level ---"
 CMD=(Rscript R_scripts/within_condition_volcano.R \

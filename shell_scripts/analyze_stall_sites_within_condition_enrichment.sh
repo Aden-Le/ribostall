@@ -51,7 +51,7 @@ echo "Y-axis cap:       ${Y_CAP:-default}"
 echo "=============================================="
 
 # Build optional flags
-OPTIONAL_FLAGS=()
+OPTIONAL_FLAGS=(--mega-composite)
 [ -n "$SHOW_CI" ] && OPTIONAL_FLAGS+=("$SHOW_CI")
 [ -n "$Y_CAP" ]   && OPTIONAL_FLAGS+=(--y-cap "$Y_CAP")
 

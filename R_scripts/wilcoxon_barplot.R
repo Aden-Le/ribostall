@@ -222,7 +222,7 @@ comparison_label <- gsub("_", " ", args$comparison)
 # Wider plot for codons (64 bars)
 plot_width <- if (args$level == "codon") 14 else 7
 
-sites <- c("E", "P", "A")
+sites <- c("A", "P", "E")
 
 # ============================================================
 # Generate Individual Plots (per-site)
@@ -252,7 +252,7 @@ for (st in sites) {
 }
 
 # ============================================================
-# Composite Plot: E | P | A
+# Composite Plot: A | P | E
 # ============================================================
 
 cat("Generating composite plot...\n")
@@ -266,7 +266,7 @@ for (st in sites) {
                                   show_legend = FALSE)
 }
 
-composite <- (plot_list[["E"]] | plot_list[["P"]] | plot_list[["A"]]) +
+composite <- (plot_list[["A"]] | plot_list[["P"]] | plot_list[["E"]]) +
   plot_layout(guides = "collect") +
   plot_annotation(
     title = paste0(level_label, " – ", comparison_label),
@@ -278,7 +278,7 @@ composite <- (plot_list[["E"]] | plot_list[["P"]] | plot_list[["A"]]) +
         legend.text = element_markdown(size = 11))
 
 filepath <- file.path(args$outdir, "composite",
-                      paste0("EPA_", args$level, "_", args$comparison,
+                      paste0("APE_", args$level, "_", args$comparison,
                              "_barplot_composite"))
 save_plot(composite, filepath, width = plot_width * 3, height = 6,
           format = args$format, dpi = args$dpi)

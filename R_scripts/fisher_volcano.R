@@ -298,7 +298,7 @@ if (all(!is.na(num_keys)) && any(num_keys != 0)) {
 } else {
   group_values <- sort(group_values)
 }
-sites <- c("E", "P", "A")
+sites <- c("A", "P", "E")
 plot_count <- 0
 
 # For each group value × site

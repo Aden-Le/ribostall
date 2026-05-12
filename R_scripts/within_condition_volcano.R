@@ -358,7 +358,7 @@ for (etype in names(enrichment_configs)) {
 cat("\nGenerating individual plots...\n")
 
 groups <- sort(unique(data$group))
-sites <- c("E", "P", "A")
+sites <- c("A", "P", "E")
 plot_count <- 0
 
 for (etype in names(enrichment_configs)) {

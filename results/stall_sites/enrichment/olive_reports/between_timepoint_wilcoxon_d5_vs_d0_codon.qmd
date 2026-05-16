@@ -1,0 +1,173 @@
+---
+title: "between_timepoint_wilcoxon_d5_vs_d0_codon — Olive report"
+subtitle: "ribostall stall_sites — enrichment stats"
+date: 2026-05-12
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    embed-resources: true
+    fig-cap-location: bottom
+  pdf:
+    toc: true
+    fig-cap-location: bottom
+tbl-colwidths: [30, 8, 22, 22, 26]  # aa-col-added
+execute:
+  echo: false
+---
+
+## Composite figure
+
+![Three-panel bar plot (A-site, P-site, E-site, left-to-right) showing per-codon log2 fold-change of day_5-vs-day_0 median per-replicate frequency, with BWM and control reps pooled within each timepoint, across the 61 sense codons. Bars sorted by log2_FC high-to-low within each panel; blue = enriched at day_5 (log2FC ≥ 0), red = depleted at day_5 (log2FC < 0). Y-axis range ~−1.35 to +1.40 across panels. A-site reaches the file's deepest depletion at TTA (~−1.34, rare-codon); P-site reaches +1.00 at GGG (rare-codon) and −1.21 at GCG (rare-codon) at its tails; E-site is the broadest panel, ranging from ATA (~+1.40, rare-codon) at the head to CCT (~−0.96) at the tail.](../../plots/between_timepoint/d5_vs_d0/codon/composite/APE_codon_Day5_vs_Day0_barplot_composite.png)
+
+Each panel ranks the 61 sense codons by signed log2_FC (day_5 median / day_0 median) at one ribosome site. Bars above zero are day_5-enriched relative to day_0; bars below zero are day_5-depleted. The widest dynamic range in the entire family (~±1.4) sits in this file, but the |log2_FC| > 0.9 cells are dominated by rare codons with median frequencies < 0.2% — read as `low-count` exploratory signal, not headline biology.
+
+---
+
+## Overview
+
+- **CSV:** `between_timepoint_wilcoxon_d5_vs_d0_codon.csv`
+- **Family (from `_INDEX.md`):** `between_timepoint_wilcoxon`
+- **Sister CSV(s):** `between_timepoint_wilcoxon_d5_vs_d0_aa.csv`, `between_timepoint_wilcoxon_d10_vs_d0_aa.csv`, `between_timepoint_wilcoxon_d10_vs_d0_codon.csv`, `between_timepoint_wilcoxon_d10_vs_d5_aa.csv`, `between_timepoint_wilcoxon_d10_vs_d5_codon.csv`
+- **Test:** Mann-Whitney U / Wilcoxon rank-sum (two-sided) (source: user-confirmed)
+- **Design:** n=4 day_5 (BWM_d5_rep2/3 + control_d5_rep2/3) vs n=4 day_0 (BWM_d0_rep2/3 + control_d0_rep2/3); BWM and control reps pooled inside each timepoint; two-sided MW on per-replicate codon frequencies; BH-FDR per E/P/A site (each site = own family of 61 sense codons); effect column is `log2_FC` = log2(median_d5 / median_d0).
+
+### Family-level caveats
+
+- **mw-floor-blocking** — MW two-sided p-floor for n=4 vs n=4 is exactly 0.02857; with per-site BH-FDR families of ~20 (aa) or ~61 (codon), clearing FDR<0.05 is mathematically impossible unless ~every test ties at the floor. Empirically: 0 hits at FDR<0.05 in any of the 6 files. Proposed by Dylan, confirmed by user in clarification round 2.
+- **condition-pooled-confound** — n=4 per timepoint is built by pooling 2 BWM + 2 control reps; if BWM and control diverge in their time response, pooling masks divergent signals. All 6 members share this design. Proposed by Dylan, confirmed by user in clarification round 2.
+- **n=4-low-power** — n=4 vs n=4 MW has very low power; null results across all 6 files are weakly informative. Proposed by Dylan, confirmed by user in clarification round 2.
+- **p-floor-aware-headline** — Headlines must explicitly state min raw p ≈ 0.0286 and explain why "no FDR hits" here is uninformative, not a biological negative. Proposed by Dylan, confirmed by user in clarification round 2.
+
+---
+
+## Headline
+
+**Firm null at FDR<0.05 (0/183) for codon-level d5-vs-d0 MW with reps pooled across BWM and control per timepoint; min p_adj = 0.436 at site P — 4 floor rows (CTA −0.923, GAG +0.190, GCA −0.740, GCG −1.212). Five total floor rows file-wide (1 at A: ACT +0.227; 4 at P; 0 at E). Min raw p = 0.0286 (n=4 vs n=4 floor); 'no FDR hits' is structural per the locked floor caveat.**
+
+Firm null at FDR<0.05 (0/183) for codon-level day_5 vs day_0 MW with BWM and control reps pooled within each timepoint (n=4 per side). Min p_adj = 0.436 at site P — 4 floor rows (CTA −0.923, GCG −1.212, GCA −0.740, GAG +0.190), giving BH wall 61*0.0286/4 = 0.436. File-wide: 5 floor rows (4 at P, 1 at A: ACT +0.227; 0 at E). Site E completely flat (min p_adj=0.926); site A min p_adj=0.775. Closest-to-significant codon-level signature: at site P, three depletions (CTA, GCG, GCA) and one enrichment (GAG) all reaching the floor between day_0 and day_5 reps. Treat as exploratory; the floor blocks formal FDR<0.05.
+
+## Top hits
+
+Effect column is `log2_FC` (day_5 / day_0 median ratio). `p_adj` is BH-corrected per E/P/A site (family of 61 codons). Each Dylan site group is split into one sub-table per sign of effect: positive `log2_FC` means day_5-enriched; negative means day_5-depleted. Row order is Dylan's source order. Dylan's group order is preserved (P is the headline group; A and E follow). The `aa` column is the single-letter amino acid translation of each codon.
+
+### P site — Enriched (day_5 > day_0)
+
+| codon | aa  | effect (`log2_FC`) | adjusted p (`p_adj`) | flag         |
+| ----- | --- | ------------------ | -------------------- | ------------ |
+| GAG   | E   | +0.190             | 0.436                | floor        |
+| TCT   | S   | +0.388             | 0.775                | nominal-only |
+| GGG   | G   | +1.001             | 0.775                | low-count    |
+| CAA   | Q   | +0.250             | 0.871                |              |
+| GTC   | V   | +0.335             | 0.871                |              |
+
+### P site — Depleted (day_5 < day_0)
+
+| codon | aa  | effect (`log2_FC`) | adjusted p (`p_adj`) | flag             |
+| ----- | --- | ------------------ | -------------------- | ---------------- |
+| GCG   | A   | −1.212             | 0.436                | floor, low-count |
+| CTA   | L   | −0.923             | 0.436                | floor, low-count |
+| GCA   | A   | −0.740             | 0.436                | floor            |
+| GGT   | G   | −0.115             | 0.697                | nominal-only     |
+| AGG   | R   | −0.729             | 0.775                | low-count        |
+
+### A site — Enriched (day_5 > day_0)
+
+| codon | aa  | effect (`log2_FC`) | adjusted p (`p_adj`) | flag         |
+| ----- | --- | ------------------ | -------------------- | ------------ |
+| ACT   | T   | +0.227             | 0.775                | floor        |
+| AAC   | N   | +0.672             | 0.775                | nominal-only |
+| ATC   | I   | +0.470             | 0.775                |              |
+| TCT   | S   | +0.250             | 0.775                |              |
+| CAA   | Q   | +0.158             | 0.775                |              |
+
+### A site — Depleted (day_5 < day_0)
+
+| codon | aa  | effect (`log2_FC`) | adjusted p (`p_adj`) | flag                    |
+| ----- | --- | ------------------ | -------------------- | ----------------------- |
+| TTA   | L   | −1.341             | 0.775                | nominal-only, low-count |
+| GCA   | A   | −0.713             | 0.775                | nominal-only            |
+| GGC   | G   | −0.683             | 0.775                | nominal-only, low-count |
+| CTG   | L   | −0.652             | 0.775                | nominal-only, low-count |
+| TGG   | W   | −0.671             | 0.775                |                         |
+
+### E site — Enriched (day_5 > day_0)
+
+| codon | aa  | effect (`log2_FC`) | adjusted p (`p_adj`) | flag         |
+| ----- | --- | ------------------ | -------------------- | ------------ |
+| TCC   | S   | +0.442             | 0.926                | nominal-only |
+| CAA   | Q   | +0.433             | 0.926                |              |
+| TCT   | S   | +0.385             | 0.926                |              |
+| CAG   | Q   | +0.312             | 0.926                |              |
+| ACT   | T   | +0.199             | 0.926                |              |
+
+### E site — Depleted (day_5 < day_0)
+
+| codon | aa  | effect (`log2_FC`) | adjusted p (`p_adj`) | flag      |
+| ----- | --- | ------------------ | -------------------- | --------- |
+| GCG   | A   | −0.610             | 0.926                | low-count |
+| CCA   | P   | −0.525             | 0.926                |           |
+| CTA   | L   | −0.398             | 0.926                | low-count |
+| AGA   | R   | −0.270             | 0.926                |           |
+| ACC   | T   | −0.143             | 0.926                |           |
+
+### Flag glossary
+
+- `floor` — the row sits at the test's discrete minimum possible raw p-value, given the sample size. For MW two-sided at n=4 vs n=4 this floor is exactly 0.02857. The site-P `p_adj` = 0.436 is exactly the BH wall for 4 floor rows tied in a 61-codon family (61 × 0.0286 / 4); a lone floor hit in a 61-codon family BH-corrects to ≈ 1.74 — cannot reach `p_adj` < 1 by itself.
+- `nominal-only` — raw p < 0.05 but `p_adj` ≥ 0.05. The row would have been flagged significant if tested in isolation, but did not survive BH-FDR correction across its grouping family.
+- `low-count` — the codon's count or median frequency is below the test's stability threshold; the `log2_FC` column for this row is dominated by single-rep fluctuations and should not be over-read. Rare codons in this file's top |effect| set include TTA, GCG, CTA, GGG, GGC, CTG, AGG — all with median frequencies < 0.2%.
+
+## Numbers at a glance
+
+- `n_tests`: 183
+- `n_significant` (adjusted-p < 0.05): 0
+- `n_significant` (adjusted-p < 0.10): 0
+- `min adjusted-p`: 0.436 (P-site, BH wall for 4 floor rows in 61-codon family)
+- `min raw-p`: 0.02857 (= MW exact floor); 5 rows at the floor — A: ACT; P: CTA, GAG, GCA, GCG
+- `p_floor`: 0.02857 (n=4 vs n=4 two-sided exact)
+- Per-site BH families:
+  - A site: 61 tests, 0 hits at p_adj<0.05, min p_adj = 0.775 (1 floor row)
+  - E site: 61 tests, 0 hits at p_adj<0.05, min p_adj = 0.926 (0 floor rows)
+  - P site: 61 tests, 0 hits at p_adj<0.05, min p_adj = 0.436 (4 floor rows)
+
+## Biological interpretation
+
+**The file is a firm null at FDR<0.05 across 183 codon-level day_5-vs-day_0 comparisons; site P breaks below the 0.5 BH wall with 4 floor rows tied at `p_adj` = 0.436 (concrete).** Raw-p is clamped at 0.02857 (the n=4 vs n=4 MW exact floor) and the 61-codon per-site BH family puts the wall for a lone floor hit at ≈ 1.74 — i.e. no single floor row can reach `p_adj` < 1 alone. The site-P configuration here (4 floor rows: CTA, GCG, GCA all depleted; GAG enriched) is one of only two cells in the family that breaks below 0.5; the d10_vs_d5_codon sister broke the wall at site A. The aa-level d5_vs_d0 sister gets to `p_adj` = 0.571 with one floor row (P-C); this file pushes the d5-vs-d0 contrast further at codon resolution because the P-site floor concentrates 4 codons, not 1 amino acid.
+
+**Site-P codon hits do not reproduce at AA resolution: codon-level d5-vs-d0 reveals partial-codon signatures that AA-aggregation hides (exploratory).** The 4 P-site floor rows here (GAG +0.190, CTA −0.923, GCA −0.740, GCG −1.212) are NOT visible at the aa level — `_INDEX.md` records P-aa A at +0.021 (p=1.0), P-aa E at +0.268 (p=0.343), P-aa L (which includes CTA) at +0.004 (p=0.686). So at site P, the day_5-vs-day_0 shift on Ala (codon-level: GCA depleted, GCG depleted, with GCC/GCT untouched) and Leu (CTA depleted, other Leu codons flat) are codon-usage shifts that aa-aggregation averages out. The aa-level d5_vs_d0 file's only floor row is P-C (+0.249) — but P-TGC is +0.068 (p=0.486) and P-TGT is +0.427 (p=0.686) at codon level; the aa-level Cys signal is balanced across both synonyms, neither individually clears the codon BH wall. The codon resolution and aa resolution are looking at different parts of the same site-P signal.
+
+**Site A's lone floor row is ACT (+0.227, Thr), well below the magnitudes of the panel's non-floor extreme cells (exploratory).** The largest |effect| cells at A — TTA −1.341 (`low-count` Leu, rare codon), AAC +0.672 (Asn, moderate freq, nominal-only), ATC +0.470 (Ile, common) — sit above ACT in magnitude but only ACT cleared the n=4 MW floor. This is the discrete-floor pattern at work: |log2_FC| magnitude and raw-p rank are partially decoupled at this design's exact-p floor. AAC (+0.672) is the most stable A-site exploratory cell (Asn is a moderate-frequency amino acid, not flagged `low-count`); its sister d10_vs_d0_codon also showed A-AAC near-floor (+0.595 in that file, `nominal-only`). Across the two d-vs-d0 contrasts at codon level, A-AAC is consistently enriched between day_0 and day_5/day_10 — worth carrying to the within-condition Fisher d5_vs_d0_codon to check if BWM and control individually corroborate.
+
+**Site E is completely flat at every contrast in this family at codon resolution (concrete).** Min `p_adj` at E is 0.926 here; 0.871 at d10_vs_d5_codon; 0.930 at d10_vs_d0_codon; 0 floor rows file-wide for site E in d5_vs_d0. The d5_vs_d0 aa sister was also flat at E (min `p_adj` = 1.000). Both resolutions converge on "site E does not have MW-detectable time-axis modulation in this family" — the strongest "silent site" claim available across the 6-file family. This is biologically informative: whatever timepoint shifts exist in stall composition concentrate at the A and P sites and bypass E.
+
+**Most large |log2_FC| cells across all three panels sit on rare codons (exploratory).** A-TTA −1.341, P-GCG −1.212, P-GGG +1.001, P-CTA −0.923, E-ATA +1.40, E-CCT −0.96, A-GCA −0.71, P-AGG −0.73 — all have median frequencies < 0.2%. The `low-count-rare-codon-instability` caveat bites hardest here of any file in the family because the d5_vs_d0 contrast's mid-range raw-p stack happens to include several rare codons at the floor. Read |log2_FC| > 0.7 on `low-count` cells as sampling-noise magnitudes, not biology. The only large-effect cells that escape this filter at the A and P sites are AAC (+0.672 at A, moderate freq) and TGG (−0.671 at A, rare Trp territory but still moderate magnitude given the rare-aa biology).
+
+**What to carry forward.** Concrete claims to quote: this file is null at FDR<0.05 for day_5-vs-day_0 at codon resolution with conditions pooled; site P has 4 tied floor rows (CTA, GCG, GCA depleted; GAG enriched) hitting BH wall 0.436, the strongest site-P signal in any codon contrast in the family; site E is completely flat across both resolutions for the d5-vs-d0 contrast. Exploratory patterns worth checking in sister tests: (1) does P-GAG's cross-contrast additivity (+0.190 here, +0.387 at d10_vs_d0_codon) cohere with `timepoint_fisher_within_condition_d5_vs_d0_codon` and `per_timepoint_fisher_codon`? — yes per `_INDEX.md`: P-GAG is BWM↑1.33 / control↑1.39 at d10_vs_d0_codon (both FDR<0.01), corroborating direction across the two test designs. (2) does the site-P codon-usage signature on Ala (GCA, GCG depleted with GCC, GCT untouched) and Leu (CTA-specific) reproduce in the within-condition Fisher? (3) does A-AAC's cross-contrast enrichment (+0.672 here, +0.595 at d10_vs_d0_codon) reach FDR significance in the Fisher contrasts? Noise to ignore: every `low-count` rare-codon cell with |log2_FC| > 0.7 (TTA, GCG, GGG, CTA, AGG, CTG, GGC, etc.) — magnitudes are not biology-quotable numbers.
+
+## Methods
+
+MW rank-sum two-sided on per-replicate frequencies, n=4 day_5 (BWM_day5_rep2/3 + control_day5_rep2/3) vs n=4 day_0, BH-FDR per site (each site = 61-codon family). Test answers "do day_5 and day_0 reps differ in per-rep codon frequency at this site?" with BWM and control reps pooled within each timepoint.
+
+## What the caveats mean for reading this file
+
+- **mw-floor-blocking.** Raw-p is clamped at 0.0286 (n=4 vs n=4 floor); for a 61-codon per-site BH family, even 4 tied floor hits at one site only reach `p_adj` = 0.436. "0/183 at FDR<0.05" here is the design's structural ceiling, not biological evidence that day_5 ≈ day_0.
+- **condition-pooled-confound.** Each timepoint's n=4 is 2 BWM + 2 control reps. The site-P 4-floor block here cannot be attributed to BWM or control individually — use `timepoint_fisher_within_condition_d5_vs_d0_codon` to disentangle (88/366 hits at FDR<0.05 per `_INDEX.md`).
+- **n=4-low-power.** Low power; null is weakly informative.
+- **p-floor-aware-headline.** Headline above explicitly flags 0.0286 as the raw-p floor and the structural source of "no FDR hits".
+- **weighted_log2_enrichment-absent.** `log2_FC` of medians only; rare codons (TTA, CTA, GCG, GGG all < 0.2% median freq) get the same column real estate as common codons and dominate the |effect| tails.
+- **larger-bh-family.** 61 codons per site → BH wall ~3x more stringent than aa. The aa-level d5_vs_d0 sister gets to `p_adj` = 0.571 with 1 floor hit; here at codon level, 4 floor rows still only reach `p_adj` = 0.436. Codon resolution lives further from FDR<0.05 than aa resolution despite finer dynamic range.
+- **low-count-rare-codon-instability.** Extreme |effect| at A-TTA (−1.341), P-GCG (−1.212), P-GGG (+1.001), P-CTA (−0.923) all sit on rare codons (median freq < 0.2%). Their magnitudes are not stable across small sample fluctuations.
+
+### Considered and ruled out
+
+*(Dylan did not propose any further per-CSV caveats here.)*
+
+---
+
+## Plots — individual
+
+![A-site day_5-vs-day_0 codon bar plot. X-axis is the 61 sense codons ordered by log2_FC high-to-low (left: AAC, AAT, ATC, GAT, CGC, CGG, GTC, TCT, ACT, TGT, ATT, CTA, GAC, CAA, GTT, ...; right: ... CCT, TTG, TCG, GCG, CGA, ATA, GTG, CTG, ACG, TGG, GGC, GCA, TTA). Y-axis is log2_FC ranging ~−1.34 to +0.67. Largest enrichment at AAC (~+0.67, nominal-only); largest depletion at TTA (~−1.34, `low-count`). One floor row visible mid-pack at ACT (+0.227) — floor flag tracks raw-p, not effect size.](../../plots/between_timepoint/d5_vs_d0/codon/individual/site_A_codon_Day5_vs_Day0_barplot.png)
+
+![P-site day_5-vs-day_0 codon bar plot. X-axis is the 61 sense codons ordered by log2_FC high-to-low (left: GGG, TCC, TTT, TGT, TCT, GTC, AAC, CAA, GCT, GAG, ACT, GAA, GCC, CTC, ATC, ...; right: ... TGG, CAC, GGC, CTG, ATG, AGT, CCG, CGA, CCT, AGG, GCA, CTA, TTA, GCG). Y-axis is log2_FC ranging ~−1.21 to +1.00. Largest enrichment at GGG (~+1.00, `low-count`); largest depletions at GCG (~−1.21, floor + `low-count`), TTA (~−1.00, `low-count`), CTA (~−0.92, floor + `low-count`), GCA (~−0.74, floor). 4 floor rows visible across both directions — site-P min p_adj = 0.436, the file's headline.](../../plots/between_timepoint/d5_vs_d0/codon/individual/site_P_codon_Day5_vs_Day0_barplot.png)
+
+![E-site day_5-vs-day_0 codon bar plot. X-axis is the 61 sense codons ordered by log2_FC high-to-low (left: ATA, ACG, TCG, TCC, CAA, TCT, GAG, CAG, TTG, TGT, ACT, CGG, GAA, TGC, CTC, ...; right: ... ATG, AGT, GTT, AGA, TAT, AAA, CTA, AGG, GGG, GCA, CCA, CGA, GCG, TTA, CCT). Y-axis is log2_FC ranging ~−0.96 to +1.40. Largest enrichment at ATA (~+1.40, `low-count` Ile rare codon); largest depletions at CCT (~−0.96), TTA (~−0.91, `low-count`). No floor rows — site E completely flat at `p_adj` = 0.926 despite this panel having the widest displayed dynamic range of any plot in this file.](../../plots/between_timepoint/d5_vs_d0/codon/individual/site_E_codon_Day5_vs_Day0_barplot.png)

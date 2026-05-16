@@ -1,4 +1,22 @@
 results/
+# Track report .md/.qmd in these two folders (re-include parent dirs)
+!results/
+results/*
+!results/stall_sites/
+results/stall_sites/*
+!results/stall_sites/enrichment/
+results/stall_sites/enrichment/*
+!results/stall_sites/enrichment/analysis_stats_interpretation/
+!results/stall_sites/enrichment/olive_reports/
+results/stall_sites/enrichment/analysis_stats_interpretation/*
+results/stall_sites/enrichment/olive_reports/*
+!results/stall_sites/enrichment/analysis_stats_interpretation/*.md
+!results/stall_sites/enrichment/olive_reports/*.md
+!results/stall_sites/enrichment/olive_reports/*.qmd
+# Re-ignore meta files (index, plan, manual review, remediation, etc.)
+results/stall_sites/enrichment/analysis_stats_interpretation/_*
+results/stall_sites/enrichment/olive_reports/_*
+
 R_scripts/journals/
 docs/
 test.py

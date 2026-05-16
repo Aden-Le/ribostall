@@ -1,0 +1,189 @@
+---
+title: "timepoint_fisher_within_condition_d10_vs_d5_codon — Olive report"
+subtitle: "ribostall stall_sites — enrichment stats"
+date: 2026-05-12
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    embed-resources: true
+    fig-cap-location: bottom
+  pdf:
+    toc: true
+    fig-cap-location: bottom
+tbl-colwidths: [30, 22, 22, 26]
+execute:
+  echo: false
+---
+
+## Composite figure
+
+![2×3 grid of day-10-vs-day-5 codon Fisher volcano panels: rows are conditions (top = BWM, bottom = control); columns are ribosome sites (A / P / E). Each panel plots −log₁₀(FDR) against log₂(odds ratio); triangles mark FDR<0.05 hits and circles are non-significant. Glyphs are coloured by codon biochemistry (acidic = red, basic = blue, hydrophobic = green, neutral = orange, polar = purple). The control,P panel carries the file's tallest single point (GGA at log₂(OR) ≈ +0.5, −log₁₀(FDR) ≈ 8.3); control,A is the next most-populated panel (CAA depleted and GGA enriched both at −log₁₀(FDR) ≈ 6, AAC depleted at ≈ 3.8, GCC enriched at ≈ 2). The BWM row is sparse: BWM,A shows GGA enriched at log₂(OR) ≈ +0.4 (−log₁₀(FDR) ≈ 3.3) and CTG depleted near the FDR threshold; BWM,P shows GGA enriched (−log₁₀(FDR) ≈ 2.7) and TTT depleted at the FDR threshold, with one stray zero-cell hydrophobic point at log₂(OR) ≈ −10; **BWM,E is completely null** — every glyph is a circle below the FDR=0.05 line. control,E shows GCC and CTC enriched at log₂(OR) ≈ +0.6, CCA and GAG and ACC clustered above FDR=0.05, and GTC marginal.](../../plots/within_condition_timepoint_fisher/d10_vs_d5/codon/composite/codon_fisher_composite.png)
+
+Each glyph is a single codon at one (condition, site) BH-FDR family of 61; horizontal dashed line is FDR = 0.05 and vertical dashed lines mark ±0.5 log₂(OR). Positive log₂(OR) means day-10-enriched relative to day-5 *within the same condition*; negative means day-10-depleted relative to day-5. The test does not compare BWM to control directly — that contrast is implied by reading paired top/bottom rows of the grid side-by-side. Panels are arranged in A / P / E ribosome-site order across columns.
+
+---
+
+## Overview
+
+- **CSV:** `timepoint_fisher_within_condition_d10_vs_d5_codon.csv`
+- **Family (from `_INDEX.md`):** `timepoint_fisher_within_condition`
+- **Sister CSV(s):** `timepoint_fisher_within_condition_d10_vs_d0_aa.csv`, `timepoint_fisher_within_condition_d10_vs_d0_codon.csv`, `timepoint_fisher_within_condition_d10_vs_d5_aa.csv`, `timepoint_fisher_within_condition_d5_vs_d0_aa.csv`, `timepoint_fisher_within_condition_d5_vs_d0_codon.csv`
+- **Test:** Fisher's exact (two-sided), day-10-vs-day-5 2×2 contingency per (condition, site, codon); BH-FDR within each (condition, site) family of 61 codons (source: user-confirmed)
+- **Design:** Per (condition, site, codon) 2×2 day-10-vs-day-5 contingency tested by two-sided Fisher's exact within one condition; replicates summed before the test (pseudoreplicated); BH-FDR applied independently within each of 6 (condition, site) families of 61 codons (366 tests total). The test is **within-condition**: BWM and control are tested separately and never share a contingency.
+
+### Family-level caveats
+
+- **pseudorep** — 2 biological reps per (condition, timepoint) are summed into the 2×2 before Fisher's exact; per-replicate variation is invisible to the statistic, so p-values are anti-conservative.
+- **large-N-Fisher-anticonservative** — pooled (day_10 + day_5) totals at the condition level are in the thousands (6945, 8788, 11177, 11935 across cells); Fisher returns vanishing p-values for tiny absolute deviations, so `odds_ratio` (log-axis) is the primary effect column, not p magnitude.
+- **bh-per-(condition,site)** — BH-FDR is computed independently within each of the 6 (condition, site) families of 61 codons; `p_adj` means "corrected within this sub-family", not across the full 366-row file.
+- **within-condition-clean** — unlike the between-condition or between-timepoint Wilcoxon families, no condition pooling and no timepoint pooling cross-contaminate the test; the design is structurally cleaner.
+
+---
+
+## Headline
+
+**d10 vs d5 within-condition Fisher (codon-level): 22/366 hits at FDR<0.05 (4/183 BWM, 18/183 control). BWM concentrates on site-A and site-P GGA enrichment (A:GGA↑1.30 FDR<5e-4, P:GGA↑1.28 FDR<2.4e-3) plus a rare-codon depletion (A:CTG↓0.37 FDR=0.028) and one rare-codon enrichment (P:TTT↑2.23 FDR=0.035). Control sweeps broadly across all three sites (A: 5 hits dominated by GGA/CAA/AAC/GCC/CCA; E: 7 hits including CCA/CTC/GCC/GAG/ACC↑ and GAG↓; P: 6 hits with GGA↑1.43 FDR<6e-9 the leading feature). The site-A and site-P GGA enrichment is the largest-magnitude shared-direction cell in this CSV: same direction in BWM and control across both sites and at large magnitude. Notable direction flip: P:GTC (BWM 1.26 ns vs control↓0.74 FDR=0.017).**
+
+## Top hits
+
+The effect column is `odds_ratio`. Direction is fixed by the day-10-vs-day-5 contingency layout *within one condition*: OR > 1 = day-10-enriched relative to day-5 in that condition, OR < 1 = day-10-depleted. `p_adj` is BH-corrected within each (condition, site) family of 61 codons. Sub-tables below are split per-direction within each (condition, site) Dylan-group, ordered A / P / E (ribostall ribosome-site canonical ordering). Codon-resolution rows keep the three-letter codon as-is; the encoded amino-acid annotation in parentheses is Dylan's verbatim notation. BWM has fewer than 10 candidates at FDR<0.10 (9 total), so per Dylan's per-CSV note BWM rows are ranked by raw p irrespective of cutoff — several `nominal-only` rows appear below the FDR<0.05 cells.
+
+### BWM, A site — Enriched (day_10 > day_5)
+
+| codon | effect (`odds_ratio`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- |
+| GGA (Gly) | 1.303 | 4.68e-04 |  |
+| CGT (Arg) | 1.291 | 0.05832 | nominal-only |
+| GAG (Glu) | 1.175 | 0.07953 | nominal-only |
+
+### BWM, A site — Depleted (day_10 < day_5)
+
+| codon | effect (`odds_ratio`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- |
+| CTG (Leu) | 0.374 | 0.02759 | rare-codon-low-count |
+| GCA (Ala) | 0.500 | 0.05832 | nominal-only, rare-codon-low-count |
+| CAA (Gln) | 0.743 | 0.05832 | nominal-only |
+| CTT (Leu) | 0.753 | 0.07300 | nominal-only |
+
+### BWM, P site — Enriched (day_10 > day_5)
+
+| codon | effect (`odds_ratio`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- |
+| GGA (Gly) | 1.279 | 0.00239 |  |
+| GAG (Glu) | 1.191 | 0.13886 | nominal-only |
+
+### BWM, P site — Depleted (day_10 < day_5)
+
+| codon | effect (`odds_ratio`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- |
+| TTT (Phe) | 0.492 | 0.03466 | rare-codon-low-count |
+
+### BWM, E site — Enriched (day_10 > day_5)
+
+*(BWM,E is fully null at codon level — smallest `p_adj` = 0.114 across all 61 codons. No FDR<0.05 rows in either direction; see the BWM,E volcano panel below, which is empty above the FDR threshold. The aa-level companion (`timepoint_fisher_within_condition_d10_vs_d5_aa.csv`) shows BWM,E:G/R/I significant at FDR<0.05 — the larger BH family of 61 codons washes per-synonym signal out even where aa-level aggregation reaches significance. This is the `larger-bh-family` caveat case study for this CSV.)*
+
+### BWM, E site — Depleted (day_10 < day_5)
+
+*(BWM,E is fully null at codon level — see the BWM,E note above.)*
+
+### control, A site — Enriched (day_10 > day_5)
+
+| codon | effect (`odds_ratio`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- |
+| GCC (Ala) | 1.389 | 0.01536 |  |
+
+### control, A site — Depleted (day_10 < day_5)
+
+| codon | effect (`odds_ratio`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- |
+| CAA (Gln) | 0.552 | 1.02e-06 |  |
+| AAC (Asn) | 0.675 | 3.00e-04 |  |
+| AAT (Asn) | 0.712 | 0.08969 | nominal-only |
+
+### control, P site — Enriched (day_10 > day_5)
+
+| codon | effect (`odds_ratio`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- |
+| GGA (Gly) | 1.430 | 5.71e-09 |  |
+
+### control, P site — Depleted (day_10 < day_5)
+
+| codon | effect (`odds_ratio`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- |
+| CAA (Gln) | 0.675 | 0.01183 |  |
+| ATT (Ile) | 0.685 | 0.01283 |  |
+
+### control, E site — Enriched (day_10 > day_5)
+
+| codon | effect (`odds_ratio`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- |
+| GCC (Ala) | 1.530 | 0.00111 |  |
+| CTC (Leu) | 1.422 | 0.00111 |  |
+| CCA (Pro) | 1.387 | 0.00111 |  |
+
+### control, E site — Depleted (day_10 < day_5)
+
+*(Dylan's curated Top hits table did not include control,E depleted rows; Dylan's per-CSV note flags `E:GAG` (BWM 1.05 ns vs control 0.82 FDR=0.0069) as a direction-flip cell relative to BWM. See the control,E volcano panel below for the full panel.)*
+
+### Flag glossary
+
+- `nominal-only` — raw p < 0.05 but `p_adj` ≥ 0.05. The row would have been flagged significant if tested in isolation, but did not survive BH-FDR correction across its (condition, site) family of 61 codons. Applied here to BWM enriched rows CGT/GAG at sites A and P, BWM depleted rows GCA/CAA/CTT at site A, and the single control,A,AAT row.
+- `rare-codon-low-count` — at least one timepoint cell for this (condition, site, codon) row has `day_X_count` below the test's stability threshold (typically < 50 at codon resolution). OR estimates and CIs are unstable at small k; large `|log₂(OR)|` values for flagged rows may reflect sampling noise rather than biology. Applied here to BWM,A,CTG (day_X count 12 vs 55), BWM,A,GCA (21 vs 72), and BWM,P,TTT (25 vs 87).
+
+## Numbers at a glance
+- `n_tests`: 366 (183 per condition; BH families of 61 codons per (condition, site))
+- `n_significant` (adjusted-p < 0.05): 22 (BWM 4, control 18)
+- `n_significant` (adjusted-p < 0.10): 29 (BWM 9, control 20)
+- `min adjusted-p`: 5.71e-09 (control, P, GGA)
+- Per (condition, site) at FDR<0.05:
+  - BWM,A: 2 (GGA↑, CTG↓); min p_adj = 4.68e-04
+  - BWM,E: 0 (smallest p_adj = 0.114)
+  - BWM,P: 2 (GGA↑, TTT↓); min p_adj = 0.00239
+  - control,A: 5; min p_adj = 1.02e-06 (CAA↓)
+  - control,E: 7; min p_adj = 0.00111 (3-way tie at GCC/CTC/CCA)
+  - control,P: 6; min p_adj = 5.71e-09 (GGA↑)
+
+## Biological interpretation
+
+**Site-A and site-P GGA enrichment is the file's largest shared-direction codon-level cell and is GGA-only, not pan-Gly (concrete).** BWM and control both significantly enrich GGA at sites A and P from day-5 to day-10 (BWM,A,GGA OR=1.30 `p_adj`=4.7e-4; BWM,P,GGA OR=1.28 `p_adj`=2.4e-3; control,A,GGA enriched per the composite at −log₁₀(FDR) ≈ 6; control,P,GGA OR=1.43 `p_adj`=5.7e-9 — the file minimum). Per Dylan's joint-reading note, no other Gly synonym (GGC, GGG, GGT) clears FDR at either site in either condition — the aa-level d10-vs-d5 Gly enrichment at sites A and P is therefore carried entirely by GGA. GGA is a Gly synonym whose decoding involves a wobble interaction at the third position; a coordinated GGA-specific accumulation at the A and P sites between d5 and d10 in *both* conditions is most parsimonious with a shared time-axis shift in Gly-tRNA isoacceptor availability or in transcriptome composition (more GGA-encoding transcripts in the ribosome footprint pool late in the timecourse), not with a perturbation-specific effect.
+
+**BWM site E is fully null at codon resolution (concrete; design-level observation).** All 61 BWM,E codons return `p_adj` ≥ 0.114, while the aa-level companion shows BWM,E:G, BWM,E:R, BWM,E:I significant at FDR<0.05 over the same contrast. This is the textbook `larger-bh-family` caveat at work: codon resolution multiplies the BH family from 20 (aa) to 61 (codons), and BWM's d10-vs-d5 site-E aa-level signal spreads across multiple Gly/Arg/Ile synonyms thinly enough that no single codon clears the per-(condition, site) FDR threshold. Biologically this rules out a clean synonym-preference signature at BWM,E for this contrast (otherwise one or two codons would have concentrated the aa-level signal and survived the larger BH family); the BWM,E aa-level effect, to the extent it is real, is *isoacceptor-spread* rather than codon-selective. Worth reading codon-vs-aa `p_adj` here on an effect-size axis, not on a p-axis.
+
+**Control's broad d10-vs-d5 codon reshuffle concentrates at site E and site A (concrete; partly amplified by large-N).** Control fires 7 codon hits at site E (GCC/CTC/CCA enriched at FDR<2e-3 each; ACC, GAG↑ from Dylan's per-CSV table; GAG↓ and one more from the volcano panel), 6 at site P (GGA the leader, plus CAA/ATT depleted), and 5 at site A (CAA the leading depletion at FDR<1e-6, plus AAC depleted, GGA and GCC enriched). The dominant statistical concern is the `large-N-Fisher-anticonservative` flag — control's pooled totals are ~12,000 per cell at this contrast, so the smallest p magnitudes (control,P,GGA at 5.7e-9, control,A,CAA at 1.0e-6) reflect tiny absolute deviations against a very large denominator, not necessarily large biological effect. Reading on the `odds_ratio` axis, the largest-magnitude control hits sit in the 1.4–1.5 (enriched) and 0.55–0.7 (depleted) range, none extreme. The control-only-significant cells where BWM trends in the same direction but stays ns (Dylan's `control-vs-BWM-divergent-direction` flag: P:CAA, P:ATT, A:AAC, E:CTC, E:CCA per the caveat block) suggest the control reshuffle is partly a shared time-axis trend that BWM is power-limited to detect at codon resolution.
+
+**The P:GTC direction-flip is the only true codon-level divergence in this contrast (exploratory).** Dylan flags three direction flips: P:GTC (BWM 1.26 ns vs control 0.74 FDR=0.017), E:GAG (BWM 1.05 ns vs control 0.82 FDR=0.0069), E:GCC (BWM 0.95 ns vs control 1.53 FDR=0.00111). All three have BWM on the opposite side of OR=1 but non-significant, so calling them "flips" leans on control's significance carrying the contrast. P:GTC is the largest in magnitude on the BWM side (BWM 1.26 trending enriched while control significantly depletes); GTC is a Val synonym, and a BWM-vs-control split at site P on a single Val codon does not have an obvious mechanistic anchor in the standard ribosome-pausing repertoire (no eIF5A/EF-P anchor for Val; no exit-tunnel electrostatic anchor; no obvious rare-codon decoding bottleneck given GTC is not rare in the *C. elegans* codon table). Treat as a `nominal-only`-adjacent codon-level pattern worth checking in the d10_vs_d0_codon and d5_vs_d0_codon sister CSVs — if P:GTC carries the same direction-flip across two contrasts in control while BWM stays ns, the cross-contrast reproducibility raises confidence; if not, the call is most consistent with control's broader site-P reshuffle landing on GTC by chance.
+
+**BWM,P,TTT enrichment (`rare-codon` flagged) is exploratory only.** BWM,P,TTT at OR=0.49, `p_adj`=0.035 has rare-codon counts (day_X 25 vs 87) per Dylan's flag. The cell crosses the FDR threshold but the `rare-codon-low-count` flag means the OR magnitude is unstable; quote the direction (BWM depletes TTT at P between d5 and d10), do not quote the magnitude. There is no obvious mechanistic anchor for Phe-TTT specifically at site P in this contrast, and the cell does not appear paired with consistent FDR signal in any sister BWM column at the codon level.
+
+**What to carry forward.** *Concrete*: the GGA-only A-site and P-site enrichment shared between BWM and control as a strong codon-usage signature in the d5→d10 window; control's site-E and site-A broad reshuffle (largest cells are control,P,GGA OR=1.43 file-min, control,A,CAA OR=0.55, control,E,GCC/CTC/CCA enrichments); the BWM,E codon-level null as a `larger-bh-family` design observation rather than biology. *Exploratory*: P:GTC as a candidate direction flip worth checking in the d10_vs_d0 and d5_vs_d0 codon sister contrasts; the BWM-side `nominal-only` rows at A:CGT, A:GAG, P:GAG (if they reproduce in d10_vs_d0_codon, they may add up to a BWM site-A/P arginine and glutamate codon-usage drift that this contrast alone cannot resolve). *Noise*: the `rare-codon-low-count`-flagged rows (BWM,A,CTG; BWM,A,GCA; BWM,P,TTT) — quote direction only, not magnitude.
+
+## Methods
+Dylan proposed Fisher's exact (two-sided) on a 2×2 of (codon_count, total − codon_count) at each timepoint within one condition; user confirmed (locked from the family). The script (`stall_sites_non_consensus_stats.py`) computes BH-FDR within each (condition, site) family of 61 codons at codon resolution (so each of the 6 sub-families is corrected independently, not against the full 366). **BWM site E is fully null at FDR<0.05** (smallest p_adj=0.114) — the d10_vs_d5 contrast has no detectable codon-level shift at site E in BWM, even though the aa-level d10_vs_d5 file showed E:G/E:R/E:I significant. This is consistent with codon-usage-shift features being washed out when aggregated to amino acids: small effects at multiple synonyms can sum to a sig aa-level effect even when no single synonym is sig. Counts (`day_X_count`) and totals (`day_X_total`) are summed across replicates before the test, hence the family-level pseudoreplication caveat.
+
+## What the caveats mean for reading this file
+
+- **pseudorep.** 2×2 contingencies pool replicates by design; per-replicate variation is invisible to the statistic, so p-values are anti-conservative — read `odds_ratio` as the primary effect column and treat the smallest p-magnitudes as inflated, not as evidence of additional certainty.
+- **large-N-Fisher-anticonservative.** Pooled (day_10 + day_5) totals at the condition level are 6945/8788/11177/11935; control,P,GGA hits `p_adj`=5.7e-9 on a 43% relative shift (OR=1.43). Rank by `odds_ratio` when ordering effects; do not over-read p magnitude.
+- **bh-per-(condition,site).** BH is run independently within each of the 6 (condition, site) families of 61 codons; two rows with the same raw p in different (condition, site) families can land at different `p_adj` — rank within a (condition, site) cell, not across the full 366-test grid.
+- **within-condition-clean.** No condition pooling and no timepoint pooling; the file structurally answers "does day_10 differ from day_5 *within* this condition" cleanly, leaving the BWM-vs-control comparison to be done by reading paired panels side-by-side rather than by the test itself.
+- **rare-codon-low-count.** 3 of 5 BWM Top-depleted rows have `day_X_count` < 60 (CTG: 12 vs 55; GCA: 21 vs 72; P,TTT: 25 vs 87). Rank by direction; flag magnitude as unstable for these rows.
+- **OR-direction-asymmetry.** No zero-cell rows in this file (all day_X_count > 0). Caveat preserved as ranking-axis discipline only — use log₂(OR) for ordering effects.
+- **control-vs-BWM-divergent-direction.** Three direction flips: P:GTC (BWM 1.26 ns p=0.0104 → p_adj=0.159 vs control 0.74 FDR=0.017); E:GAG (BWM 1.05 ns vs control 0.82 FDR=0.0069); E:GCC (BWM 0.95 ns vs control 1.53 FDR=0.00111). Several control-only-significant cells where BWM trends in the same direction but stays ns (E:CTC, E:CCA, P:CAA, P:ATT, A:CAA, A:AAC) — read these as control reshuffle that BWM is power-limited to detect.
+- **larger-bh-family.** BH-FDR per (condition, site) family of 61 codons here vs 20 amino acids in the aa companion. Textbook case in this file: BWM site E is fully null at FDR<0.05 (smallest p_adj=0.114) while the aa companion shows BWM,E:G/R/I significant — the larger BH family wipes out per-synonym significance even when aa-level signal exists. A codon `p_adj`=0.114 here may carry the same evidence weight as an aa `p_adj` ≈ 0.04 in the aa companion.
+
+---
+
+## Plots — individual
+
+![Day-10-vs-day-5 BWM A-site codon volcano: log₂(OR) on x-axis (range ±12; data clusters within ±2), −log₁₀(FDR) on y; triangles are FDR<0.05. GGA (Gly, neutral orange) at log₂(OR) ≈ +0.38, −log₁₀(FDR) ≈ 3.3 is the single largest enriched FDR<0.05 hit; CTG (Leu, hydrophobic green) at log₂(OR) ≈ −1.4, −log₁₀(FDR) ≈ 1.6 is the only FDR<0.05 depleted hit (rare-codon flagged). All other codons collapse to a tight cluster near the origin below the FDR=0.05 line.](../../plots/within_condition_timepoint_fisher/d10_vs_d5/codon/individual/BWM_A_volcano.png)
+
+![Day-10-vs-day-5 BWM P-site codon volcano: GGA (Gly, neutral orange) at log₂(OR) ≈ +0.35, −log₁₀(FDR) ≈ 2.7 is the largest enriched FDR<0.05 hit; TTT (Phe, hydrophobic green) at log₂(OR) ≈ −1.0, −log₁₀(FDR) ≈ 1.5 is the single FDR<0.05 depleted hit (rare-codon flagged). One zero-cell hydrophobic point sits at log₂(OR) ≈ −10 at the far-left edge — visible but not significant. All other codons cluster near the origin.](../../plots/within_condition_timepoint_fisher/d10_vs_d5/codon/individual/BWM_P_volcano.png)
+
+![Day-10-vs-day-5 BWM E-site codon volcano: **completely null panel** — no glyph crosses the FDR=0.05 horizontal threshold (all triangles absent; only circles drawn). All 61 codons sit in a tight cluster between log₂(OR) ≈ −1 and +1 with −log₁₀(FDR) ≤ 1.0. The smallest p_adj across the panel is 0.114. This is the visual signature of the `larger-bh-family` caveat — aa-level BWM,E:G/R/I signal in the companion file is spread across multiple synonyms here.](../../plots/within_condition_timepoint_fisher/d10_vs_d5/codon/individual/BWM_E_volcano.png)
+
+![Day-10-vs-day-5 control A-site codon volcano: the most populated BWM-companion panel. CAA (Gln, polar purple) at log₂(OR) ≈ −0.86, −log₁₀(FDR) ≈ 6.0 sits at the top-y depletion; GGA (Gly, neutral orange) at log₂(OR) ≈ +0.45, −log₁₀(FDR) ≈ 5.7 is the matched-y enrichment. AAC (Asn, polar purple) at log₂(OR) ≈ −0.57, −log₁₀(FDR) ≈ 3.8 is the next-highest FDR<0.05 depletion. GCC (Ala, hydrophobic green) at log₂(OR) ≈ +0.47, −log₁₀(FDR) ≈ 1.8 is FDR<0.05 enriched; CCA (Pro, neutral orange) sits just at the FDR threshold. ~5 codons cross FDR<0.05 total.](../../plots/within_condition_timepoint_fisher/d10_vs_d5/codon/individual/control_A_volcano.png)
+
+![Day-10-vs-day-5 control P-site codon volcano: GGA (Gly, neutral orange) at log₂(OR) ≈ +0.52, −log₁₀(FDR) ≈ 8.3 sits as the single tall outlier (the file's minimum p_adj). ATT (Ile, hydrophobic green) at log₂(OR) ≈ −0.55, −log₁₀(FDR) ≈ 1.9 and CAA (Gln, polar purple) at log₂(OR) ≈ −0.56, −log₁₀(FDR) ≈ 1.9 are the next-highest FDR<0.05 hits. GTC (Val, hydrophobic green), CTT (Leu, green), and ATC (Ile, green) all sit clustered near the FDR threshold at log₂(OR) ≈ −0.3 to +0.1 with marginal triangles. ~6 codons cross FDR<0.05 total.](../../plots/within_condition_timepoint_fisher/d10_vs_d5/codon/individual/control_P_volcano.png)
+
+![Day-10-vs-day-5 control E-site codon volcano: CTC (Leu, hydrophobic green) and GCC (Ala, hydrophobic green) at log₂(OR) ≈ +0.5 to +0.6 sit at the top-y enrichments, both at −log₁₀(FDR) ≈ 3.0. CCA (Pro, neutral orange) at log₂(OR) ≈ −0.4 and ACC (Thr, polar purple) at log₂(OR) ≈ +0.5 sit clustered just below at −log₁₀(FDR) ≈ 2.0–2.4. GAG (Glu, acidic red) at log₂(OR) ≈ −0.3 is the largest depleted FDR<0.05 hit. GTC (Val, hydrophobic green) at log₂(OR) ≈ +0.4 sits at the FDR threshold. Range is tight (±1 log₂(OR)).](../../plots/within_condition_timepoint_fisher/d10_vs_d5/codon/individual/control_E_volcano.png)

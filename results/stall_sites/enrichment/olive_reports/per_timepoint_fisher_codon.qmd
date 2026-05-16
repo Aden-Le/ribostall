@@ -1,0 +1,335 @@
+---
+title: "per_timepoint_fisher_codon — Olive report"
+subtitle: "ribostall stall_sites — enrichment stats"
+date: 2026-05-12
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    embed-resources: true
+    fig-cap-location: bottom
+  pdf:
+    toc: true
+    fig-cap-location: bottom
+tbl-colwidths: [30, 8, 22, 22, 26]  # aa-col-added
+execute:
+  echo: false
+---
+
+## Composite figure
+
+![3×3 grid of BWM-vs-control codon volcano panels: rows are timepoints (day 0 / day 5 / day 10) and columns are ribosome sites (A / P / E). Each panel plots −log₁₀(FDR) against log₂(odds ratio); triangles mark FDR<0.05 hits and circles are non-significant. Glyphs are coloured by amino-acid property of the encoded residue (acidic = red, basic = blue, hydrophobic = green, neutral = orange, polar = purple). Day-0 panels are dense with FDR<0.05 hits and reach −log₁₀(FDR) ~30 at the AAG codon at the E site; day-5 and day-10 panels collapse to the origin with at most a handful of hits.](../../plots/per_timepoint_fisher/codon/composite/codon_fisher_composite.png)
+
+Each glyph is a single codon at one (timepoint, site) BH-FDR family of 61 sense codons; horizontal dashed line is FDR = 0.05 and vertical dashed lines mark ±0.5 log₂(OR). Positive log₂(OR) means BWM-enriched relative to control; negative means BWM-depleted. The x-axis extends to ±10 to accommodate rare-codon depletions whose magnitudes are dominated by the small-k floor (see `rare-codon-low-count`).
+
+---
+
+## Overview
+
+- **CSV:** `per_timepoint_fisher_codon.csv`
+- **Family (from `_INDEX.md`):** `per_timepoint_fisher`
+- **Sister CSV(s):** `per_timepoint_fisher_aa.csv`
+- **Test:** Fisher's exact (two-sided), BWM vs control 2x2 contingency per (timepoint, site, codon); BH-FDR within each (timepoint, site) family of 61 sense codons (source: user-confirmed)
+- **Design:** Per (timepoint, site, codon) 2×2 BWM-vs-control contingency tested by two-sided Fisher's exact; replicates summed before the test (pseudoreplicated); BH-FDR applied independently within each of 9 (timepoint, site) families of 61 codons (549 tests total).
+
+### Family-level caveats
+
+- **pseudorep** — 2 biological reps per (condition,timepoint) summed before Fisher's exact; the source script literally prints a pseudoreplication warning. Anti-conservative p-values.
+- **large-N-Fisher-anticonservative** — pooled totals are in the thousands (e.g. BWM_total ~6091, control_total ~27732 at day_0); Fisher's exact returns vanishing p-values for tiny absolute deviations (odds_ratio 1.36 at p=1e-10). odds_ratio is the primary effect column, not p.
+- **imbalanced-N** — BWM_total ~6091 vs control_total ~27732 at day_0 (~5x asymmetry); Fisher handles imbalance fine but downstream interpretation should not over-read odds ratios when one cell is small.
+- **bh-per-(timepoint,site)** — BH-FDR is computed within each (timepoint,site) family of ~20 (aa) or ~61 (codon) tests. p_adj means "corrected within this slice", not across the whole CSV.
+
+---
+
+## Headline
+
+**Per-timepoint BWM-vs-control Fisher at codon resolution: 86/549 hits at FDR<0.05 (108/549 at FDR<0.10); per-(timepoint, site) cell n_sig at FDR<0.05 ranges from 0 (day_5 A, day_5 P, day_10 A, day_10 E) to 28 (day_0 P). 48 of 183 (site, codon) cells are concordant in OR direction across all 3 timepoints (17 BWM-enriched, 31 BWM-depleted; the depleted set is heavily weighted toward rare-codon rows where the across-timepoint sign is the same but each cell magnitude is unstable); 133 of 183 cells show at least one sign change across the 3 timepoint values, of which only 1 reaches FDR<0.05 on both opposite-sign rows (E:CCT, day_0 BWM-depleted log2OR=-1.235 p_adj=2.99e-02 / day_5 BWM-enriched log2OR=+0.252 p_adj=4.99e-02 — both in rare-codon territory). 3 rows have p_adj < 1e-10, all at day_0 and all on AAG: day_0 E AAG +0.745 (file-min, BWM_k=866 ctrl_k=2495), day_0 P AAG +0.692 (BWM_k=591 ctrl_k=1729), day_0 A AAG +0.654 (BWM_k=618 ctrl_k=1857) — equal billing across the three sites at this timepoint. Largest-magnitude high-count concordant cells (mean log2OR across the 3 timepoints, single sign throughout, k_BWM>=100 in every timepoint): P:AAG +0.379, P:GAA -0.310, A:AGA +0.294, P:AGA +0.249. Largest-magnitude single-cell signals at p_adj<0.05 with k_BWM+k_ctrl>=50: day_0 E AAG +0.745, day_0 E CGC +0.923 (rare-codon: ctrl_k=225 but BWM_k=93), day_0 P CGC +0.954 (BWM_k=95), day_0 P AAG +0.692, day_0 A AAG +0.654. Treat per-cell n_sig differences across timepoints as power-modulated by the BWM/control N imbalance, not as direction-of-effect biology.**
+
+549 tests (3 timepoints x 3 sites x 61 sense codons), 86 hits at p_adj<0.05 (15.7%), 108 at p_adj<0.10 (19.7%). Per-(timepoint, site) cell n_sig at p_adj<0.05: day_0 A=27, day_0 E=27, day_0 P=28; day_5 A=0, E=3, P=0; day_10 A=0, E=0, P=1. Of 183 (site, codon) cells: 48 are concordant in OR direction across all 3 timepoints (17 BWM-enriched, 31 BWM-depleted, with the depleted set heavily weighted toward low-count rare-codon rows that are direction-stable but per-cell magnitude-unstable); 133 show at least one sign change across the 3 timepoint values; only 1 of those 133 has the sign change at p_adj<0.05 on both opposite-sign rows (E:CCT, both rare-codon). 3 rows have p_adj < 1e-10, all at day_0 and all on AAG (Lys): day_0 E AAG log2OR=+0.745 p_adj=2.03e-30 (file-min, BWM_k=866 ctrl_k=2495), day_0 P AAG log2OR=+0.692 p_adj=1.04e-18 (BWM_k=591 ctrl_k=1729), day_0 A AAG log2OR=+0.654 p_adj=1.38e-17 (BWM_k=618 ctrl_k=1857) — these three sites get equal billing in this row of the headline. Largest-magnitude single-cell BWM-vs-control divergences at p_adj<0.05 with combined k>=50 (mixing directions, including rare-codon flagged): day_0 P CGC +0.954 (BWM_k=95, rare-codon), day_0 E CGC +0.923 (BWM_k=93, rare-codon), day_0 E AAG +0.745, day_0 P AAG +0.692, day_0 A AAG +0.654, day_0 A CGC +0.592 (BWM_k=104), day_0 A AGA +0.559, day_0 P AGA +0.579, day_0 P ATC +0.424, day_0 A CTC +0.427. Note: the file's largest absolute |log2OR| values at p_adj<0.05 (day_0 E ACG -2.293, day_0 P ACA -2.005, day_0 A TGT -1.843, day_0 A TTT -1.521, day_0 A AAT -1.499, day_0 A TAT -1.346) are all rare-codon depletions with BWM_k under 40; their direction is consistent with the per-cell counts but the magnitude is dominated by the small-k floor and they are not in the high-count concordant set. Treat per-cell n_sig differences across timepoints as power-modulated by the BWM/control N imbalance, not as direction-of-effect biology.
+
+## Top hits
+
+The effect column is `log2_OR` (the log₂ of Dylan's `odds_ratio`). Direction is fixed by the BWM-vs-control contingency layout: positive log₂(OR) = BWM-enriched, negative = BWM-depleted. `p_adj` is BH-corrected within each (timepoint, site) family of 61 codons. Sub-tables below are split per-direction within each Dylan group (timepoint × site). The `aa` column is the single-letter amino acid translation of each codon.
+
+The two Dylan-emitted summary tables (high-count cross-timepoint concordance, direction-flip cells), plus the lower-count rare-codon concordance set, are reproduced verbatim under "Cross-timepoint summary" at the end of this section.
+
+### day_0, A site — Enriched (BWM > control)
+
+| codon | aa  | effect (`log2_OR`) | adjusted p (`p_adj`) | flag       |
+| ----- | --- | ------------------ | -------------------- | ---------- |
+| AAG   | K   | +0.654 (OR=1.573)  | 1.38e-17             | iid-amp    |
+| CGC   | R   | +0.592 (OR=1.508)  | 2.03e-03             |            |
+| AGA   | R   | +0.559 (OR=1.473)  | 3.68e-04             |            |
+| CAC   | H   | +0.448 (OR=1.364)  | 2.67e-02             | rare-codon |
+| CTC   | L   | +0.427 (OR=1.345)  | 4.00e-03             |            |
+
+### day_0, A site — Depleted (BWM < control)
+
+| codon | aa  | effect (`log2_OR`) | adjusted p (`p_adj`) | flag       |
+| ----- | --- | ------------------ | -------------------- | ---------- |
+| TGT   | C   | -1.843 (OR=0.279)  | 5.88e-04             | rare-codon |
+| TTT   | F   | -1.521 (OR=0.348)  | 5.41e-05             | rare-codon |
+| AAT   | N   | -1.499 (OR=0.354)  | 1.03e-09             | rare-codon |
+| TAT   | Y   | -1.346 (OR=0.393)  | 4.13e-08             | rare-codon |
+| AGT   | S   | -1.340 (OR=0.395)  | 2.35e-02             | rare-codon |
+
+### day_0, P site — Enriched (BWM > control)
+
+| codon | aa  | effect (`log2_OR`) | adjusted p (`p_adj`) | flag       |
+| ----- | --- | ------------------ | -------------------- | ---------- |
+| CGC   | R   | +0.954 (OR=1.937)  | 3.45e-06             | rare-codon |
+| AAG   | K   | +0.692 (OR=1.616)  | 1.04e-18             | iid-amp    |
+| AGA   | R   | +0.579 (OR=1.494)  | 2.47e-04             |            |
+| ATC   | I   | +0.424 (OR=1.341)  | 2.47e-04             |            |
+| CGT   | R   | +0.410 (OR=1.328)  | 2.41e-03             |            |
+
+### day_0, P site — Depleted (BWM < control)
+
+| codon | aa  | effect (`log2_OR`) | adjusted p (`p_adj`) | flag       |
+| ----- | --- | ------------------ | -------------------- | ---------- |
+| ACA   | T   | -2.005 (OR=0.249)  | 5.58e-08             | rare-codon |
+| ACG   | T   | -1.868 (OR=0.274)  | 6.17e-04             | rare-codon |
+| TGT   | C   | -1.477 (OR=0.359)  | 1.05e-03             | rare-codon |
+| TTT   | F   | -1.299 (OR=0.406)  | 1.59e-04             | rare-codon |
+| AGT   | S   | -1.277 (OR=0.413)  | 5.07e-03             | rare-codon |
+
+### day_0, E site — Enriched (BWM > control)
+
+| codon | aa  | effect (`log2_OR`) | adjusted p (`p_adj`) | flag       |
+| ----- | --- | ------------------ | -------------------- | ---------- |
+| CGC   | R   | +0.923 (OR=1.896)  | 1.44e-05             | rare-codon |
+| AAG   | K   | +0.745 (OR=1.676)  | 2.03e-30             | iid-amp    |
+| CTC   | L   | +0.539 (OR=1.453)  | 1.89e-04             |            |
+| AGA   | R   | +0.468 (OR=1.383)  | 1.66e-03             |            |
+| CGT   | R   | +0.465 (OR=1.380)  | 3.47e-03             |            |
+
+### day_0, E site — Depleted (BWM < control)
+
+| codon | aa  | effect (`log2_OR`) | adjusted p (`p_adj`) | flag       |
+| ----- | --- | ------------------ | -------------------- | ---------- |
+| ACG   | T   | -2.293 (OR=0.204)  | 6.32e-04             | rare-codon |
+| ACA   | T   | -1.555 (OR=0.340)  | 2.43e-05             | rare-codon |
+| CCG   | P   | -1.402 (OR=0.378)  | 7.20e-03             | rare-codon |
+| GTA   | V   | -1.402 (OR=0.378)  | 7.20e-03             | rare-codon |
+| TCA   | S   | -1.396 (OR=0.380)  | 1.44e-05             | rare-codon |
+
+### day_5, A site
+
+*(no rows clear `p_adj` < 0.10 with combined k ≥ 50; min `p_adj` in this cell is 0.283.)*
+
+### day_5, P site — Enriched (BWM > control)
+
+| codon | aa  | effect (`log2_OR`) | adjusted p (`p_adj`) | flag         |
+| ----- | --- | ------------------ | -------------------- | ------------ |
+| AAG   | K   | +0.249 (OR=1.188)  | 6.98e-02             | nominal-only |
+
+### day_5, E site — Enriched (BWM > control)
+
+| codon | aa  | effect (`log2_OR`) | adjusted p (`p_adj`) | flag |
+| ----- | --- | ------------------ | -------------------- | ---- |
+| CCA   | P   | +0.358 (OR=1.282)  | 2.52e-02             |      |
+
+### day_5, E site — Depleted (BWM < control)
+
+| codon | aa  | effect (`log2_OR`) | adjusted p (`p_adj`) | flag |
+| ----- | --- | ------------------ | -------------------- | ---- |
+| GAG   | E   | -0.300 (OR=0.812)  | 5.00e-03             |      |
+| AAG   | K   | -0.226 (OR=0.855)  | 5.00e-03             |      |
+
+### day_10, A site — Enriched (BWM > control)
+
+| codon | aa  | effect (`log2_OR`) | adjusted p (`p_adj`) | flag         |
+| ----- | --- | ------------------ | -------------------- | ------------ |
+| CAA   | Q   | +0.511 (OR=1.425)  | 9.77e-02             | nominal-only |
+| AAC   | N   | +0.387 (OR=1.307)  | 9.77e-02             | nominal-only |
+| GAG   | E   | +0.249 (OR=1.188)  | 9.77e-02             | nominal-only |
+
+### day_10, A site — Depleted (BWM < control)
+
+| codon | aa  | effect (`log2_OR`) | adjusted p (`p_adj`) | flag                     |
+| ----- | --- | ------------------ | -------------------- | ------------------------ |
+| GTG   | V   | -0.765 (OR=0.588)  | 9.77e-02             | rare-codon, nominal-only |
+| GCC   | A   | -0.461 (OR=0.727)  | 9.77e-02             | nominal-only             |
+
+### day_10, P site — Enriched (BWM > control)
+
+| codon | aa  | effect (`log2_OR`) | adjusted p (`p_adj`) | flag |
+| ----- | --- | ------------------ | -------------------- | ---- |
+| GTC   | V   | +0.563 (OR=1.476)  | 4.03e-03             |      |
+
+### day_10, E site
+
+*(no rows clear `p_adj` < 0.10 with combined k ≥ 50.)*
+
+### Cross-timepoint summary (Dylan's three ranking tables)
+
+#### High-count cross-timepoint direction concordance
+
+20 of the 48 cross-timepoint concordant cells have min(BWM_k, ctrl_k) >= 80 in every timepoint. Sorted by |mean log2OR|.
+
+| direction | cell (site:codon, AA) | mean log2OR | per-tp log2OR (d0, d5, d10) | #sig (FDR<0.05) | min p_adj | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| enriched | E:CGC (R) | +0.514 | +0.92, +0.04, +0.58 | 1/3 | 1.44e-05 | rare-codon, single-tp-driven |
+| enriched | P:AAG (K) | +0.379 | +0.69, +0.25, +0.20 | 1/3 | 1.04e-18 | iid-amp, single-tp-driven |
+| depleted | P:GAA (E) | -0.310 | -0.69, -0.17, -0.07 | 1/3 | 3.45e-06 | single-tp-driven |
+| enriched | A:AGA (R) | +0.294 | +0.56, +0.03, +0.29 | 1/3 | 3.68e-04 | single-tp-driven |
+| enriched | A:CAC (H) | +0.292 | +0.45, +0.20, +0.23 | 1/3 | 2.67e-02 | rare-codon, single-tp-driven |
+| enriched | P:AGA (R) | +0.249 | +0.58, +0.10, +0.06 | 1/3 | 2.47e-04 | single-tp-driven |
+| depleted | A:GAA (E) | -0.242 | -0.46, -0.24, -0.02 | 1/3 | 4.61e-04 | single-tp-driven |
+| enriched | P:CGT (R) | +0.230 | +0.41, +0.16, +0.12 | 1/3 | 2.41e-03 | single-tp-driven |
+| enriched | A:CGT (R) | +0.230 | +0.26, +0.16, +0.27 | 0/3 | 8.81e-02 |  |
+| depleted | E:CAG (Q) | -0.208 | -0.20, -0.32, -0.11 | 0/3 | 2.08e-01 | rare-codon |
+| enriched | P:CTT (L) | +0.204 | +0.13, +0.14, +0.34 | 0/3 | 3.75e-01 |  |
+| depleted | E:GAT (D) | -0.199 | -0.42, -0.13, -0.04 | 1/3 | 1.66e-03 | single-tp-driven |
+| enriched | P:CTC (L) | +0.196 | +0.30, +0.07, +0.22 | 0/3 | 8.90e-02 |  |
+| enriched | A:TCC (S) | +0.196 | +0.29, +0.07, +0.22 | 0/3 | 1.43e-01 | rare-codon |
+| depleted | P:GCT (A) | -0.174 | -0.08, -0.10, -0.34 | 0/3 | 3.75e-01 |  |
+| enriched | P:CAC (H) | +0.173 | +0.36, +0.07, +0.10 | 0/3 | 9.41e-02 | rare-codon |
+| depleted | P:GAT (D) | -0.172 | -0.35, -0.03, -0.14 | 1/3 | 1.05e-03 | single-tp-driven |
+| depleted | A:ACC (T) | -0.099 | -0.02, -0.11, -0.17 | 0/3 | 6.78e-01 |  |
+| depleted | A:GCT (A) | -0.090 | -0.07, -0.04, -0.16 | 0/3 | 6.78e-01 |  |
+| depleted | A:GTT (V) | -0.068 | -0.12, -0.07, -0.01 | 0/3 | 5.31e-01 |  |
+
+#### Direction-flip cells across timepoints
+
+133 of 183 (site, codon) cells show at least one sign change across the 3 timepoint values. 2 cells have both opposite-sign rows at p_adj<0.05 (E:CCT in rare-codon territory; E:AAG high-count). Sorted by max |log2OR|.
+
+| cell (site:codon, AA) | log2OR range | per-tp log2OR (sig marked `*`) | sig-flip | flag |
+| --- | --- | --- | --- | --- |
+| E:TTA (Leu) | [-2.67, +0.64] | -2.67, +0.64, -1.25 | no | rare-codon |
+| E:ACG (Thr) | [-2.29, +0.66] | -2.29*, +0.16, +0.66 | no | rare-codon |
+| E:CGG (Arg) | [-2.27, +0.34] | -2.27, -0.09, +0.34 | no | rare-codon |
+| A:GCG (Ala) | [-2.17, +0.49] | -1.19*, +0.49, -2.17 | no | rare-codon |
+| P:ACG (Thr) | [-1.87, +0.09] | -1.87*, +0.09, -0.95 | no | rare-codon |
+| A:GGG (Gly) | [-1.86, +0.68] | -1.86, +0.68, +0.17 | no | rare-codon |
+| A:TGT (Cys) | [-1.84, +0.55] | -1.84*, -0.30, +0.55 | no | rare-codon |
+| E:ACA (Thr) | [-1.56, +0.29] | -1.56*, +0.29, +0.04 | no | rare-codon |
+| A:TTT (Phe) | [-1.52, +0.24] | -1.52*, -0.00, +0.24 | no | rare-codon |
+| A:AAT (Asn) | [-1.50, +0.08] | -1.50*, -0.20, +0.08 | no | rare-codon |
+| P:TGT (Cys) | [-1.48, +0.08] | -1.48*, -0.18, +0.08 | no | rare-codon |
+| A:GTA (Val) | [-1.42, +0.04] | -1.15*, +0.04, -1.42 | no | rare-codon |
+| E:CCG (Pro) | [-1.40, +0.51] | -1.40*, +0.51, -0.58 | no | rare-codon |
+| E:GTA (Val) | [-1.40, +0.64] | -1.40*, +0.64, -0.42 | no | rare-codon |
+| E:TCA (Ser) | [-1.40, +0.40] | -1.40*, -0.05, +0.40 | no | rare-codon |
+| E:CCT (Pro) | [-1.235, +0.252] | -1.24*, +0.25*, -0.04 | yes (both p_adj<0.05) | rare-codon |
+| E:CCA (Pro) | [-0.62, +0.51] | -0.62*, +0.51*, +0.07 | no | (opposite sign at d0 / d5) |
+| E:GAG (Glu) | [-0.41, +0.05] | -0.41*, -0.30*, +0.05 | no |  |
+| E:AAG (Lys) | [-0.226, +0.745] | +0.74*, -0.23*, +0.04 | yes (both p_adj<0.05) | iid-amp (d0 cell only) |
+| E:AAA (Lys) | [-0.62, +0.27] | -0.62*, +0.27, +0.04 | no |  |
+
+(113 lower-magnitude flip cells with max |log2OR| < 1.0 are in the data but not listed.)
+
+#### Full 48-cell concordant set — rare-codon-dominated remainder
+
+The remaining 28 cells (the 48 concordant minus the 20 high-count above) have at least one timepoint with BWM_k or ctrl_k under 80; direction is the same across all 3 timepoint values but per-cell magnitude is unstable at small k.
+
+| direction | cell (site:codon, AA) | mean log2OR | per-tp log2OR (d0, d5, d10) | #sig (FDR<0.05) |
+| --- | --- | --- | --- | --- |
+| depleted | A:CGG (R) | -1.159 | -1.57, -0.25, -1.66 | 0/3 |
+| depleted | P:GGG (G) | -1.068 | -2.51, -0.44, -0.25 | 0/3 |
+| depleted | P:CGG (R) | -0.866 | -1.62, -0.90, -0.08 | 0/3 |
+| depleted | P:GTA (V) | -0.752 | -1.06, -0.04, -1.15 | 1/3 |
+| depleted | P:ACA (T) | -0.730 | -2.00, -0.07, -0.12 | 1/3 |
+| depleted | E:CGA (R) | -0.721 | -1.17, -0.01, -0.98 | 1/3 |
+| depleted | E:AGT (S) | -0.712 | -0.92, -0.87, -0.34 | 0/3 |
+| depleted | P:CCT (P) | -0.674 | -1.24, -0.26, -0.52 | 1/3 |
+| depleted | P:CGA (R) | -0.662 | -1.21, -0.26, -0.52 | 1/3 |
+| depleted | E:GGG (G) | -0.611 | -0.66, -0.83, -0.34 | 0/3 |
+| depleted | E:TCG (S) | -0.527 | -0.84, -0.08, -0.66 | 1/3 |
+| depleted | A:ACA (T) | -0.523 | -1.11, -0.15, -0.31 | 1/3 |
+| depleted | P:GCA (A) | -0.461 | -0.82, -0.16, -0.41 | 1/3 |
+| depleted | E:AAT (N) | -0.446 | -1.11, -0.16, -0.06 | 1/3 |
+| depleted | P:TCA (S) | -0.443 | -0.95, -0.14, -0.25 | 1/3 |
+| enriched | P:ATA (I) | +0.442 | +0.14, +0.39, +0.80 | 0/3 |
+| depleted | A:GTG (V) | -0.438 | -0.42, -0.13, -0.77 | 0/3 |
+| depleted | E:TTT (F) | -0.417 | -1.11, -0.06, -0.08 | 1/3 |
+| depleted | A:AAA (K) | -0.391 | -0.89, -0.05, -0.23 | 1/3 |
+| enriched | P:AGG (R) | +0.378 | +0.43, +0.58, +0.12 | 0/3 |
+| depleted | P:TCG (S) | -0.325 | -0.37, -0.14, -0.47 | 0/3 |
+| enriched | E:AGG (R) | +0.303 | +0.47, +0.42, +0.02 | 0/3 |
+| depleted | P:GTG (V) | -0.259 | -0.29, -0.15, -0.34 | 0/3 |
+| depleted | A:TCT (S) | -0.253 | -0.50, -0.11, -0.16 | 0/3 |
+| depleted | E:GGT (G) | -0.234 | -0.31, -0.23, -0.16 | 0/3 |
+| enriched | A:GGT (G) | +0.200 | +0.10, +0.07, +0.43 | 0/3 |
+| enriched | P:GCG (A) | +0.179 | +0.03, +0.17, +0.34 | 0/3 |
+| enriched | A:TGG (W) | +0.172 | +0.09, +0.12, +0.31 | 0/3 |
+
+### Flag glossary
+
+- `iid-amp` — single per-timepoint `p_adj` falls below 1e-10. The magnitude of `-log10(p_adj)` is inflated by Fisher's anti-conservative behaviour at large pooled N + correlated stall positions; rank by effect size, not by p magnitude.
+- `nominal-only` — raw p < 0.05 but `p_adj` ≥ 0.05. The row would have been flagged significant if tested in isolation, but did not survive BH-FDR correction across its (timepoint, site) family of 61.
+- `rare-codon` — `BWM_k` < 100 or `ctrl_k` < 100 in this row (or at least one timepoint, for cross-timepoint cells). OR estimate is unstable at small k and the magnitude is dominated by the small-k floor; large |log2OR| in flagged rows may reflect sampling noise rather than biology.
+- `multi-tp-coherent` — cell reaches `p_adj` < 0.05 in ≥ 2 of 3 timepoints; reproducible across the time axis.
+- `single-tp-driven` — cell reaches `p_adj` < 0.05 in exactly 1 of 3 timepoints; the cross-timepoint mean is carried by that one timepoint.
+
+## Numbers at a glance
+- `n_tests`: 549 (3 timepoints x 3 sites x 61 sense codons)
+- `n_significant` (adjusted-p < 0.05): 86 (15.7%)
+- `n_significant` (adjusted-p < 0.10): 108 (19.7%)
+- `min adjusted-p`: 2.0325194950162870e-30 (day_0 E AAG, log2OR=+0.745, BWM_k=866/n=6091, ctrl_k=2495/n=27732)
+- `p_floor`: n/a — Fisher's exact has no analytic floor; effective discreteness floor at small (k_BWM + k_ctrl) is captured by the `larger-bh-family` and `rare-codon-low-count` caveats
+- Cells with p_adj < 1e-10: 3 of 549 (day_0 E AAG, day_0 P AAG, day_0 A AAG); all flagged `iid-amp`
+- 2 rows have OR exactly = 0 (BWM_k = 0): day_0 E ATA (ctrl_k=16, p_adj=0.152) and day_10 P TTA (ctrl_k=1, p_adj=1.0); reported with log2OR=-Inf and excluded from |mean log2OR| ranking
+- Cross-(timepoint, site) BH families and their n_sig at p_adj<0.05:
+
+| timepoint | A | E | P | BWM_total | control_total | ctrl:BWM ratio |
+| --- | --- | --- | --- | --- | --- | --- |
+| day_0 | 27/61 (min p 1.38e-17) | 27/61 (min p 2.03e-30) | 28/61 (min p 1.04e-18) | 6091 | 27732 | 4.55 |
+| day_5 | 0/61 (min p 2.83e-01) | 3/61 (min p 4.99e-03) | 0/61 (min p 6.98e-02) | 11935 | 11177 | 0.94 |
+| day_10 | 0/61 (min p 9.77e-02) | 0/61 (min p 1.36e-01) | 1/61 (min p 4.03e-03) | 6945 | 8788 | 1.27 |
+
+- Cross-timepoint (site, codon) cells, all 3 timepoints same OR direction: 48/183 (17 BWM-enriched, 31 BWM-depleted; 22 of the 31 depleted cells are lower-count — at least one timepoint has BWM_k<80 or ctrl_k<80)
+- Cross-timepoint (site, codon) cells with at least one sign change: 133/183
+- Cells with sign change at p_adj<0.05 on both opposite-sign rows: 2 (E:CCT both rare-codon; E:AAG high-count)
+
+## Biological interpretation
+
+**Day-0 AAG (Lys) BWM-enrichment is the file's strongest concrete signal at all three ribosome sites (concrete).** AAG-at-E (+0.75 log₂(OR), p_adj=2.0e-30), AAG-at-P (+0.69), and AAG-at-A (+0.65) are the only three rows in the file with p_adj < 1e-10, all at day 0, all at high count (BWM_k = 591–866). Even discounting the p magnitudes — which the `iid-amp` flag explicitly warns against over-reading — the effect sizes are large (OR ≈ 1.6) and reproduced across three independent ribosome sites with consistent direction. Co-enrichment of a basic codon throughout the A/P/E corridor at day 0 is consistent with the AA-resolution sister CSV's K/R-at-A/P/E day-0 signal, and with electrostatic exit-tunnel slowing by basic residues. The codon-level resolution adds specificity: the signal localises on AAG, not AAA (see next paragraph).
+
+**The Lys signal is codon-biased toward AAG over AAA (exploratory).** AAG and AAA encode the same amino acid (Lys), but at day-0 they move in opposite directions at the A site: A:AAA is in the concordant-depleted set (mean -0.39 across timepoints, 1/3 sig) while A:AAG is the second-largest enrichment row in the file. E:AAA is depleted at day 0 (-0.62, p_adj<0.05) while E:AAG is enriched at +0.74 — same site, same amino acid, opposite directions. This is exploratory rather than concrete: the AAA depletions sit at single-timepoint significance and the within-condition sister tests are the right place to corroborate whether the AAG-over-AAA bias is a perturbation × time pattern or a baseline codon-usage feature that survives the day-0 amplification. The within-condition binomial baselines are the obvious cross-check (does AAG at E sit at high baseline enrichment in every group?).
+
+**Day-0 Arg enrichment is consistent across multiple synonyms (concrete).** Arg has 6 synonyms; CGC, AGA, and CGT all clear FDR<0.05 at day-0 in at least one site, with mean log₂(OR) > +0.2 across timepoints (A:AGA +0.29 concordant, P:AGA +0.25 concordant, P:CGT +0.23 concordant, A:CGT +0.23 concordant). CGC at the P and E sites has the largest single-cell magnitudes (+0.95 and +0.92 respectively, both `rare-codon` flagged because BWM_k < 100). The cross-synonym coherence is the firm part: AGA and CGT carry the signal at high count; CGC tracks the same direction but its magnitude weight is reduced by the small-k flag. The mechanistic anchor (basic-residue electrostatic slowing in the exit tunnel) is the same as the AAG-Lys story; codon resolution shows that the BWM-control difference is distributed across multiple Arg codons rather than concentrated on one.
+
+**The two FDR-significant direction flips need codon-level scrutiny (exploratory).** E:AAG flips between day-0 (+0.75, sig) and day-5 (-0.23, sig); this is the only high-count cell in the file with both opposite-sign rows clearing FDR<0.05. E:CCT does the same but sits in `rare-codon` territory (BWM_k = 11 at day 0) — magnitude is dominated by the small-k floor and the flip should be treated as small-count instability rather than biology. The AAG flip is more interesting: it pairs with the AA-sister's E:K flip (also d0 → d5, also FDR-significant in both directions), and the within-condition Fisher d5_vs_d0 contrast is a natural triangulation point. Exploratory hypothesis: a transient day-5 BWM-specific depletion of AAG at the E site, on top of stable E:AAG enrichment in both conditions at baseline; concrete confirmation would require the within-condition binomial baselines and the within-condition Fisher contrast to cohere.
+
+**The day-0 dominance of FDR hits is a power story, not biology (concrete).** 82 of 86 FDR<0.05 hits sit at day 0; day-5 and day-10 contribute 3 and 1 hit respectively. File-minimum p_adj spans 28 orders of magnitude over the same gradient (2.0e-30 → 5.0e-3 → 1.4e-1). The control:BWM N ratio is 4.55:1 at day 0, 0.94:1 at day 5, 1.27:1 at day 10 — the day-0 imbalance amplifies moderate effect sizes into extreme p magnitudes, while the same effect sizes at later timepoints stay below FDR. The `n-asymmetry-affects-power-not-direction` caveat applies directly: per-cell hit-count differences are power-modulated; the data do not support a "BWM-vs-control divergence is concentrated at day 0" reading without further power-corrected support from the within-condition contrasts.
+
+**Many high-magnitude rare-codon depletions are noise, not biology (concrete).** The file's largest absolute |log₂(OR)| values at p_adj<0.05 (E:ACG -2.29, P:ACA -2.00, A:TGT -1.84, A:TTT -1.52, A:AAT -1.50, A:TAT -1.35) are all rare-codon depletions with BWM_k under 40. Direction is consistent with the per-cell counts but magnitude is dominated by the small-k floor — these rows are exactly what the `rare-codon-low-count` caveat is designed to flag. They should not anchor any biological reading; the high-count concordant subset (P:AAG, P:GAA, A:AGA, P:AGA) is the right list to carry forward.
+
+**What to carry forward.** *Concrete*: day-0 AAG-at-A/P/E Lys enrichment as a stable, multi-site, large-effect BWM signature; day-0 Arg enrichment carried across multiple synonyms (AGA, CGT primarily); the day-0/day-5/day-10 hit gradient is a power-story, not a time-course story. *Exploratory*: AAG vs AAA codon-usage divergence at day 0 (needs within-condition cross-check); the E:AAG day-0 → day-5 sign flip (needs within-condition d5_vs_d0 Fisher to anchor). *Noise*: every rare-codon flagged row with BWM_k < 50 and |log₂(OR)| > 1; the day-5/day-10 panels visually flat — at most a handful of single-cell hits, none above the high-count significance bar.
+
+## Methods
+Dylan proposed Fisher's exact (two-sided) on a 2x2 contingency BWM_count vs control_count for each (timepoint, site, codon), with BH-FDR correction within each (timepoint, site) family of 61 sense codons; user confirmed in the original triage and the answer is carried over to this re-run without re-litigation. Effect column is `odds_ratio` (re-expressed as log2OR in this report's tables for symmetry with sister files); test statistic and exact p are returned by `scipy.stats.fisher_exact`. The p-correction column is `p_adj` (BH per (timepoint, site) family). The test answers "is the BWM-vs-control codon composition at this site different at this timepoint?". It does *not* answer "is each condition's per-codon enrichment vs background informative" (that is the `within_condition_binomial` family) and *not* "is the BWM-vs-control difference itself shifting across timepoints" (that would require an explicit between-timepoint contrast; see the `between_timepoint_wilcoxon` family for the within-condition variant of that question).
+
+## What the caveats mean for reading this file
+
+- **pseudorep.** 2×2 contingencies pool replicates by design; per-replicate variation is invisible to the statistic, so p-values are anti-conservative — read `odds_ratio` as the primary effect column and treat the smallest p-magnitudes as inflated.
+- **large-N-Fisher-anticonservative.** With many thousands of pooled stall events and stalls correlated on shared motifs/transcripts, Fisher's effective N is smaller than `k_total`; treat tiny p magnitudes (`p_adj` < 1e-10) as inflated and rank by `log2_OR`.
+- **imbalanced-N.** At day 0, control_total (27732) dwarfs BWM_total (6091); Fisher concentrates its information in the larger arm and inflates `p_adj` at moderate effects — read day-0 magnitudes against day-5/day-10 with the imbalance in mind.
+- **bh-per-(timepoint,site).** BH is run independently within each of the 9 (timepoint, site) families of 61; rank within a (timepoint, site) cell, not across the full 549-test grid.
+- **larger-bh-family.** Each per-(timepoint, site) BH family is 61 codons, ~3× larger than the AA sister's 20-AA families; AA-level signals can split across synonyms below the per-(timepoint, site) FDR threshold here. If a feature is sig at AA but absent here, that is an aggregation effect, not a contradiction.
+- **rare-codon-low-count.** Many rare codons have `BWM_k` or `ctrl_k` in the single/double digits; OR estimates are unstable at small k and the file's largest |log2OR| values are all in this regime. Flagged rows should not anchor magnitude claims.
+- **OR-direction-anchor.** OR > 1 = BWM-enriched, OR < 1 = BWM-depleted at this (timepoint, site, codon); stated here so downstream consumers do not invert the direction.
+- **n-asymmetry-affects-power-not-direction.** The 28-OOM gap between min `p_adj` at day 0 (2.03e-30) and day 5 (4.99e-3) or day 10 (1.36e-1) is consistent with day 0's 4.55:1 control:BWM ratio amplifying moderate effects; per-cell hit counts are power-modulated, not direction-of-effect biology.
+
+---
+
+## Plots — individual
+
+![Day-0 A-site codon BWM-vs-control volcano: x-axis log₂(OR), y-axis −log₁₀(FDR); triangles are FDR<0.05. AAG (basic blue) at +0.65 log₂(OR), −log₁₀(FDR) ≈ 17 is the highest point; AAT (polar purple) and TAT (hydrophobic green) are the largest negative-direction labeled hits at log₂(OR) ≈ −1.5; many other triangles cluster between log₂(OR) −2 and +1.](../../plots/per_timepoint_fisher/codon/individual/day_0_A_volcano.png)
+
+![Day-0 P-site codon BWM-vs-control volcano: AAG (basic blue) at +0.69 log₂(OR), −log₁₀(FDR) ≈ 18 is the highest point; ACA, AAT, AAA (polar/basic), TAT, GAA, CGC are labeled mid-magnitude hits; TTA (hydrophobic green) sits far left at log₂(OR) ≈ −2.8 below the FDR line (rare-codon).](../../plots/per_timepoint_fisher/codon/individual/day_0_P_volcano.png)
+
+![Day-0 E-site codon BWM-vs-control volcano: AAG (basic blue) at +0.75 log₂(OR), −log₁₀(FDR) ≈ 30 dominates the panel — by far the highest point in the file. AAT, AAA, CGC are labeled mid-magnitude triangles; a single hydrophobic point at log₂(OR) ≈ −10 (BWM_k = 0 ATA codon) sits at the left edge.](../../plots/per_timepoint_fisher/codon/individual/day_0_E_volcano.png)
+
+![Day-5 A-site codon BWM-vs-control volcano: all points collapse near the origin within ±0.5 log₂(OR); no FDR<0.05 triangles. The flattest day-5 panel.](../../plots/per_timepoint_fisher/codon/individual/day_5_A_volcano.png)
+
+![Day-5 P-site codon BWM-vs-control volcano: all points collapse near the origin; no FDR<0.05 triangles. A single basic-blue point (AAG) sits just at the FDR threshold but does not cross it.](../../plots/per_timepoint_fisher/codon/individual/day_5_P_volcano.png)
+
+![Day-5 E-site codon BWM-vs-control volcano: three FDR<0.05 triangles labeled — AAG (basic blue) depleted at -0.23, GAG (acidic red) depleted at -0.30, CCA (neutral orange) enriched at +0.36. All three sit close to the origin with -log₁₀(FDR) ≈ 2–3.](../../plots/per_timepoint_fisher/codon/individual/day_5_E_volcano.png)
+
+![Day-10 A-site codon BWM-vs-control volcano: no FDR<0.05 hits; all points fall below the FDR threshold within the ±2 log₂(OR) band — a structurally flat panel.](../../plots/per_timepoint_fisher/codon/individual/day_10_A_volcano.png)
+
+![Day-10 P-site codon BWM-vs-control volcano: GTC (hydrophobic green) at +0.56 log₂(OR) is the single FDR<0.05 hit; a TTA point sits at log₂(OR) ≈ −10 at the left edge (control_k = 1 zero-cell row, ignored in headline rankings). All other points cluster near the origin.](../../plots/per_timepoint_fisher/codon/individual/day_10_P_volcano.png)
+
+![Day-10 E-site codon BWM-vs-control volcano: no FDR<0.05 hits; all points fall below the FDR threshold within the ±1 log₂(OR) band — the flattest panel of the file.](../../plots/per_timepoint_fisher/codon/individual/day_10_E_volcano.png)

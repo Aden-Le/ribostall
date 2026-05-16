@@ -17,7 +17,7 @@ caveats:
   - {label: "weighted_log2_enrichment-absent", proposed_by: dylan, status: confirmed, why: "Effect column is `log2_FC` of medians only; no count-weighted enrichment column. Rare AAs (W, C ~0.5-1.5% median freq) ranked equivalently to common ones (K, E ~10%)."}
   - {label: "small-bh-family-discreteness", proposed_by: dylan, status: confirmed, why: "BH adjusts only 20 raw-p per site. With raw-p clamped at 0.0286, only one floor hit per site can reach p_adj = 20*0.0286 / 1 = 0.571; here exactly one P-site row hits the floor, producing the empirically observed p_adj = 0.5714."}
   - {label: "asymptotic-with-ties", proposed_by: dylan, status: ruled_out, why: "Empirical audit (scripts/_for_claude_mw_branch_audit.py --design between_timepoint --timepoints day10 day0 --level aa): 0/60 (site, AA) tests have rank ties in the pooled 8-element sample; scipy.stats.mannwhitneyu(method='auto') picks the exact branch for all 60; recomputed p matches pipeline CSV to ~1e-16; forcing method='asymptotic' flips 0 raw-p<0.05 decisions and leaves the per-site BH conclusion unchanged (0 hits at FDR<0.05 either way)."}
-headline: "No statistically significant differences at FDR<0.05 (0/60) for AA-level d10-vs-d0 MW with BWM and control reps pooled per timepoint; one floor hit at P-site C (+0.405, raw p=0.0286, p_adj=0.571) plus a second sub-floor near-hit at P-site E (+0.373, raw p=0.057). Min raw p across the file = 0.0286 (the n=4 vs n=4 floor), so 'no FDR hits' here is structural, not biological."
+headline: "No statistically significant differences at FDR<0.05 (0/60) for AA-level d10-vs-d0 MW with BWM and control reps pooled per timepoint; the file's only sub-0.05 raw-p row is P-site C (+0.405, raw p=0.0286, p_adj=0.571, flagged `nominal-only, floor`), with three more cells tied at the near-floor raw p=0.0571 (P-site E +0.373, A-site Q -0.406, A-site L -0.368, all p_adj=0.571). Min raw p across the file = 0.0286 (the n=4 vs n=4 floor), so 'no FDR hits' here is structural, not biological."
 user_directives:
   - "(triage, batched across all 6 family members) Test type confirmation — `MW / Wilcoxon rank-sum two-sided, n=4 vs n=4, BH-FDR per site` → `Confirm`."
   - "(triage, batched across the 3 aa files) CSV-specific caveats → `weighted_log2_enrichment-absent`, `small-bh-family-discreteness` confirmed."
@@ -36,7 +36,7 @@ user_directives:
 - (invocation context) Shell script `run_enrichment_stats.sh` confirms upstream pipeline and the EXP_GROUPS string driving the timepoint pooling.
 
 ## Headline
-No statistically significant differences at FDR<0.05 (0/60) for AA-level day_10 vs day_0 MW with BWM and control reps pooled within each timepoint (n=4 per side). Min raw p = 0.0286 = the exact MW two-sided floor for n=4 vs n=4 — so "no FDR hits" is structural per the locked `mw-floor-blocking` caveat, not a biological negative. One row at the floor (P-site C, +0.405, p_adj=0.571), one near-floor row (P-site E, +0.373, raw p=0.0571, p_adj=0.571). Site P carries all the closest-to-significant signal; A and E are flat. Treat as exploratory leads only; the only test in this family that can resolve a real day_10 vs day_0 effect is the per-timepoint Fisher.
+No statistically significant differences at FDR<0.05 (0/60) for AA-level day_10 vs day_0 MW with BWM and control reps pooled within each timepoint (n=4 per side). Min raw p = 0.0286 = the exact MW two-sided floor for n=4 vs n=4 — so "no FDR hits" is structural per the locked `mw-floor-blocking` caveat, not a biological negative. One row at the floor and also the file's only sub-0.05 raw-p row (P-site C, +0.405, p_adj=0.571, flagged `nominal-only, floor`), plus three near-floor cells tied at raw p = 0.0571 (P-site E +0.373, A-site Q -0.406, A-site L -0.368, all p_adj=0.571). Sites P and A both reach the same per-site BH wall (min p_adj = 0.571); E-site is flat (min p_adj = 0.984). Treat as exploratory leads only; the only test in this family that can resolve a real day_10 vs day_0 effect is the per-timepoint Fisher.
 
 ## Top hits
 
@@ -44,16 +44,16 @@ No statistically significant differences at FDR<0.05 (0/60) for AA-level day_10 
 
 | direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
 | --- | --- | --- | --- | --- |
-| enriched | C | +0.405 | 0.571 | floor |
-| enriched | E | +0.373 | 0.571 | nominal-only |
+| enriched | C | +0.405 | 0.571 | nominal-only, floor |
+| enriched | E | +0.373 | 0.571 |  |
 | enriched | G | +0.124 | 0.571 |  |
 | enriched | D | +0.144 | 0.932 |  |
 | enriched | V | +0.110 | 0.932 |  |
 | depleted | K | -0.271 | 0.571 |  |
 | depleted | W | -0.620 | 0.667 |  |
 | depleted | I | -0.159 | 0.667 |  |
-| depleted | H | -0.247 | 0.857 |  |
 | depleted | M | -0.511 | 0.857 |  |
+| depleted | H | -0.247 | 0.857 |  |
 
 <details>
 <summary>A site</summary>
@@ -61,12 +61,12 @@ No statistically significant differences at FDR<0.05 (0/60) for AA-level day_10 
 | direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
 | --- | --- | --- | --- | --- |
 | enriched | G | +0.234 | 0.800 |  |
-| enriched | I | +0.234 | 0.800 |  |
+| enriched | I | +0.233 | 0.800 |  |
 | enriched | R | +0.235 | 0.810 |  |
 | enriched | D | +0.171 | 0.810 |  |
 | enriched | F | +0.109 | 0.810 |  |
-| depleted | L | -0.368 | 0.571 | nominal-only |
-| depleted | Q | -0.406 | 0.571 | nominal-only |
+| depleted | Q | -0.406 | 0.571 |  |
+| depleted | L | -0.368 | 0.571 |  |
 | depleted | Y | -0.401 | 0.800 |  |
 | depleted | W | -0.496 | 0.810 |  |
 | depleted | S | -0.165 | 0.810 |  |
@@ -79,10 +79,10 @@ No statistically significant differences at FDR<0.05 (0/60) for AA-level day_10 
 | direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
 | --- | --- | --- | --- | --- |
 | enriched | C | +0.241 | 0.984 |  |
-| enriched | Q | +0.369 | 0.984 |  |
 | enriched | S | +0.179 | 0.984 |  |
-| enriched | G | +0.139 | 0.984 |  |
 | enriched | L | +0.116 | 0.984 |  |
+| enriched | T | +0.100 | 0.984 |  |
+| enriched | Q | +0.369 | 0.984 |  |
 | depleted | M | -0.384 | 0.984 |  |
 | depleted | P | -0.253 | 0.984 |  |
 | depleted | K | -0.128 | 0.984 |  |

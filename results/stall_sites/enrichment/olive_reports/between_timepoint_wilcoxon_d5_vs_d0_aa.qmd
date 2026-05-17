@@ -18,7 +18,7 @@ execute:
 
 ## Composite figure
 
-![Three-panel bar plot (A-site, P-site, E-site, left-to-right) showing per-amino-acid log2 fold-change of day_5-vs-day_0 median per-replicate frequency with BWM and control reps pooled within each timepoint. Bars sorted by log2_FC high-to-low within each panel; blue = enriched at day_5 (log2FC ≥ 0), red = depleted at day_5 (log2FC < 0). Y-axis range ~−0.7 to +0.65. A-site dynamic range is dominated by a single tall N enrichment (~+0.62) and a deep W depletion (~−0.68); P-site is the narrowest of the three with E and C topping (~+0.27) and M tailing (~−0.38); E-site leads with Q (~+0.48) and tails into P (~−0.51).](../../plots/between_timepoint/d5_vs_d0/composite/APE_aa_Day5_vs_Day0_barplot_composite.png)
+![Three-panel bar plot (A-site, P-site, E-site, left-to-right) showing per-amino-acid log2 fold-change of day_5-vs-day_0 median per-replicate frequency with BWM and control reps pooled within each timepoint. Bars sorted by log2_FC high-to-low within each panel; blue = enriched at day_5 (log2FC ≥ 0), red = depleted at day_5 (log2FC < 0). Y-axis range ~−0.7 to +0.65.](../../plots/between_timepoint/d5_vs_d0/composite/APE_aa_Day5_vs_Day0_barplot_composite.png)
 
 Each panel ranks the 20 amino acids by signed log2_FC (day_5 median / day_0 median) at one ribosome site. Bars above zero are day_5-enriched relative to day_0; bars below zero are day_5-depleted. Dynamic range is comparable to the d10_vs_d5 sister (~±0.5) but the panel-level signal is shallower — site P min `p_adj` here is the only sub-1 cell.
 
@@ -43,9 +43,7 @@ Each panel ranks the 20 amino acids by signed log2_FC (day_5 median / day_0 medi
 
 ## Headline
 
-**Firm null at FDR<0.05 (0/60) for AA-level d5-vs-d0 MW with reps pooled across BWM and control per timepoint; one floor row at P-site C (+0.249, p_adj=0.571) and one near-floor at P-site H (−0.144, p_adj=0.571). Site E is completely flat (min p_adj=1.0). Min raw p = 0.0286 (n=4 vs n=4 floor); 'no FDR hits' is structural per the locked floor caveat.**
-
-Firm null at FDR<0.05 (0/60) for AA-level day_5 vs day_0 MW with BWM and control reps pooled within each timepoint (n=4 per side). One floor row across the file: P-site C (+0.249, raw p=0.0286, p_adj=0.571), with a P-site H near-floor companion (−0.144, raw p=0.0571, p_adj=0.571). Site E is completely flat (min p_adj=1.0); site A min p_adj=0.8. The day_5 vs day_0 contrast carries the *least* signal of the three pairwise contrasts in this family — every site has weaker signal here than in the corresponding d10_vs_d5 or d10_vs_d0 file. Treat as exploratory; the only feature with even a floor-level signal is P-site Cysteine, also flagged at d10_vs_d0_aa.
+Firm null at FDR<0.05 (0/60) for AA-level day_5 vs day_0 MW with BWM and control reps pooled within each timepoint (n=4 per side); min raw p = 0.0286 (the n=4 vs n=4 MW exact floor). One floor row across the file: P-site C (+0.249, raw p=0.0286, p_adj=0.571), with a P-site H near-floor companion (−0.144, raw p=0.0571, p_adj=0.571). Site E is completely flat (min p_adj=1.0); site A min p_adj=0.8. The day_5 vs day_0 contrast carries the *least* signal of the three pairwise contrasts in this family — every site has weaker signal here than in the corresponding d10_vs_d5 or d10_vs_d0 file. The only feature with even a floor-level signal is P-site Cysteine, also flagged at d10_vs_d0_aa. 'No FDR hits' here is structural — the locked n=4 floor caveat, not a biological negative; treat as exploratory.
 
 ## Top hits
 

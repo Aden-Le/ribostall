@@ -45,8 +45,6 @@ Each panel ranks the 20 amino acids by signed log2_FC (BWM median / control medi
 
 ## Headline
 
-**No statistically significant differences at FDR<0.05 for AA-level BWM-vs-control under MW with timepoints pooled (0/60); closest-to-significant features are A-site T depleted, E-site R enriched, and P-site A/P depleted, all at raw p ~= 0.026-0.041 but p_adj in the 0.41-0.52 range.**
-
 No statistically significant differences at FDR<0.05 across 60 AA-level tests (3 sites x 20 AAs) under Mann-Whitney with BWM (n=6) vs control (n=6) replicates pooled across day_0/5/10. Min `p_adj` = 0.41 at P-site (A and P, both BWM-depleted); the next closest are T@A and R@E at `p_adj` = 0.52. The four nominal raw-p hits (T@A, R@E, A@P, P@P) all sit at the discrete tied raw p = 0.0260 or 0.0411 and are flagged `nominal-only` — none survive BH per-site. Treat as no signal conditional on `mw-floor-tight`, `n=6-modest-power`, and `timepoint-pooled-confound`; the four nominal hits are exploratory leads worth reconciling against the per-timepoint Fisher contrasts.
 
 ## Top hits

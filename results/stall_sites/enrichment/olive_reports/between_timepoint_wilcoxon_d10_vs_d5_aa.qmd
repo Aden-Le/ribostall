@@ -11,16 +11,19 @@ format:
   pdf:
     toc: true
     fig-cap-location: bottom
-tbl-colwidths: [30, 22, 22, 26]
+    include-in-header:
+      text: |
+        \usepackage{needspace}
+tbl-colwidths: [26, 20, 17, 17, 20]
 execute:
   echo: false
 ---
 
 ## Composite figure
 
-![Three-panel bar plot (A-site, P-site, E-site, left-to-right) showing per-amino-acid log2 fold-change of day_10-vs-day_5 median per-replicate frequency with BWM and control reps pooled within each timepoint. Bars sorted by log2_FC high-to-low within each panel; blue = enriched at day_10 (log2FC ≥ 0), red = depleted at day_10 (log2FC < 0). Y-axis range ~−0.5 to +0.35. Largest A-site enrichment at G (~+0.29) paired with largest A-site depletion at Q (~−0.46); P-site G enrichment (~+0.32) is the largest in the panel; E-site is the flattest with P slightly enriched (~+0.26) and M slightly depleted (~−0.21).](../../plots/between_timepoint/d10_vs_d5/composite/APE_aa_Day10_vs_Day5_barplot_composite.png)
+![Three-panel bar plot (A-site, P-site, E-site, left-to-right) showing per-amino-acid log2 fold-change of day_10-vs-day_5 median per-replicate frequency with BWM and control reps pooled within each timepoint. Bars sorted by log2_FC high-to-low within each panel; blue = enriched at day_10 (log2FC >= 0), red = depleted at day_10 (log2FC < 0). Y-axis range ~-0.5 to +0.35.](../../plots/between_timepoint/d10_vs_d5/composite/APE_aa_Day10_vs_Day5_barplot_composite.png)
 
-Each panel ranks the 20 amino acids by signed log2_FC (day_10 median / day_5 median) at one ribosome site. Bars above zero are day_10-enriched relative to day_5; bars below zero are day_10-depleted. Dynamic range is narrower than the d10-vs-d0 sister (~±0.5 vs ~±0.65), consistent with d10-vs-d5 being a shorter and smaller interval.
+Each panel ranks the 20 amino acids by signed log2_FC (day_10 median / day_5 median) at one ribosome site. Bars above zero are day_10-enriched relative to day_5; bars below zero are day_10-depleted. Dynamic range is narrower than the d10-vs-d0 sister (~+/-0.5 vs ~+/-0.65), consistent with d10-vs-d5 being a shorter and smaller interval. No significance asterisks are drawn — every bar sits at or above the n=4-vs-n=4 MW exact p-floor (raw p = 0.0286).
 
 ---
 
@@ -28,93 +31,120 @@ Each panel ranks the 20 amino acids by signed log2_FC (day_10 median / day_5 med
 
 - **CSV:** `between_timepoint_wilcoxon_d10_vs_d5_aa.csv`
 - **Family (from `_INDEX.md`):** `between_timepoint_wilcoxon`
-- **Sister CSV(s):** `between_timepoint_wilcoxon_d10_vs_d5_codon.csv`, `between_timepoint_wilcoxon_d10_vs_d0_aa.csv`, `between_timepoint_wilcoxon_d10_vs_d0_codon.csv`, `between_timepoint_wilcoxon_d5_vs_d0_aa.csv`, `between_timepoint_wilcoxon_d5_vs_d0_codon.csv`
-- **Test:** Mann-Whitney U / Wilcoxon rank-sum (two-sided) (source: user-confirmed)
-- **Design:** n=4 day_10 (BWM_d10_rep2/3 + control_d10_rep2/3) vs n=4 day_5 (BWM_d5_rep2/3 + control_d5_rep2/3); BWM and control reps pooled inside each timepoint; two-sided MW on per-replicate AA frequencies; BH-FDR per E/P/A site (each site = own family of 20 amino-acid hypotheses); effect column is `log2_FC` = log2(median_d10 / median_d5).
+- **Sister CSV(s):**
+  - `between_timepoint_wilcoxon_d10_vs_d5_codon.csv`
+  - `between_timepoint_wilcoxon_d10_vs_d0_aa.csv`
+  - `between_timepoint_wilcoxon_d10_vs_d0_codon.csv`
+  - `between_timepoint_wilcoxon_d5_vs_d0_aa.csv`
+  - `between_timepoint_wilcoxon_d5_vs_d0_codon.csv`
+- **Test:** Mann-Whitney U / Wilcoxon rank-sum (two-sided)
+- **Design:** n=4 day_10 (BWM_d10_rep2/3 + control_d10_rep2/3) vs n=4 day_5 (BWM_d5_rep2/3 + control_d5_rep2/3); BWM and control reps are pooled inside each timepoint; two-sided MW on per-replicate AA frequencies; BH-FDR per A/P/E site (each site = own family of 20 amino-acid hypotheses); effect column is `log2_FC` = log2(median_d10 / median_d5).
 
 ### Family-level caveats
 
-- **mw-floor-blocking** — MW two-sided p-floor for n=4 vs n=4 is exactly 0.02857; with per-site BH-FDR families of ~20 (aa) or ~61 (codon), clearing FDR<0.05 is mathematically impossible unless ~every test ties at the floor. Empirically: 0 hits at FDR<0.05 in any of the 6 files. Proposed by Dylan, confirmed by user in clarification round 2.
-- **condition-pooled-confound** — n=4 per timepoint is built by pooling 2 BWM + 2 control reps; if BWM and control diverge in their time response, pooling masks divergent signals. All 6 members share this design. Proposed by Dylan, confirmed by user in clarification round 2.
-- **n=4-low-power** — n=4 vs n=4 MW has very low power; null results across all 6 files are weakly informative. Proposed by Dylan, confirmed by user in clarification round 2.
-- **p-floor-aware-headline** — Headlines must explicitly state min raw p ≈ 0.0286 and explain why "no FDR hits" here is uninformative, not a biological negative. Proposed by Dylan, confirmed by user in clarification round 2.
+- **mw-floor-blocking** — MW two-sided p-floor for n=4 vs n=4 is exactly 0.02857; with per-site BH-FDR families of ~20 (aa) or ~61 (codon), clearing FDR<0.05 is mathematically impossible unless ~every test ties at the floor. Empirically: 0 hits at FDR<0.05 in any of the 6 files.
+- **condition-pooled-confound** — n=4 per timepoint is built by pooling 2 BWM + 2 control reps; if BWM and control diverge in their time response, pooling masks divergent signals. All 6 members share this design.
+- **n=4-low-power** — n=4 vs n=4 MW has very low power; no-signal results across all 6 files are weakly informative.
+- **p-floor-aware-headline** — Headlines must explicitly state min raw p ~= 0.0286 and explain why "no FDR hits" here is uninformative, not a biological negative.
 
 ---
 
 ## Headline
 
-**Firm null at FDR<0.05 (0/60) for AA-level d10-vs-d5 MW with reps pooled across BWM and control per timepoint; min p_adj = 0.381 at site A — the lowest in the entire family — driven by 3 rows ≤ raw p 0.057: G (+0.293, floor), R (+0.239, near-floor), Q (−0.462, near-floor). Site P also has one floor row (G +0.317). Min raw p = 0.0286 (n=4 vs n=4 floor); 'no FDR hits' is structural per the locked floor caveat.**
-
-Firm null at FDR<0.05 (0/60) for AA-level day_10 vs day_5 MW with BWM and control reps pooled within each timepoint (n=4 per side). Min `p_adj` = 0.381 at site A — the lowest `p_adj` across the entire `between_timepoint_wilcoxon` family — driven by 3 site-A rows ≤ raw p 0.057: G enriched (+0.293, raw p=0.0286 floor), R enriched (+0.239, raw p=0.0571), Q depleted (−0.462, raw p=0.0571). One additional floor row at site P (G +0.317, raw p=0.0286, `p_adj`=0.571). Site E (min `p_adj`=0.97) is flat. Closest-to-significant signature: A-site G enrichment + Q depletion in day_10 vs day_5 — i.e. day_10 reps trend toward more A-site glycine and less A-site glutamine than day_5 reps. Treat as exploratory; the floor caveat blocks formal FDR<0.05 here regardless of biology.
+No statistically significant differences at FDR<0.05 (0/60) for AA-level day_10 vs day_5 MW with BWM and control reps pooled within each timepoint (n=4 per side); min raw p = 0.0286 (the n=4 vs n=4 MW exact floor). Min `p_adj` = 0.381 at site A — the lowest `p_adj` across the entire `between_timepoint_wilcoxon` family — driven by 3 site-A rows at raw p <= 0.0571: G enriched (+0.293, raw p=0.0286 floor), R enriched (+0.239, raw p=0.0571), Q depleted (-0.462, raw p=0.0571). One additional floor row at site P (G +0.317, raw p=0.0286, `p_adj`=0.571). Site E (min `p_adj`=0.971) is flat. Closest-to-significant signature: A-site G enrichment + Q depletion in day_10 vs day_5 — i.e. day_10 reps trend toward more A-site glycine and less A-site glutamine than day_5 reps. 'No FDR hits' here is structural per the locked floor caveat, not a biological negative — the floor blocks formal FDR<0.05 regardless of biology; treat as exploratory.
 
 ## Top hits
 
-Effect column is `log2_FC` (day_10 / day_5 median ratio). `p_adj` is BH-corrected per E/P/A site (family of 20 amino-acid tests). Each Dylan site group is split into one sub-table per sign of effect: positive `log2_FC` means day_10-enriched; negative means day_10-depleted. Row order is Dylan's source order. Dylan's group order is preserved (A is the headline group; E and P follow).
+Effect column is `log2_FC` (day_10 / day_5 median ratio). `p_value` is the raw Mann-Whitney p; `p_adj` is BH-corrected per A/P/E site (family of 20 amino-acid tests). Each site group is split into one sub-table per sign of effect: positive `log2_FC` means day_10-enriched; negative means day_10-depleted. Within each sub-table, rows are up to 5 per direction ranked by raw `p_value` ascending, with `|log2_FC|` descending as the tiebreaker.
+
+```{=latex}
+\needspace{14\baselineskip}
+```
 
 ### A site — Enriched (day_10 > day_5)
 
-| amino acid       | effect (`log2_FC`) | adjusted p (`p_adj`) | flag         |
-| ---              | ---                | ---                  | ---          |
-| G (glycine)      | +0.293             | 0.381                | floor        |
-| R (arginine)     | +0.239             | 0.381                | nominal-only |
-| W (tryptophan)   | +0.175             | 0.457                |              |
-| C (cysteine)     | +0.045             | 0.857                |              |
-| Y (tyrosine)     | +0.011             | 0.980                |              |
+| amino acid       | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag                |
+| ---              | ---                | ---               | ---                  | ---                 |
+| G (glycine)      | +0.293             | 0.0286            | 0.381                | nominal-only, floor |
+| R (arginine)     | +0.239             | 0.0571            | 0.381                |                     |
+| W (tryptophan)   | +0.175             | 0.1143            | 0.457                |                     |
+| C (cysteine)     | +0.045             | 0.3429            | 0.857                |                     |
+| Y (tyrosine)     | +0.011             | 0.6857            | 0.980                |                     |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
 
 ### A site — Depleted (day_10 < day_5)
 
-| amino acid       | effect (`log2_FC`) | adjusted p (`p_adj`) | flag         |
-| ---              | ---                | ---                  | ---          |
-| Q (glutamine)    | −0.462             | 0.381                | nominal-only |
-| S (serine)       | −0.122             | 0.457                |              |
-| L (leucine)      | −0.271             | 0.857                |              |
-| T (threonine)    | −0.063             | 0.857                |              |
-| D (aspartate)    | −0.051             | 0.980                |              |
+| amino acid       | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| ---              | ---                | ---               | ---                  | ---  |
+| Q (glutamine)    | -0.462             | 0.0571            | 0.381                |      |
+| S (serine)       | -0.122             | 0.1143            | 0.457                |      |
+| L (leucine)      | -0.271             | 0.3429            | 0.857                |      |
+| T (threonine)    | -0.063             | 0.3429            | 0.857                |      |
+| D (aspartate)    | -0.051             | 0.4857            | 0.980                |      |
 
-### E site — Enriched (day_10 > day_5)
-
-| amino acid       | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
-| ---              | ---                | ---                  | ---  |
-| P (proline)      | +0.258             | 0.971                |      |
-| G (glycine)      | +0.094             | 0.971                |      |
-| A (alanine)      | +0.069             | 0.971                |      |
-| T (threonine)    | +0.055             | 0.971                |      |
-| C (cysteine)     | +0.109             | 0.984                |      |
-
-### E site — Depleted (day_10 < day_5)
-
-| amino acid       | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
-| ---              | ---                | ---                  | ---  |
-| M (methionine)   | −0.214             | 0.971                |      |
-| E (glutamate)    | −0.182             | 0.971                |      |
-| Y (tyrosine)     | −0.088             | 0.971                |      |
-| S (serine)       | −0.122             | 0.971                |      |
-| Q (glutamine)    | −0.113             | 0.971                |      |
+```{=latex}
+\needspace{14\baselineskip}
+```
 
 ### P site — Enriched (day_10 > day_5)
 
-| amino acid       | effect (`log2_FC`) | adjusted p (`p_adj`) | flag         |
-| ---              | ---                | ---                  | ---          |
-| G (glycine)      | +0.317             | 0.571                | floor        |
-| C (cysteine)     | +0.156             | 0.571                | nominal-only |
-| E (glutamate)    | +0.105             | 0.762                |              |
-| D (aspartate)    | +0.112             | 0.810                |              |
-| R (arginine)     | +0.085             | 0.810                |              |
+| amino acid       | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag                |
+| ---              | ---                | ---               | ---                  | ---                 |
+| G (glycine)      | +0.317             | 0.0286            | 0.571                | nominal-only, floor |
+| C (cysteine)     | +0.156             | 0.0571            | 0.571                |                     |
+| E (glutamate)    | +0.105             | 0.3429            | 0.762                |                     |
+| D (aspartate)    | +0.112             | 0.4857            | 0.810                |                     |
+| R (arginine)     | +0.085             | 0.4857            | 0.810                |                     |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
 
 ### P site — Depleted (day_10 < day_5)
 
-| amino acid       | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
-| ---              | ---                | ---                  | ---  |
-| I (isoleucine)   | −0.203             | 0.571                |      |
-| S (serine)       | −0.136             | 0.571                |      |
-| Q (glutamine)    | −0.378             | 0.762                |      |
-| W (tryptophan)   | −0.369             | 0.762                |      |
-| F (phenylalanine)| −0.079             | 0.762                |      |
+| amino acid       | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| ---              | ---                | ---               | ---                  | ---  |
+| I (isoleucine)   | -0.203             | 0.1143            | 0.571                |      |
+| S (serine)       | -0.136             | 0.1143            | 0.571                |      |
+| Q (glutamine)    | -0.378             | 0.2000            | 0.762                |      |
+| W (tryptophan)   | -0.369             | 0.3429            | 0.762                |      |
+| F (phenylalanine)| -0.079             | 0.3429            | 0.762                |      |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### E site — Enriched (day_10 > day_5)
+
+| amino acid       | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| ---              | ---                | ---               | ---                  | ---  |
+| P (proline)      | +0.258             | 0.4857            | 0.971                |      |
+| G (glycine)      | +0.094             | 0.4857            | 0.971                |      |
+| A (alanine)      | +0.069             | 0.4857            | 0.971                |      |
+| T (threonine)    | +0.055             | 0.4857            | 0.971                |      |
+| C (cysteine)     | +0.109             | 0.6857            | 0.984                |      |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### E site — Depleted (day_10 < day_5)
+
+| amino acid       | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| ---              | ---                | ---               | ---                  | ---  |
+| M (methionine)   | -0.214             | 0.2000            | 0.971                |      |
+| E (glutamate)    | -0.182             | 0.3429            | 0.971                |      |
+| Y (tyrosine)     | -0.088             | 0.3429            | 0.971                |      |
+| S (serine)       | -0.122             | 0.4857            | 0.971                |      |
+| Q (glutamine)    | -0.113             | 0.4857            | 0.971                |      |
 
 ### Flag glossary
 
-- `floor` — the row sits at the test's discrete minimum possible raw p-value, given the sample size. For MW two-sided at n=4 vs n=4 this floor is exactly 0.02857. In a 20-AA per-site BH family, one floor hit → `p_adj` = 0.571; the unusual structure here (two near-floor cells at the same site as the floor cell at the A-site) is what drives the file's `p_adj` down to 0.381 — still well above FDR<0.05.
-- `nominal-only` — raw p < 0.05 but `p_adj` ≥ 0.05. The row would have been flagged significant if tested in isolation, but did not survive BH-FDR correction across its grouping family.
+- `floor` — the row sits at the test's discrete minimum possible raw p-value, given the sample size. For MW two-sided at n=4 vs n=4 this floor is exactly 0.02857. In a 20-AA per-site BH family, one floor hit gives `p_adj` ~= 0.571; the unusual structure here (two near-floor cells at the same site as the floor cell at the A-site) is what drives the file's `p_adj` down to 0.381 — still well above FDR<0.05.
+- `nominal-only` — raw p < 0.05 but `p_adj` >= 0.05. The row would have been flagged significant if tested in isolation, but did not survive BH-FDR correction across its grouping family. Only the two exact-floor rows (A-site G, P-site G; raw p = 0.0286) clear raw p < 0.05 in this file, so they carry both `nominal-only` and `floor`; the near-floor cells (raw p = 0.0571) are above the 0.05 nominal threshold and are unflagged.
 
 ## Numbers at a glance
 
@@ -122,46 +152,49 @@ Effect column is `log2_FC` (day_10 / day_5 median ratio). `p_adj` is BH-correcte
 - `n_significant` (adjusted-p < 0.05): 0
 - `n_significant` (adjusted-p < 0.10): 0
 - `min adjusted-p`: 0.381 (site A: G enriched, R enriched, Q depleted, all tied at the BH wall)
-- `min raw-p`: 0.02857 (= MW exact floor); 2 rows at the floor — A-G (+0.293), P-G (+0.317)
+- `min raw-p`: 0.02857 (= MW exact floor for n=4 vs n=4); 2 rows at the floor — A-G (+0.293), P-G (+0.317)
+- `nominal-only count`: 2 amino acids (A-site G, P-site G) with raw p < 0.05 across all 60 tests; both rows are also at the n=4-vs-n=4 exact-MW floor, so they carry both `nominal-only` and `floor`
 - `p_floor`: 0.02857 (n=4 vs n=4 two-sided exact)
 - Per-site BH families:
   - A site: 20 tests, 0 hits at p_adj<0.05, min p_adj = 0.381
-  - E site: 20 tests, 0 hits at p_adj<0.05, min p_adj = 0.971
   - P site: 20 tests, 0 hits at p_adj<0.05, min p_adj = 0.571
+  - E site: 20 tests, 0 hits at p_adj<0.05, min p_adj = 0.971
 
 ## Biological interpretation
 
-**The file is a firm null at FDR<0.05 across all 60 AA-level day_10-vs-day_5 comparisons; the null is structural rather than biological, but the file is the strongest member of the `between_timepoint_wilcoxon` family by `p_adj` (concrete).** Min raw p across the file is exactly 0.02857 — the MW two-sided exact p-floor at n=4 vs n=4 — and `p_adj` cannot reach 0.05 under this design's 20-AA per-site BH family without near-universal floor-tying. The file's min `p_adj` (0.381) is below the family-wide `between_timepoint_wilcoxon` baseline of 0.571 because three site-A rows simultaneously clear raw p ≤ 0.057, which is the only configuration in the family that breaks the 0.571 wall via BH-discreteness. This file is the family's strongest near-miss; the null is still structural.
+**The file shows no significant differences at FDR<0.05 across all 60 AA-level day_10-vs-day_5 comparisons; the no-signal result is structural rather than biological, but the file is the strongest member of the `between_timepoint_wilcoxon` family by `p_adj` (concrete).** Min raw p across the file is exactly 0.02857 — the MW two-sided exact p-floor at n=4 vs n=4 — and `p_adj` cannot reach 0.05 under this design's 20-AA per-site BH family without near-universal floor-tying. The file's min `p_adj` (0.381) is below the family-wide `between_timepoint_wilcoxon` baseline of 0.571 because three site-A rows simultaneously clear raw p <= 0.0571, which is the only configuration in the family that breaks the 0.571 wall via BH-discreteness. This file is the family's strongest near-miss; the result is still structural.
 
-**A-site shows a coherent glycine-up + glutamine-down + arginine-up near-significant block at day_10 vs day_5 (exploratory).** A-G is at the floor (+0.293), A-R is near-floor (+0.239), and A-Q is the largest |effect| in the A-panel (−0.462, near-floor). All three sit at `p_adj` = 0.381. A small co-ordinate shift toward A-site glycine and arginine at day_10 (relative to day_5) paired with a glutamine drop has no obvious shared mechanistic anchor in the report's domain — these residues are not co-decoded by a single mechanism — but the fact that three same-site cells move together at the BH wall is unusual enough to carry forward. The within-condition Fisher d10_vs_d5 contrasts are the natural cross-check: if A-G, A-R, A-Q reproduce in the same direction inside either BWM or control individually, the MW signal is corroborated; if they don't, the block is most naturally read as discrete-floor coincidence.
+**A-site shows a coherent glycine-up + glutamine-down + arginine-up near-significant block at day_10 vs day_5 (exploratory).** A-G is at the floor (+0.293), A-R is near-floor (+0.239), and A-Q is the largest |effect| in the A-panel (-0.462, near-floor). All three sit at `p_adj` = 0.381. A small co-ordinate shift toward A-site glycine and arginine at day_10 (relative to day_5) paired with a glutamine drop has no obvious shared mechanistic anchor in the report's domain — these residues are not co-decoded by a single mechanism — but the fact that three same-site cells move together at the BH wall is unusual enough to carry forward. The within-condition Fisher d10_vs_d5 contrasts are the natural cross-check: if A-G, A-R, A-Q reproduce in the same direction inside either BWM or control individually, the MW signal is corroborated; if they don't, the block is most naturally read as discrete-floor coincidence.
 
 **P-site shows a single floor hit at glycine (+0.317), pairing with the A-site G enrichment (exploratory).** P-G at the floor pairs with A-G at the floor in the same direction (both day_10-enriched); a coordinated glycine enrichment at the A and P sites between day_5 and day_10 is internally coherent. This is also worth cross-checking against the codon sister and within-condition Fisher: if codon resolution localizes both site-A and site-P glycine enrichment to the same Gly synonym (most likely GGA, the most stable Gly codon in the report's flagged candidates), the pattern is a codon-usage shift on glycine; otherwise it is an AA-level co-modulation. E-site is essentially flat (min `p_adj` = 0.971) and contributes no exploratory cells.
 
-**What to carry forward.** Concrete claims to quote: this file is null at FDR<0.05 for day_10-vs-day_5 at AA resolution with conditions pooled, and it is the family's strongest near-miss (min `p_adj` = 0.381, below the family-wide 0.571 ceiling). Exploratory patterns worth checking in sister tests: (1) does the A-site G-up + Q-down + R-up triplet reappear inside either BWM or control individually in `timepoint_fisher_within_condition_d10_vs_d5_aa`? (2) does codon-resolution sister `between_timepoint_wilcoxon_d10_vs_d5_codon` localize the A-G + P-G enrichment to one Gly synonym? (3) does the pattern "d10 has more A-site glycine than d5" make sense in the longer arc — what do d5_vs_d0_aa and d10_vs_d0_aa say about Gly at the A and P sites? If d5_vs_d0_aa shows A-G *depleted* and d10_vs_d0_aa shows A-G enriched, the signal would be a transient day_5 dip rather than monotonic accumulation. Noise to ignore: every E-site cell (uniformly `p_adj` ≈ 0.97) and any P-site cell with `p_adj` ≥ 0.762.
+**What to carry forward.** Concrete claims to quote: this file shows no signal at FDR<0.05 for day_10-vs-day_5 at AA resolution with conditions pooled, and it is the family's strongest near-miss (min `p_adj` = 0.381, below the family-wide 0.571 ceiling). Exploratory patterns worth checking in sister tests: (1) does the A-site G-up + Q-down + R-up triplet reappear inside either BWM or control individually in `timepoint_fisher_within_condition_d10_vs_d5_aa`? (2) does codon-resolution sister `between_timepoint_wilcoxon_d10_vs_d5_codon` localize the A-G + P-G enrichment to one Gly synonym? (3) does the pattern "d10 has more A-site glycine than d5" make sense in the longer arc — what do d5_vs_d0_aa and d10_vs_d0_aa say about Gly at the A and P sites? If d5_vs_d0_aa shows A-G *depleted* and d10_vs_d0_aa shows A-G enriched, the signal would be a transient day_5 dip rather than monotonic accumulation. Noise to ignore: every E-site cell (uniformly `p_adj` ~= 0.97) and any P-site cell with `p_adj` >= 0.762.
 
 ## Methods
 
-Dylan proposed Mann-Whitney U / Wilcoxon rank-sum two-sided on per-replicate frequencies, n=4 day_10 vs n=4 day_5 (BWM_day10/5_rep2/3 + control_day10/5_rep2/3), BH-FDR per site (each site = 20-AA family); user confirmed. Effect column is `log2_FC` of medians; test statistic is `U_stat`. Test answers "do day_10 and day_5 reps differ in per-rep AA frequency at this site?" — pooling BWM and control within timepoint. Does *not* answer condition-specific time response (`timepoint_fisher_within_condition_d10_vs_d5_aa`).
+Mann-Whitney U / Wilcoxon rank-sum two-sided on per-replicate frequencies, n=4 day_10 (BWM_day10_rep2/3 + control_day10_rep2/3) vs n=4 day_5 (BWM_day5_rep2/3 + control_day5_rep2/3), BH-FDR per site (each A/P/E site = 20-AA family). Effect column is `log2_FC` of medians; test statistic is `U_stat`. The test answers "do day_10 and day_5 reps differ in per-rep AA frequency at this site?" — pooling BWM and control reps within timepoint makes condition-by-time interactions invisible. Does *not* answer condition-specific time response (`timepoint_fisher_within_condition_d10_vs_d5_aa`).
 
 ## What the caveats mean for reading this file
 
-- **mw-floor-blocking.** Raw-p is clamped at 0.0286 (n=4 vs n=4 floor); per-site BH wall for one floor hit on a 20-AA family is 0.571. "0/60 at FDR<0.05" here is the design's structural ceiling, not biological evidence of d10 ≈ d5.
+- **mw-floor-blocking.** Raw-p is clamped at 0.0286 (n=4 vs n=4 floor); per-site BH wall for one floor hit on a 20-AA family is 0.571. "0/60 at FDR<0.05" here is the design's structural ceiling, not biological evidence of d10 ~= d5.
 - **condition-pooled-confound.** Each timepoint's n=4 is 2 BWM + 2 control. The A-G and P-G enrichments at d10 vs d5 cannot be attributed to BWM or control here — use `timepoint_fisher_within_condition_d10_vs_d5_aa` to disentangle.
-- **n=4-low-power.** Modest-to-low power at n=4 vs n=4; null is weakly informative.
+- **n=4-low-power.** Modest-to-low power at n=4 vs n=4; the no-signal result is weakly informative.
 - **p-floor-aware-headline.** Headline above explicitly flags 0.0286 as the achievable raw-p minimum.
-- **weighted_log2_enrichment-absent.** `log2_FC` is the median ratio with no count-weighted variant; rare AAs (W ~0.5%, C ~1.5%) get the same column real estate as common AAs (K, E ~10%). A-Q (−0.462) is the largest |effect| in the file but Q is a moderate-frequency residue, so this one is less affected — the warning bites harder for any W or C reading.
-- **small-bh-family-discreteness.** The observed `p_adj` = 0.381 is a discrete-BH artefact: 3 site-A rows at raw p ≤ 0.0571 produce BH wall 20 × 0.0571/3 = 0.381. This is the only file in the family that breaks the 0.571 ceiling — and it does so by BH-discreteness, not by underlying signal strength. Read the 0.381 as "three-near-floor-rows-at-one-site" rather than as "evidence of larger effect."
+- **weighted_log2_enrichment-absent.** `log2_FC` is the median ratio with no count-weighted variant; rare AAs (W ~0.5%, C ~1.5%) get the same column real estate as common AAs (K, E ~10%). A-Q (-0.462) is the largest |effect| in the file but Q is a moderate-frequency residue, so this one is less affected — the warning bites harder for any W or C reading.
+- **small-bh-family-discreteness.** The observed `p_adj` = 0.381 is a discrete-BH artefact: 3 site-A rows at raw p <= 0.0571 produce BH wall 20 x 0.0571/3 = 0.381. This is the only file in the family that breaks the 0.571 ceiling — and it does so by BH-discreteness, not by underlying signal strength. Read the 0.381 as "three-near-floor-rows-at-one-site" rather than as "evidence of larger effect."
 
 ### Considered and ruled out
 
-*(Dylan did not propose any further per-CSV caveats here.)*
+- **asymptotic-with-ties.** Concern that `scipy.stats.mannwhitneyu` might fall back to the asymptotic Z approximation under tied per-rep frequencies (more likely than at n=6 vs n=6 because the per-arm n is smaller), which would shift p-values away from the exact-floor bound. **Ruled out, empirically verified** (audit script: `scripts/_for_claude_mw_branch_audit.py --design between_timepoint --timepoints day10 day5 --level aa`): **0 of 60** (site, AA) tests have any rank ties in the pooled 8-element sample, and `scipy.stats.mannwhitneyu(method='auto')` chose the **exact** branch for every single test. Recomputed p-values match the pipeline CSV to ~8e-17, so the pipeline's reported p-values are the right scipy auto-branch choice (60/60 exact). As a counterfactual, forcing `method='asymptotic'` for all 60 tests shifts raw p-values by at most 0.0305 (median 0.0152), flips **zero** raw-p<0.05 decisions, and leaves the per-site BH conclusion unchanged: 0 hits at FDR<0.05 either way (min p_adj 0.404 / 0.562 / 0.941 at A/P/E under asymptotic vs the as-shipped 0.381 / 0.571 / 0.971). The branch choice does not affect any FDR-level conclusion in this file.
+
+*(No further per-CSV caveats apply here; the locked family caveats already cover the structural failure mode, and the per-CSV column-shape note plus BH-discreteness note are sufficient.)*
 
 ---
 
 ## Plots — individual
 
-![A-site day_10-vs-day_5 amino-acid bar plot. X-axis is the 20 amino acids ordered by log2_FC high-to-low (G, R, W, H, F, I, C, Y, P, M, A, E, D, K, N, T, V, S, L, Q). Y-axis is log2_FC ranging ~−0.5 to +0.3. Largest enrichment at G (~+0.29, the file's A-site floor row); largest depletion at Q (~−0.46, near-floor).](../../plots/between_timepoint/d10_vs_d5/individual/site_A_aa_Day10_vs_Day5_barplot.png)
+![A-site day_10-vs-day_5 amino-acid bar plot. X-axis is the 20 amino acids ordered by log2_FC high-to-low (G, R, W, H, F, I, C, Y, P, M, A, E, D, K, N, T, V, S, L, Q). Y-axis is log2_FC ranging ~-0.5 to +0.3. Largest enrichment at G (~+0.29, the file's A-site floor row); largest depletion at Q (~-0.46, near-floor).](../../plots/between_timepoint/d10_vs_d5/individual/site_A_aa_Day10_vs_Day5_barplot.png)
 
-![P-site day_10-vs-day_5 amino-acid bar plot. X-axis is the 20 amino acids ordered by log2_FC high-to-low (G, C, D, E, R, V, P, A, T, N, Y, L, F, K, H, M, S, I, W, Q). Y-axis is log2_FC ranging ~−0.4 to +0.35. Largest enrichment at G (~+0.32, floor row); largest depletions at Q and W (~−0.37 each).](../../plots/between_timepoint/d10_vs_d5/individual/site_P_aa_Day10_vs_Day5_barplot.png)
+![P-site day_10-vs-day_5 amino-acid bar plot. X-axis is the 20 amino acids ordered by log2_FC high-to-low (G, C, D, E, R, V, P, A, T, N, Y, L, F, K, H, M, S, I, W, Q). Y-axis is log2_FC ranging ~-0.4 to +0.35. Largest enrichment at G (~+0.32, floor row); largest depletions at Q and W (~-0.37 each).](../../plots/between_timepoint/d10_vs_d5/individual/site_P_aa_Day10_vs_Day5_barplot.png)
 
-![E-site day_10-vs-day_5 amino-acid bar plot. X-axis is the 20 amino acids ordered by log2_FC high-to-low (P, C, L, G, F, K, A, T, W, N, R, V, H, I, Y, Q, D, S, E, M). Y-axis is log2_FC ranging ~−0.25 to +0.27. Largest enrichment at P (~+0.26); largest depletion at M (~−0.21). Site is essentially flat — narrowest dynamic range of the three panels.](../../plots/between_timepoint/d10_vs_d5/individual/site_E_aa_Day10_vs_Day5_barplot.png)
+![E-site day_10-vs-day_5 amino-acid bar plot. X-axis is the 20 amino acids ordered by log2_FC high-to-low (P, C, L, G, F, K, A, T, W, N, R, V, H, I, Y, Q, D, S, E, M). Y-axis is log2_FC ranging ~-0.25 to +0.27. Largest enrichment at P (~+0.26); largest depletion at M (~-0.21). Site is essentially flat — narrowest dynamic range of the three panels.](../../plots/between_timepoint/d10_vs_d5/individual/site_E_aa_Day10_vs_Day5_barplot.png)

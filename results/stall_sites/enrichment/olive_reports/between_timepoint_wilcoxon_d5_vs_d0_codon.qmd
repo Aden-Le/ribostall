@@ -18,7 +18,7 @@ execute:
 
 ## Composite figure
 
-![Three-panel bar plot (A-site, P-site, E-site, left-to-right) showing per-codon log2 fold-change of day_5-vs-day_0 median per-replicate frequency, with BWM and control reps pooled within each timepoint, across the 61 sense codons. Bars sorted by log2_FC high-to-low within each panel; blue = enriched at day_5 (log2FC ≥ 0), red = depleted at day_5 (log2FC < 0). Y-axis range ~−1.35 to +1.40 across panels. A-site reaches the file's deepest depletion at TTA (~−1.34, rare-codon); P-site reaches +1.00 at GGG (rare-codon) and −1.21 at GCG (rare-codon) at its tails; E-site is the broadest panel, ranging from ATA (~+1.40, rare-codon) at the head to CCT (~−0.96) at the tail.](../../plots/between_timepoint/d5_vs_d0/codon/composite/APE_codon_Day5_vs_Day0_barplot_composite.png)
+![Three-panel bar plot (A-site, P-site, E-site, left-to-right) showing per-codon log2 fold-change of day_5-vs-day_0 median per-replicate frequency, with BWM and control reps pooled within each timepoint, across the 61 sense codons. Bars sorted by log2_FC high-to-low within each panel; blue = enriched at day_5 (log2FC ≥ 0), red = depleted at day_5 (log2FC < 0). Y-axis range ~−1.35 to +1.40 across panels.](../../plots/between_timepoint/d5_vs_d0/codon/composite/APE_codon_Day5_vs_Day0_barplot_composite.png)
 
 Each panel ranks the 61 sense codons by signed log2_FC (day_5 median / day_0 median) at one ribosome site. Bars above zero are day_5-enriched relative to day_0; bars below zero are day_5-depleted. The widest dynamic range in the entire family (~±1.4) sits in this file, but the |log2_FC| > 0.9 cells are dominated by rare codons with median frequencies < 0.2% — read as `low-count` exploratory signal, not headline biology.
 
@@ -43,9 +43,7 @@ Each panel ranks the 61 sense codons by signed log2_FC (day_5 median / day_0 med
 
 ## Headline
 
-**Firm null at FDR<0.05 (0/183) for codon-level d5-vs-d0 MW with reps pooled across BWM and control per timepoint; min p_adj = 0.436 at site P — 4 floor rows (CTA −0.923, GAG +0.190, GCA −0.740, GCG −1.212). Five total floor rows file-wide (1 at A: ACT +0.227; 4 at P; 0 at E). Min raw p = 0.0286 (n=4 vs n=4 floor); 'no FDR hits' is structural per the locked floor caveat.**
-
-Firm null at FDR<0.05 (0/183) for codon-level day_5 vs day_0 MW with BWM and control reps pooled within each timepoint (n=4 per side). Min p_adj = 0.436 at site P — 4 floor rows (CTA −0.923, GCG −1.212, GCA −0.740, GAG +0.190), giving BH wall 61*0.0286/4 = 0.436. File-wide: 5 floor rows (4 at P, 1 at A: ACT +0.227; 0 at E). Site E completely flat (min p_adj=0.926); site A min p_adj=0.775. Closest-to-significant codon-level signature: at site P, three depletions (CTA, GCG, GCA) and one enrichment (GAG) all reaching the floor between day_0 and day_5 reps. Treat as exploratory; the floor blocks formal FDR<0.05.
+Firm null at FDR<0.05 (0/183) for codon-level day_5 vs day_0 MW with BWM and control reps pooled within each timepoint (n=4 per side); min raw p = 0.0286 (the n=4 vs n=4 MW exact floor). Min p_adj = 0.436 at site P — 4 floor rows (CTA −0.923, GCG −1.212, GCA −0.740, GAG +0.190), giving BH wall 61*0.0286/4 = 0.436. File-wide: 5 floor rows (4 at P, 1 at A: ACT +0.227; 0 at E). Site E completely flat (min p_adj=0.926); site A min p_adj=0.775. Closest-to-significant codon-level signature: at site P, three depletions (CTA, GCG, GCA) and one enrichment (GAG) all reaching the floor between day_0 and day_5 reps. 'No FDR hits' here is structural — the floor blocks formal FDR<0.05 regardless of biology, not a biological negative; treat as exploratory.
 
 ## Top hits
 

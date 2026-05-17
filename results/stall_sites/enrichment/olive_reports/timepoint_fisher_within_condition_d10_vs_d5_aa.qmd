@@ -18,7 +18,7 @@ execute:
 
 ## Composite figure
 
-![2×3 grid of day-10-vs-day-5 amino-acid Fisher volcano panels: rows are conditions (top = BWM, bottom = control); columns are ribosome sites (A / P / E). Each panel plots −log₁₀(FDR) against log₂(odds ratio); triangles mark FDR<0.05 hits and circles are non-significant. Glyphs are coloured by amino-acid property (acidic = red, basic = blue, hydrophobic = green, neutral = orange, polar = purple). The control,P panel carries the file's tallest single point (G at log₂(OR) ≈ +0.43, −log₁₀(FDR) ≈ 7.2); control,A is the next most-populated panel (N and Q at log₂(OR) ≈ −0.55 are the strongest depletions, G and P at log₂(OR) ≈ +0.36 to +0.39 the strongest enrichments). The BWM row is sparser overall — A:L (depleted) and A:G (enriched) at log₂(OR) ≈ ±0.3 are the standout BWM,A points; BWM,P shows only G enriched; BWM,E shows I depleted and G/R enriched at small magnitudes.](../../plots/within_condition_timepoint_fisher/d10_vs_d5/composite/aa_fisher_composite.png)
+![2×3 grid of day-10-vs-day-5 amino-acid Fisher volcano panels: rows are conditions (top = BWM, bottom = control); columns are ribosome sites (A / P / E). Each panel plots −log₁₀(FDR) against log₂(odds ratio); triangles mark FDR<0.05 hits and circles are non-significant. Glyphs are coloured by amino-acid property (acidic = red, basic = blue, hydrophobic = green, neutral = orange, polar = purple). The control,P panel carries the file's tallest single point; control,A is the next most-populated panel. The BWM row is sparser overall — A:L depleted and A:G enriched are the standout BWM,A points; BWM,P shows only G enriched; BWM,E shows I depleted and G/R enriched at small magnitudes.](../../plots/within_condition_timepoint_fisher/d10_vs_d5/composite/aa_fisher_composite.png)
 
 Each glyph is a single amino acid at one (condition, site) BH-FDR family of 20; horizontal dashed line is FDR = 0.05 and vertical dashed lines mark ±0.5 log₂(OR). Positive log₂(OR) means day-10-enriched relative to day-5 *within the same condition*; negative means day-10-depleted relative to day-5. The test does not compare BWM to control directly — that contrast is implied by reading paired top/bottom rows of the grid side-by-side.
 
@@ -43,7 +43,7 @@ Each glyph is a single amino acid at one (condition, site) BH-FDR family of 20; 
 
 ## Headline
 
-**d10 vs d5 within-condition Fisher (aa-level): 23/120 hits at FDR<0.05 (8 BWM, 15 control). Largest-magnitude shared-direction cells: site-A G (BWM↑1.24 / control↑1.31, both sig) and site-P G (BWM↑1.23 / control↑1.35, both sig — control,P,G is the file minimum at 5.8e-8); flagged via shared-time-trajectory-A/P-Gly. Largest-magnitude divergence cells: E:R (BWM↑1.21 sig vs control 0.87 ns), A:A (BWM 0.88 ns vs control↑1.20 sig), P:V (BWM 1.07 ns vs control↓0.85 sig). Cross-contrast note for Chumeng: E:K (the d10_vs_d0 divergence) is null in both conditions here (BWM 1.06 ns / control 0.95 ns).**
+d10 vs d5 within-condition Fisher (aa-level): 23/120 hits at FDR<0.05 (8 BWM, 15 control). Largest-magnitude shared-direction cells: site-A G (BWM↑1.24 / control↑1.31, both sig) and site-P G (BWM↑1.23 / control↑1.35, both sig — control,P,G is the file minimum at 5.8e-8); flagged via shared-time-trajectory-A/P-Gly. Largest-magnitude divergence cells: E:R (BWM↑1.21 sig vs control 0.87 ns), A:A (BWM 0.88 ns vs control↑1.20 sig), P:V (BWM 1.07 ns vs control↓0.85 sig). Cross-contrast note for Chumeng: E:K (the d10_vs_d0 divergence) is null in both conditions here (BWM 1.06 ns / control 0.95 ns).
 
 ## Top hits
 

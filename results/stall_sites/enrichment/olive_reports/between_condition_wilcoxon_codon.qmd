@@ -21,7 +21,7 @@ execute:
 
 ## Composite figure
 
-![Three-panel bar plot (A-site, P-site, E-site, left-to-right) showing per-codon log2 fold-change of BWM-vs-control median per-replicate frequency across the 61 sense codons. Bars sorted by log2_FC high-to-low within each panel; blue = enriched (log2FC >= 0), red = depleted (log2FC < 0). Y-axis range ~-1.2 to +0.7. Tail-end depletions reach roughly -1.0 (A-site CGG, P-site GGG, E-site CGG) — codon-level dynamic range is far wider than the AA-level companion.](../../plots/between_condition/codon/composite/APE_codon_BWM_vs_Control_barplot_composite.png)
+![Three-panel bar plot (A-site, P-site, E-site, left-to-right) showing per-codon log2 fold-change of BWM-vs-control median per-replicate frequency across the 61 sense codons. Bars sorted by log2_FC high-to-low within each panel; blue = enriched (log2FC >= 0), red = depleted (log2FC < 0). Y-axis range ~-1.2 to +0.7. Codon-level dynamic range is far wider than the AA-level companion.](../../plots/between_condition/codon/composite/APE_codon_BWM_vs_Control_barplot_composite.png)
 
 Each panel ranks the 61 sense codons by signed log2_FC (BWM median / control median) at one ribosome site. The signed-rank tails are heavier than at AA resolution because many rare codons have median frequencies < 0.005, producing large but unstable |log2_FC|; treat the rightmost few red bars in each panel as `low-count` candidates rather than headline depletions.
 
@@ -44,8 +44,6 @@ Each panel ranks the 61 sense codons by signed log2_FC (BWM median / control med
 ---
 
 ## Headline
-
-**No statistically significant differences at FDR<0.05 for codon-level BWM-vs-control under MW with timepoints pooled (0/183); 12 codons clear nominal raw p<0.05 across the 3 sites and four (CGG@A, TCA@P, GTA@P, AGT@E) hit the smallest possible BH-adjusted p of 0.264 — the discrete BH wall at n=61.**
 
 No statistically significant differences at FDR<0.05 across 183 codon-level tests (3 sites x 61 sense codons) under Mann-Whitney with BWM (n=6) vs control (n=6) replicates pooled across day_0/5/10. Min `p_adj` = 0.264 — the discrete BH wall (0.00433 x 61 / 1) hit by four cells: **CGG@A** (BWM-depleted, log2_FC = -1.03), **TCA@P** (BWM-depleted, -0.32), **GTA@P** (BWM-depleted, -0.69), and **AGT@E** (BWM-depleted, -0.68). 12 codons clear raw p<0.05 across the 3 sites; all carry `nominal-only`. The codon resolution adds raw-p detail vs the aa file (smallest raw p drops from 0.0260 to 0.00433) but the larger BH family of 61 cancels the gain — FDR<0.05 remains out of reach. Treat as no signal conditional on `mw-floor-tight` + `larger-bh-family` + `timepoint-pooled-confound`; the named near-threshold codons are exploratory leads worth reconciling against per-timepoint Fisher contrasts.
 

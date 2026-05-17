@@ -21,7 +21,7 @@ execute:
 
 ## Composite figure
 
-![Three-panel bar plot (A-site, P-site, E-site, left-to-right) showing per-amino-acid log2 fold-change of day_10-vs-day_0 median per-replicate frequency with BWM and control reps pooled within each timepoint. Bars sorted by log2_FC high-to-low within each panel; blue = enriched at day_10 (log2FC >= 0), red = depleted at day_10 (log2FC < 0). Y-axis range ~-0.65 to +0.6. A-site N is the largest day_10 enrichment in the file (~+0.55); P-site W and M show the largest day_10 depletions (~-0.6 and ~-0.5).](../../plots/between_timepoint/d10_vs_d0/composite/APE_aa_Day10_vs_Day0_barplot_composite.png)
+![Three-panel bar plot (A-site, P-site, E-site, left-to-right) showing per-amino-acid log2 fold-change of day_10-vs-day_0 median per-replicate frequency with BWM and control reps pooled within each timepoint. Bars sorted by log2_FC high-to-low within each panel; blue = enriched at day_10 (log2FC >= 0), red = depleted at day_10 (log2FC < 0). Y-axis range ~-0.65 to +0.6.](../../plots/between_timepoint/d10_vs_d0/composite/APE_aa_Day10_vs_Day0_barplot_composite.png)
 
 Each panel ranks the 20 amino acids by signed log2_FC (day_10 median / day_0 median) at one ribosome site. Bars above zero are day_10-enriched relative to day_0; bars below zero are day_10-depleted. No significance asterisks are drawn — every bar sits at or above the n=4-vs-n=4 MW exact p-floor (raw p = 0.0286).
 
@@ -50,8 +50,6 @@ Each panel ranks the 20 amino acids by signed log2_FC (day_10 median / day_0 med
 ---
 
 ## Headline
-
-**No statistically significant differences at FDR<0.05 (0/60) for AA-level d10-vs-d0 MW with BWM and control reps pooled per timepoint; the file's only sub-0.05 raw-p row is P-site C (+0.405, raw p=0.0286, p_adj=0.571, flagged `nominal-only, floor`), with three more cells tied at the near-floor raw p=0.0571 (P-site E +0.373, A-site Q -0.406, A-site L -0.368, all p_adj=0.571). Min raw p across the file = 0.0286 (the n=4 vs n=4 floor), so 'no FDR hits' here is structural, not biological.**
 
 No statistically significant differences at FDR<0.05 (0/60) for AA-level day_10 vs day_0 MW with BWM and control reps pooled within each timepoint (n=4 per side). Min raw p = 0.0286 = the exact MW two-sided floor for n=4 vs n=4 — so "no FDR hits" is structural per the locked `mw-floor-blocking` caveat, not a biological negative. One row at the floor and also the file's only sub-0.05 raw-p row (P-site C, +0.405, p_adj=0.571, flagged `nominal-only, floor`), plus three near-floor cells tied at raw p = 0.0571 (P-site E +0.373, A-site Q -0.406, A-site L -0.368, all p_adj=0.571). Sites P and A both reach the same per-site BH wall (min p_adj = 0.571); E-site is flat (min p_adj = 0.984). Treat as exploratory leads only; the only test in this family that can resolve a real day_10 vs day_0 effect is the per-timepoint Fisher.
 

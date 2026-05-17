@@ -15,8 +15,9 @@ caveats:
   - {label: "n=4-low-power", proposed_by: family, status: confirmed, why: "Inherited from family `between_timepoint_wilcoxon` (see _INDEX.md)."}
   - {label: "p-floor-aware-headline", proposed_by: family, status: confirmed, why: "Inherited from family `between_timepoint_wilcoxon` (see _INDEX.md)."}
   - {label: "weighted_log2_enrichment-absent", proposed_by: dylan, status: confirmed, why: "Effect column is `log2_FC` of medians only; no count-weighted variant."}
-  - {label: "small-bh-family-discreteness", proposed_by: dylan, status: confirmed, why: "BH adjusts only 20 raw-p per site. Three rows at site A clear raw p ≤ 0.0571 — under BH this gives p_adj = max(20*0.0286/1, 20*0.0571/2, 20*0.0571/3) = max(0.571, 0.571, 0.381) → 0.381, exactly the observed min p_adj. Two near-floor + one floor at the same site is the only configuration in this family that breaks below the 0.571 wall."}
-headline: "Firm null at FDR<0.05 (0/60) for AA-level d10-vs-d5 MW with reps pooled across BWM and control per timepoint; min p_adj = 0.381 at site A — the lowest in the entire family — driven by 3 rows ≤ raw p 0.057: G (+0.293, floor), R (+0.239, near-floor), Q (-0.462, near-floor). Site P also has one floor row (G +0.317). Min raw p = 0.0286 (n=4 vs n=4 floor); 'no FDR hits' is structural per the locked floor caveat."
+  - {label: "small-bh-family-discreteness", proposed_by: dylan, status: confirmed, why: "BH adjusts only 20 raw-p per site. Three rows at site A clear raw p <= 0.0571 — under BH this gives p_adj = max(20*0.0286/1, 20*0.0571/2, 20*0.0571/3) = max(0.571, 0.571, 0.381) -> 0.381, exactly the observed min p_adj. Two near-floor + one floor at the same site is the only configuration in this family that breaks below the 0.571 wall."}
+  - {label: "asymptotic-with-ties", proposed_by: dylan, status: ruled_out, why: "Empirically verified via scripts/_for_claude_mw_branch_audit.py --design between_timepoint --timepoints day10 day5 --level aa: 0/60 (site, AA) tests have rank ties in the pooled 8-element sample; scipy mannwhitneyu(method='auto') picked the exact branch for all 60 (recomputed p matches the pipeline CSV to ~8e-17); forcing method='asymptotic' flips 0 raw-p<0.05 decisions and leaves 0 hits at FDR<0.05 (min p_adj 0.404/0.562/0.941 at A/P/E vs as-shipped 0.381/0.571/0.971)."}
+headline: "No statistically significant differences at FDR<0.05 (0/60) for AA-level d10-vs-d5 MW with reps pooled across BWM and control per timepoint; min p_adj = 0.381 at site A — the lowest in the entire family — driven by 3 site-A rows at raw p <= 0.0571: G (+0.293, raw p=0.0286 floor), R (+0.239, raw p=0.0571), Q (-0.462, raw p=0.0571). Site P also has one floor row (G +0.317). Min raw p = 0.0286 (n=4 vs n=4 floor); 'no FDR hits' is structural per the locked floor caveat."
 user_directives:
   - "(triage, batched across all 6 family members) Test type confirmation — `MW / Wilcoxon rank-sum two-sided, n=4 vs n=4, BH-FDR per site` → `Confirm`."
   - "(triage, batched across the 3 aa files) CSV-specific caveats → `weighted_log2_enrichment-absent`, `small-bh-family-discreteness` confirmed."
@@ -33,7 +34,7 @@ user_directives:
 - (triage, batched 3 aa files) CSV-specific caveats: `weighted_log2_enrichment-absent`, `small-bh-family-discreteness` confirmed.
 
 ## Headline
-Firm null at FDR<0.05 (0/60) for AA-level day_10 vs day_5 MW with BWM and control reps pooled within each timepoint (n=4 per side). Min p_adj = 0.381 at site A — the lowest p_adj across the entire `between_timepoint_wilcoxon` family — driven by 3 site-A rows ≤ raw p 0.057: G enriched (+0.293, raw p=0.0286 floor), R enriched (+0.239, raw p=0.0571), Q depleted (-0.462, raw p=0.0571). One additional floor row at site P (G +0.317, raw p=0.0286, p_adj=0.571). Sites E (min p_adj=0.97) is flat. Closest-to-significant signature: A-site G enrichment + Q depletion in day_10 vs day_5 — i.e. day_10 reps trend toward more A-site Glycine and less A-site Glutamine than day_5 reps. Treat as exploratory; the floor caveat blocks formal FDR<0.05 here regardless of biology.
+No statistically significant differences at FDR<0.05 (0/60) for AA-level day_10 vs day_5 MW with BWM and control reps pooled within each timepoint (n=4 per side). Min p_adj = 0.381 at site A — the lowest p_adj across the entire `between_timepoint_wilcoxon` family — driven by 3 site-A rows at raw p <= 0.0571: G enriched (+0.293, raw p=0.0286 floor), R enriched (+0.239, raw p=0.0571), Q depleted (-0.462, raw p=0.0571). One additional floor row at site P (G +0.317, raw p=0.0286, p_adj=0.571). Site E (min p_adj=0.971) is flat. Closest-to-significant signature: A-site G enrichment + Q depletion in day_10 vs day_5 — i.e. day_10 reps trend toward more A-site Glycine and less A-site Glutamine than day_5 reps. Treat as exploratory; the floor caveat blocks formal FDR<0.05 here regardless of biology.
 
 ## Top hits
 
@@ -41,12 +42,12 @@ Firm null at FDR<0.05 (0/60) for AA-level day_10 vs day_5 MW with BWM and contro
 
 | direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
 | --- | --- | --- | --- | --- |
-| enriched | G | +0.293 | 0.381 | floor |
-| enriched | R | +0.239 | 0.381 | nominal-only |
+| enriched | G | +0.293 | 0.381 | nominal-only, floor |
+| enriched | R | +0.239 | 0.381 |  |
 | enriched | W | +0.175 | 0.457 |  |
 | enriched | C | +0.045 | 0.857 |  |
 | enriched | Y | +0.011 | 0.980 |  |
-| depleted | Q | -0.462 | 0.381 | nominal-only |
+| depleted | Q | -0.462 | 0.381 |  |
 | depleted | S | -0.122 | 0.457 |  |
 | depleted | L | -0.271 | 0.857 |  |
 | depleted | T | -0.063 | 0.857 |  |
@@ -75,8 +76,8 @@ Firm null at FDR<0.05 (0/60) for AA-level day_10 vs day_5 MW with BWM and contro
 
 | direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
 | --- | --- | --- | --- | --- |
-| enriched | G | +0.317 | 0.571 | floor |
-| enriched | C | +0.156 | 0.571 | nominal-only |
+| enriched | G | +0.317 | 0.571 | nominal-only, floor |
+| enriched | C | +0.156 | 0.571 |  |
 | enriched | E | +0.105 | 0.762 |  |
 | enriched | D | +0.112 | 0.810 |  |
 | enriched | R | +0.085 | 0.810 |  |
@@ -97,23 +98,23 @@ Firm null at FDR<0.05 (0/60) for AA-level day_10 vs day_5 MW with BWM and contro
 - `p_floor`: 0.02857 (n=4 vs n=4 two-sided exact)
 - Per-site BH families:
   - A site: 20 tests, 0 hits at p_adj<0.05, min p_adj = 0.381
-  - E site: 20 tests, 0 hits at p_adj<0.05, min p_adj = 0.971
   - P site: 20 tests, 0 hits at p_adj<0.05, min p_adj = 0.571
+  - E site: 20 tests, 0 hits at p_adj<0.05, min p_adj = 0.971
 
 ## Methods
-Dylan proposed Mann-Whitney U / Wilcoxon rank-sum two-sided on per-replicate frequencies, n=4 day_10 vs n=4 day_5 (BWM_day10/5_rep2/3 + control_day10/5_rep2/3), BH-FDR per site (each site = 20-AA family); user confirmed. Effect column is `log2_FC` of medians; test statistic is `U_stat`. Test answers "do day_10 and day_5 reps differ in per-rep AA frequency at this site?" — pooling BWM and control within timepoint. Does *not* answer condition-specific time response (`timepoint_fisher_within_condition_d10_vs_d5_aa`).
+Mann-Whitney U / Wilcoxon rank-sum two-sided on per-replicate frequencies, n=4 day_10 vs n=4 day_5 (BWM_day10/5_rep2/3 + control_day10/5_rep2/3), BH-FDR per site (each site = 20-AA family). Effect column is `log2_FC` of medians; test statistic is `U_stat`. Test answers "do day_10 and day_5 reps differ in per-rep AA frequency at this site?" — pooling BWM and control within timepoint. Does *not* answer condition-specific time response (`timepoint_fisher_within_condition_d10_vs_d5_aa`).
 
 ## Caveats
 ### Confirmed
 - **mw-floor-blocking** (family-wide) — exact floor 0.0286; per-site BH wall for one floor hit on a 20-AA family is 0.571.
 - **condition-pooled-confound** (family-wide) — n=4 per timepoint = 2 BWM + 2 control. The G enrichment at A and P at day_10 (vs day_5) cannot be attributed to BWM or control here.
-- **n=4-low-power** (family-wide) — null is weakly informative.
+- **n=4-low-power** (family-wide) — the no-signal result is weakly informative.
 - **p-floor-aware-headline** (family-wide).
 - **weighted_log2_enrichment-absent** (per-CSV).
-- **small-bh-family-discreteness** (per-CSV) — the observed p_adj=0.381 is a discrete-BH artefact: 3 site-A rows at raw p ≤ 0.0571 produce BH wall 20*0.0571/3 = 0.381. This is the *only* file in the `between_timepoint_wilcoxon` family that breaks below the 0.571 ceiling at any resolution.
+- **small-bh-family-discreteness** (per-CSV) — the observed p_adj=0.381 is a discrete-BH artefact: 3 site-A rows at raw p <= 0.0571 produce BH wall 20*0.0571/3 = 0.381. This is the *only* file in the `between_timepoint_wilcoxon` family that breaks below the 0.571 ceiling at any resolution.
 
 ### Considered but not applicable
-*(Dylan did not propose any further per-CSV caveats here.)*
+- **asymptotic-with-ties** (per-CSV, ruled out) — concern that `scipy.stats.mannwhitneyu` might fall back to the asymptotic Z approximation under tied per-rep frequencies. Empirically verified via `scripts/_for_claude_mw_branch_audit.py --design between_timepoint --timepoints day10 day5 --level aa`: 0/60 (site, AA) tests have rank ties in the pooled 8-element sample; scipy `method='auto'` picked the exact branch for all 60 (recomputed p matches the pipeline CSV to ~8e-17); forcing `method='asymptotic'` flips 0 raw-p<0.05 decisions and leaves 0 hits at FDR<0.05 (min p_adj 0.404/0.562/0.941 at A/P/E vs as-shipped 0.381/0.571/0.971). The branch choice does not affect any FDR-level conclusion in this file.
 
 ## For Chumeng (joint-reading hooks)
 - Family: `between_timepoint_wilcoxon` — sister CSVs in this family that should be reconciled: `between_timepoint_wilcoxon_d10_vs_d5_codon.csv` (codon resolution, same contrast), and the d10_vs_d0 / d5_vs_d0 pairs at both resolutions.

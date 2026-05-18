@@ -46,7 +46,7 @@ Firm null at FDR<0.05 (0/60) for AA-level day_5 vs day_0 MW with BWM and control
 | enriched | E | +0.268 | 0.883 |  |
 | enriched | F | +0.086 | 0.883 |  |
 | enriched | Q | +0.166 | 0.883 |  |
-| depleted | H | -0.144 | 0.571 | nominal-only |
+| depleted | H | -0.144 | 0.571 |  |
 | depleted | K | -0.192 | 0.883 |  |
 | depleted | G | -0.193 | 0.883 |  |
 | depleted | W | -0.252 | 0.883 |  |
@@ -58,8 +58,8 @@ Firm null at FDR<0.05 (0/60) for AA-level day_5 vs day_0 MW with BWM and control
 | direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
 | --- | --- | --- | --- | --- |
 | enriched | I | +0.188 | 0.800 |  |
-| enriched | D | +0.222 | 0.800 |  |
 | enriched | N | +0.618 | 0.800 |  |
+| enriched | D | +0.222 | 0.800 |  |
 | enriched | E | +0.069 | 0.857 |  |
 | enriched | Q | +0.056 | 0.857 |  |
 | depleted | Y | -0.412 | 0.800 |  |
@@ -78,13 +78,13 @@ Firm null at FDR<0.05 (0/60) for AA-level day_5 vs day_0 MW with BWM and control
 | enriched | Q | +0.482 | 1.0 |  |
 | enriched | S | +0.300 | 1.0 |  |
 | enriched | E | +0.212 | 1.0 |  |
-| enriched | C | +0.131 | 1.0 |  |
 | enriched | N | +0.040 | 1.0 |  |
+| enriched | C | +0.131 | 1.0 |  |
 | depleted | P | -0.510 | 1.0 |  |
-| depleted | K | -0.201 | 1.0 |  |
-| depleted | M | -0.170 | 1.0 |  |
 | depleted | W | -0.143 | 1.0 |  |
+| depleted | M | -0.170 | 1.0 |  |
 | depleted | A | -0.092 | 1.0 |  |
+| depleted | K | -0.201 | 1.0 |  |
 
 </details>
 
@@ -97,8 +97,8 @@ Firm null at FDR<0.05 (0/60) for AA-level day_5 vs day_0 MW with BWM and control
 - `p_floor`: 0.02857 (n=4 vs n=4 two-sided exact)
 - Per-site BH families:
   - A site: 20 tests, 0 hits at p_adj<0.05, min p_adj = 0.800
-  - E site: 20 tests, 0 hits at p_adj<0.05, min p_adj = 1.000
   - P site: 20 tests, 0 hits at p_adj<0.05, min p_adj = 0.571
+  - E site: 20 tests, 0 hits at p_adj<0.05, min p_adj = 1.000
 
 ## Methods
 MW rank-sum two-sided on per-replicate frequencies, n=4 day_5 (BWM_day5_rep2/3 + control_day5_rep2/3) vs n=4 day_0, BH-FDR per site (each site = 20-AA family). Test answers "do day_5 and day_0 reps differ in per-rep AA frequency at this site?" with BWM and control reps pooled within each timepoint.

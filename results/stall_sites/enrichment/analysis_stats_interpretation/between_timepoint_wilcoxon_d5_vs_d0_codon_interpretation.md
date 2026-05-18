@@ -43,14 +43,14 @@ Firm null at FDR<0.05 (0/183) for codon-level day_5 vs day_0 MW with BWM and con
 | direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
 | --- | --- | --- | --- | --- |
 | enriched | GAG | +0.190 | 0.436 | floor |
-| enriched | TCT | +0.388 | 0.775 | nominal-only |
 | enriched | GGG | +1.001 | 0.775 | low-count |
-| enriched | CAA | +0.250 | 0.871 |  |
+| enriched | TCT | +0.388 | 0.775 |  |
+| enriched | TCC | +0.444 | 0.871 |  |
 | enriched | GTC | +0.335 | 0.871 |  |
 | depleted | GCG | -1.212 | 0.436 | floor, low-count |
 | depleted | CTA | -0.923 | 0.436 | floor, low-count |
-| depleted | GCA | -0.740 | 0.436 | floor |
-| depleted | GGT | -0.115 | 0.697 | nominal-only |
+| depleted | GCA | -0.740 | 0.436 | floor, low-count |
+| depleted | GGT | -0.115 | 0.697 |  |
 | depleted | AGG | -0.729 | 0.775 | low-count |
 
 <details>
@@ -59,14 +59,14 @@ Firm null at FDR<0.05 (0/183) for codon-level day_5 vs day_0 MW with BWM and con
 | direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
 | --- | --- | --- | --- | --- |
 | enriched | ACT | +0.227 | 0.775 | floor |
-| enriched | AAC | +0.672 | 0.775 | nominal-only |
+| enriched | AAC | +0.672 | 0.775 |  |
 | enriched | ATC | +0.470 | 0.775 |  |
 | enriched | TCT | +0.250 | 0.775 |  |
 | enriched | CAA | +0.158 | 0.775 |  |
-| depleted | TTA | -1.341 | 0.775 | nominal-only, low-count |
-| depleted | GCA | -0.713 | 0.775 | nominal-only |
-| depleted | GGC | -0.683 | 0.775 | nominal-only, low-count |
-| depleted | CTG | -0.652 | 0.775 | nominal-only, low-count |
+| depleted | TTA | -1.341 | 0.775 | low-count |
+| depleted | GCA | -0.713 | 0.775 |  |
+| depleted | GGC | -0.683 | 0.775 | low-count |
+| depleted | CTG | -0.652 | 0.775 | low-count |
 | depleted | TGG | -0.671 | 0.775 |  |
 
 </details>
@@ -76,16 +76,16 @@ Firm null at FDR<0.05 (0/183) for codon-level day_5 vs day_0 MW with BWM and con
 
 | direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
 | --- | --- | --- | --- | --- |
-| enriched | TCC | +0.442 | 0.926 | nominal-only |
+| enriched | TCC | +0.442 | 0.926 |  |
 | enriched | CAA | +0.433 | 0.926 |  |
 | enriched | TCT | +0.385 | 0.926 |  |
 | enriched | CAG | +0.312 | 0.926 |  |
 | enriched | ACT | +0.199 | 0.926 |  |
-| depleted | GCG | -0.610 | 0.926 | low-count |
 | depleted | CCA | -0.525 | 0.926 |  |
+| depleted | ACC | -0.143 | 0.926 |  |
+| depleted | GCG | -0.610 | 0.926 | low-count |
 | depleted | CTA | -0.398 | 0.926 | low-count |
 | depleted | AGA | -0.270 | 0.926 |  |
-| depleted | ACC | -0.143 | 0.926 |  |
 
 </details>
 
@@ -98,8 +98,8 @@ Firm null at FDR<0.05 (0/183) for codon-level day_5 vs day_0 MW with BWM and con
 - `p_floor`: 0.02857 (n=4 vs n=4 two-sided exact)
 - Per-site BH families:
   - A site: 61 tests, 0 hits at p_adj<0.05, min p_adj = 0.775 (1 floor row)
-  - E site: 61 tests, 0 hits at p_adj<0.05, min p_adj = 0.926 (0 floor rows)
   - P site: 61 tests, 0 hits at p_adj<0.05, min p_adj = 0.436 (4 floor rows)
+  - E site: 61 tests, 0 hits at p_adj<0.05, min p_adj = 0.926 (0 floor rows)
 
 ## Methods
 MW rank-sum two-sided on per-replicate frequencies, n=4 day_5 (BWM_day5_rep2/3 + control_day5_rep2/3) vs n=4 day_0, BH-FDR per site (each site = 61-codon family). Test answers "do day_5 and day_0 reps differ in per-rep codon frequency at this site?" with BWM and control reps pooled within each timepoint.

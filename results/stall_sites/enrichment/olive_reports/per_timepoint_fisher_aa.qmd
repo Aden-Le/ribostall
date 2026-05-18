@@ -1,7 +1,7 @@
 ---
 title: "per_timepoint_fisher_aa — Olive report"
 subtitle: "ribostall stall_sites — enrichment stats"
-date: 2026-05-12
+date: 2026-05-17
 format:
   html:
     toc: true
@@ -11,16 +11,19 @@ format:
   pdf:
     toc: true
     fig-cap-location: bottom
-tbl-colwidths: [30, 22, 22, 26]
+    include-in-header:
+      text: |
+        \usepackage{needspace}
+tbl-colwidths: [26, 20, 17, 17, 20]
 execute:
   echo: false
 ---
 
 ## Composite figure
 
-![3×3 grid of BWM-vs-control amino-acid volcano panels: rows are timepoints (day 0 / day 5 / day 10) and columns are ribosome sites (A / P / E). Each panel plots −log₁₀(FDR) against log₂(odds ratio); triangles mark FDR<0.05 hits and circles are non-significant. Glyphs are coloured by amino-acid property (acidic = red, basic = blue, hydrophobic = green, neutral = orange, polar = purple). Day-0 panels are richly populated and span the widest log₂(OR) range; day-5 and day-10 panels collapse toward the origin.](../../plots/per_timepoint_fisher/composite/aa_fisher_composite.png)
+![3x3 grid of BWM-vs-control amino-acid volcano panels: rows are timepoints (day 0 / day 5 / day 10) and columns are ribosome sites (A / P / E). Each panel plots -log10(FDR) against log2(odds ratio); triangles mark FDR<0.05 hits and circles are non-significant. Glyphs are coloured by amino-acid property (acidic = red, basic = blue, hydrophobic = green, neutral = orange, polar = purple). Day-0 panels are richly populated and span the widest log2(OR) range; day-5 and day-10 panels collapse toward the origin.](../../plots/per_timepoint_fisher/composite/aa_fisher_composite.png)
 
-Each glyph is a single amino acid at one (timepoint, site) BH-FDR family of 20; horizontal dashed line is FDR = 0.05 and vertical dashed lines mark ±0.5 log₂(OR). Positive log₂(OR) means BWM-enriched relative to control; negative means BWM-depleted.
+Each glyph is a single amino acid at one (timepoint, site) BH-FDR family of 20; horizontal dashed line is FDR = 0.05 and vertical dashed lines mark +/-0.5 log2(OR). Positive log2(OR) means BWM-enriched relative to control; negative means BWM-depleted.
 
 ---
 
@@ -29,8 +32,8 @@ Each glyph is a single amino acid at one (timepoint, site) BH-FDR family of 20; 
 - **CSV:** `per_timepoint_fisher_aa.csv`
 - **Family (from `_INDEX.md`):** `per_timepoint_fisher`
 - **Sister CSV(s):** `per_timepoint_fisher_codon.csv`
-- **Test:** Fisher's exact (two-sided), BWM vs control 2x2 contingency per (timepoint, site, aa); BH-FDR within each (timepoint, site) family of 20 AAs (source: user-confirmed)
-- **Design:** Per (timepoint, site, aa) 2×2 BWM-vs-control contingency tested by two-sided Fisher's exact; replicates summed before the test (pseudoreplicated); BH-FDR applied independently within each of 9 (timepoint, site) families of 20 AAs (180 tests total).
+- **Test:** Fisher's exact (two-sided), BWM vs control 2x2 contingency per (timepoint, site, aa); BH-FDR within each (timepoint, site) family of 20 AAs
+- **Design:** Per (timepoint, site, aa) 2x2 BWM-vs-control contingency tested by two-sided Fisher's exact; replicates summed before the test (pseudoreplicated); BH-FDR applied independently within each of 9 (timepoint, site) families of 20 AAs (180 tests total).
 
 ### Family-level caveats
 
@@ -43,125 +46,180 @@ Each glyph is a single amino acid at one (timepoint, site) BH-FDR family of 20; 
 
 ## Headline
 
-180 tests (3 timepoints x 3 sites x 20 AAs), 27 hits at p_adj<0.05 (15.0%), 35 at p_adj<0.10 (19.4%). Per-(timepoint, site) cell n_sig at p_adj<0.05: day_0 A=7, day_0 E=6, day_0 P=5; day_5 A=1, E=5, P=1; day_10 A=1, E=1, P=0. Of 60 (site, aa) cells, 21 are concordant in OR direction across all 3 timepoints (9 enriched in BWM, 12 depleted in BWM); 39 show at least one sign change across the 3 timepoint values. Only 1 of those 39 has the sign change at p_adj<0.05 on both opposite-sign rows: E:K (day_0 log2OR=+0.480, p_adj=2.87e-15; day_5 log2OR=-0.195, p_adj=4.93e-3; day_10 log2OR=-0.035, ns). Largest-magnitude single-cell signals at p_adj<0.05 (mixing directions): day_0 A:N -0.755 (rare-aa: BWM_k=134), day_0 P:R +0.519, day_0 E:R +0.482, day_0 E:K +0.480 (file-min p_adj), day_0 E:Q -0.467, day_0 P:P -0.460, day_0 A:K +0.439, day_10 A:A -0.415, day_0 A:R +0.381. Largest-magnitude cells in the cross-timepoint concordant set (mean log2OR across the 3 timepoints, single sign throughout): P:K +0.253 (BWM-enriched, 2/3 cell-sig), P:R +0.239, A:R +0.218, A:T -0.178. Treat per-cell n_sig differences across timepoints as power-modulated by the BWM/control N imbalance (control:BWM ratio 4.55:1 at day_0, 0.94:1 at day_5, 1.27:1 at day_10), not as direction-of-effect biology.
+180 tests (3 timepoints x 3 sites x 20 AAs), 27 hits at p_adj<0.05 (15.0%), 35 at p_adj<0.10 (19.4%). Per-(timepoint, site) cell n_sig at p_adj<0.05: day_0 A=7, day_0 P=5, day_0 E=6; day_5 A=1, P=1, E=5; day_10 A=1, P=0, E=1. Of 60 (site, aa) cells, 21 are concordant in OR direction across all 3 timepoints (9 enriched in BWM, 12 depleted in BWM); 39 show at least one sign change across the 3 timepoint values. Only 1 of those 39 has the sign change at p_adj<0.05 on both opposite-sign rows: E:K (day_0 log2OR=+0.480, p_adj=2.87e-15; day_5 log2OR=-0.195, p_adj=4.93e-3; day_10 log2OR=-0.035, ns). Largest-magnitude single-cell signals at p_adj<0.05 (mixing directions): day_0 A:N -0.755 (rare-aa: BWM_k=134), day_0 P:R +0.519, day_0 E:R +0.482, day_0 E:K +0.480 (file-min p_adj), day_0 E:Q -0.467, day_0 P:P -0.460, day_0 A:K +0.439, day_10 A:A -0.415, day_0 A:R +0.381. Largest-magnitude cells in the cross-timepoint concordant set (mean log2OR across the 3 timepoints, single sign throughout): P:K +0.253 (BWM-enriched, 2/3 cell-sig), P:R +0.239, A:R +0.218, A:T -0.178. Treat per-cell n_sig differences across timepoints as power-modulated by the BWM/control N imbalance (control:BWM ratio 4.55:1 at day_0, 0.94:1 at day_5, 1.27:1 at day_10), not as direction-of-effect biology.
 
 ## Top hits
 
-The effect column is `log2_OR` (the log₂ of Dylan's `odds_ratio`). Direction is fixed by the BWM-vs-control contingency layout: positive log₂(OR) = BWM-enriched, negative = BWM-depleted. `p_adj` is BH-corrected within each (timepoint, site) family of 20 AAs. Sub-tables below are split per-direction within each Dylan group (timepoint × site).
+The effect column is `log2_OR` (the log2 of the `odds_ratio` column). Direction is fixed by the BWM-vs-control contingency layout: positive log2(OR) = BWM-enriched, negative = BWM-depleted. `p_value` is the raw two-sided Fisher's exact p; `p_adj` is BH-corrected within each (timepoint, site) family of 20 AAs. Sub-tables below are split per-direction within each (timepoint, site) group. *Rows with `p_adj` < 0.10; up to 5 per direction, ranked by `|log2_OR|` descending.*
 
-The two Dylan-emitted summary tables (cross-timepoint direction concordance, direction-flip cells) are reproduced verbatim under "Cross-timepoint summary" at the end of this section.
+The two summary tables that follow the per-(timepoint, site) blocks (cross-timepoint direction concordance and direction-flip cells) are reproduced under "Cross-timepoint summary" at the end of this section.
+
+```{=latex}
+\needspace{14\baselineskip}
+```
 
 ### day_0, A site — Enriched (BWM > control)
 
-| amino acid | effect (`log2_OR`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- |
-| K (lysine) | +0.439 (OR=1.356) | 2.31e-09 |  |
-| R (arginine) | +0.381 (OR=1.302) | 2.34e-05 |  |
-| G (glycine) | +0.283 (OR=1.217) | 6.72e-04 |  |
+| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| K (lysine) | +0.439 (OR=1.356) | 1.16e-10 | 2.31e-09 |  |
+| R (arginine) | +0.381 (OR=1.302) | 3.50e-06 | 2.34e-05 |  |
+| G (glycine) | +0.283 (OR=1.217) | 1.35e-04 | 6.72e-04 |  |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
 
 ### day_0, A site — Depleted (BWM < control)
 
-| amino acid | effect (`log2_OR`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- |
-| N (asparagine) | -0.755 (OR=0.593) | 3.17e-08 |  |
-| T (threonine) | -0.339 (OR=0.791) | 5.98e-03 |  |
-| F (phenylalanine) | -0.321 (OR=0.800) | 1.98e-02 |  |
-| D (aspartate) | -0.203 (OR=0.869) | 4.21e-02 |  |
+| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| N (asparagine) | -0.755 (OR=0.593) | 3.17e-09 | 3.17e-08 |  |
+| T (threonine) | -0.339 (OR=0.791) | 1.50e-03 | 5.98e-03 |  |
+| F (phenylalanine) | -0.321 (OR=0.800) | 5.90e-03 | 1.98e-02 |  |
+| D (aspartate) | -0.203 (OR=0.869) | 1.47e-02 | 4.21e-02 |  |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
 
 ### day_0, P site — Enriched (BWM > control)
 
-| amino acid | effect (`log2_OR`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- |
-| R (arginine) | +0.519 (OR=1.433) | 4.65e-09 |  |
-| K (lysine) | +0.360 (OR=1.283) | 1.05e-06 |  |
-| G (glycine) | +0.195 (OR=1.145) | 2.96e-02 |  |
+| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| R (arginine) | +0.519 (OR=1.433) | 2.32e-10 | 4.65e-09 |  |
+| K (lysine) | +0.360 (OR=1.283) | 1.05e-07 | 1.05e-06 |  |
+| G (glycine) | +0.195 (OR=1.145) | 7.10e-03 | 2.96e-02 |  |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
 
 ### day_0, P site — Depleted (BWM < control)
 
-| amino acid | effect (`log2_OR`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- |
-| P (proline) | -0.460 (OR=0.727) | 1.30e-04 |  |
-| S (serine) | -0.281 (OR=0.823) | 2.96e-02 |  |
-| T (threonine) | -0.224 (OR=0.856) | 7.07e-02 |  |
-| E (glutamate) | -0.192 (OR=0.875) | 5.59e-02 |  |
+| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| P (proline) | -0.460 (OR=0.727) | 1.95e-05 | 1.30e-04 |  |
+| S (serine) | -0.281 (OR=0.823) | 7.40e-03 | 2.96e-02 |  |
+| T (threonine) | -0.224 (OR=0.856) | 2.48e-02 | 7.07e-02 |  |
+| E (glutamate) | -0.192 (OR=0.875) | 1.68e-02 | 5.59e-02 |  |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
 
 ### day_0, E site — Enriched (BWM > control)
 
-| amino acid | effect (`log2_OR`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- |
-| R (arginine) | +0.482 (OR=1.396) | 1.09e-07 |  |
-| K (lysine) | +0.480 (OR=1.395) | 2.87e-15 | iid-amp |
+| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| R (arginine) | +0.482 (OR=1.396) | 1.09e-08 | 1.09e-07 |  |
+| K (lysine) | +0.480 (OR=1.395) | 1.43e-16 | 2.87e-15 | iid-amp |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
 
 ### day_0, E site — Depleted (BWM < control)
 
-| amino acid | effect (`log2_OR`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- |
-| Q (glutamine) | -0.467 (OR=0.723) | 1.66e-04 |  |
-| S (serine) | -0.375 (OR=0.771) | 2.26e-03 |  |
-| Y (tyrosine) | -0.371 (OR=0.773) | 3.00e-02 |  |
-| T (threonine) | -0.248 (OR=0.842) | 4.78e-02 |  |
-| F (phenylalanine) | -0.222 (OR=0.857) | 1.88e-01 | nominal-only |
+| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| Q (glutamine) | -0.467 (OR=0.723) | 2.49e-05 | 1.66e-04 |  |
+| S (serine) | -0.375 (OR=0.771) | 4.53e-04 | 2.26e-03 |  |
+| Y (tyrosine) | -0.371 (OR=0.773) | 7.50e-03 | 3.00e-02 |  |
+| T (threonine) | -0.248 (OR=0.842) | 1.43e-02 | 4.78e-02 |  |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
 
 ### day_5, A site — Enriched (BWM > control)
 
-| amino acid | effect (`log2_OR`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- |
-| L (leucine) | +0.280 (OR=1.215) | 4.98e-03 |  |
-| P (proline) | +0.236 (OR=1.177) | 8.62e-02 |  |
+| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| L (leucine) | +0.280 (OR=1.215) | 2.49e-04 | 4.98e-03 |  |
+| P (proline) | +0.236 (OR=1.177) | 1.84e-02 | 8.62e-02 |  |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
 
 ### day_5, A site — Depleted (BWM < control)
 
-| amino acid | effect (`log2_OR`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- |
-| N (asparagine) | -0.255 (OR=0.838) | 5.17e-02 |  |
-| E (glutamate) | -0.180 (OR=0.883) | 5.17e-02 |  |
-| I (isoleucine) | -0.177 (OR=0.884) | 8.62e-02 |  |
+| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| N (asparagine) | -0.255 (OR=0.838) | 7.80e-03 | 5.17e-02 |  |
+| E (glutamate) | -0.180 (OR=0.883) | 5.50e-03 | 5.17e-02 |  |
+| I (isoleucine) | -0.177 (OR=0.884) | 2.16e-02 | 8.62e-02 |  |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
 
 ### day_5, P site — Enriched (BWM > control)
 
-| amino acid | effect (`log2_OR`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- |
-| K (lysine) | +0.211 (OR=1.157) | 4.43e-02 |  |
+| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| K (lysine) | +0.211 (OR=1.157) | 2.20e-03 | 4.43e-02 |  |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
 
 ### day_5, P site — Depleted (BWM < control)
 
-| amino acid | effect (`log2_OR`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- |
-| V (valine) | -0.196 (OR=0.873) | 8.38e-02 |  |
+| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| V (valine) | -0.196 (OR=0.873) | 8.40e-03 | 8.38e-02 |  |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
 
 ### day_5, E site — Enriched (BWM > control)
 
-| amino acid | effect (`log2_OR`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- |
-| P (proline) | +0.358 (OR=1.282) | 4.93e-03 |  |
-| A (alanine) | +0.299 (OR=1.230) | 9.35e-03 |  |
-| T (threonine) | +0.219 (OR=1.164) | 6.05e-02 |  |
+| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| P (proline) | +0.358 (OR=1.282) | 4.89e-04 | 4.93e-03 |  |
+| A (alanine) | +0.299 (OR=1.230) | 1.40e-03 | 9.35e-03 |  |
+| T (threonine) | +0.219 (OR=1.164) | 1.81e-02 | 6.05e-02 |  |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
 
 ### day_5, E site — Depleted (BWM < control)
 
-| amino acid | effect (`log2_OR`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- |
-| G (glycine) | -0.202 (OR=0.869) | 3.32e-02 |  |
-| K (lysine) | -0.195 (OR=0.874) | 4.93e-03 |  |
-| E (glutamate) | -0.174 (OR=0.886) | 3.32e-02 |  |
+| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| G (glycine) | -0.202 (OR=0.869) | 8.30e-03 | 3.32e-02 |  |
+| K (lysine) | -0.195 (OR=0.874) | 4.93e-04 | 4.93e-03 |  |
+| E (glutamate) | -0.174 (OR=0.886) | 7.20e-03 | 3.32e-02 |  |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
 
 ### day_10, A site — Depleted (BWM < control)
 
-| amino acid | effect (`log2_OR`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- |
-| A (alanine) | -0.415 (OR=0.750) | 2.91e-03 |  |
+| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| A (alanine) | -0.415 (OR=0.750) | 1.45e-04 | 2.91e-03 |  |
 
 ### day_10, P site
 
-*(no rows clear `p_adj` < 0.10; closest are P:I, P:K, P:L all at `p_adj` = 0.148, log₂(OR) ~+0.16 to +0.21.)*
+*(no rows clear `p_adj` < 0.10; closest are P:I, P:K, P:L all at `p_adj` = 0.148, log2(OR) ~+0.16 to +0.21.)*
+
+```{=latex}
+\needspace{14\baselineskip}
+```
 
 ### day_10, E site — Enriched (BWM > control)
 
-| amino acid | effect (`log2_OR`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- |
-| R (arginine) | +0.388 (OR=1.308) | 1.86e-03 |  |
+| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| R (arginine) | +0.388 (OR=1.308) | 9.29e-05 | 1.86e-03 |  |
 
-### Cross-timepoint summary (Dylan's two ranking tables)
+### Cross-timepoint summary (two ranking tables)
 
 #### Cross-timepoint direction concordance
 
@@ -218,9 +276,8 @@ The two Dylan-emitted summary tables (cross-timepoint direction concordance, dir
 ### Flag glossary
 
 - `iid-amp` — single per-timepoint `p_adj` falls below 1e-10. The magnitude of `-log10(p_adj)` is inflated by Fisher's anti-conservative behaviour at large pooled N + correlated stall positions; rank by effect size, not by p magnitude.
-- `nominal-only` — raw p < 0.05 but `p_adj` ≥ 0.05. The row would have been flagged significant if tested in isolation, but did not survive BH-FDR correction across its (timepoint, site) family of 20.
-- `rare-aa` — at least one of the 3 per-timepoint rows for this cell has `BWM_k` < 100 (or analogously low `ctrl_k`). Odds-ratio estimate is unstable; large |log2OR| values may reflect sampling noise rather than biology.
-- `multi-tp-coherent` — cell reaches `p_adj` < 0.05 in ≥ 2 of 3 timepoints; signal is reproducible across the time axis.
+- `rare-aa` — at least one of the 3 per-timepoint rows for this cell has `BWM_k` < 100 (or similarly low `ctrl_k`). Odds-ratio estimate is unstable; large |log2OR| values may reflect sampling noise rather than biology.
+- `multi-tp-coherent` — cell reaches `p_adj` < 0.05 in 2 or 3 of 3 timepoints; signal is reproducible across the time axis.
 - `single-tp-driven` — cell reaches `p_adj` < 0.05 in exactly 1 of 3 timepoints; the cross-timepoint mean is carried by that one timepoint and is exploratory across the others.
 
 ## Numbers at a glance
@@ -232,11 +289,11 @@ The two Dylan-emitted summary tables (cross-timepoint direction concordance, dir
 - Cells with p_adj < 1e-10: 1 of 180 (only day_0 E K); flagged `iid-amp`
 - Cross-(timepoint, site) BH families and their n_sig at p_adj<0.05:
 
-| timepoint | A | E | P | BWM_total | control_total | ctrl:BWM ratio |
+| timepoint | A | P | E | BWM_total | control_total | ctrl:BWM ratio |
 | --- | --- | --- | --- | --- | --- | --- |
-| day_0 | 7/20 (min p 2.31e-09) | 6/20 (min p 2.87e-15) | 5/20 (min p 4.65e-09) | 6091 | 27732 | 4.55 |
-| day_5 | 1/20 (min p 4.98e-03) | 5/20 (min p 4.93e-03) | 1/20 (min p 4.43e-02) | 11935 | 11177 | 0.94 |
-| day_10 | 1/20 (min p 2.91e-03) | 1/20 (min p 1.86e-03) | 0/20 (min p 1.48e-01) | 6945 | 8788 | 1.27 |
+| day_0 | 7/20 (min p 2.31e-09) | 5/20 (min p 4.65e-09) | 6/20 (min p 2.87e-15) | 6091 | 27732 | 4.55 |
+| day_5 | 1/20 (min p 4.98e-03) | 1/20 (min p 4.43e-02) | 5/20 (min p 4.93e-03) | 11935 | 11177 | 0.94 |
+| day_10 | 1/20 (min p 2.91e-03) | 0/20 (min p 1.48e-01) | 1/20 (min p 1.86e-03) | 6945 | 8788 | 1.27 |
 
 - Cross-timepoint (site, aa) cells, all 3 timepoints same OR direction: 21/60 (9 BWM-enriched, 12 BWM-depleted)
 - Cross-timepoint (site, aa) cells with at least one sign change: 39/60
@@ -246,22 +303,22 @@ The two Dylan-emitted summary tables (cross-timepoint direction concordance, dir
 
 **Day-0 BWM ribosomes are enriched for basic residues (K, R) and depleted for asparagine at A and P sites (concrete).** Both Lys and Arg show large, FDR-confirmed BWM-enrichment at all three sites at day 0 — E:K (+0.48, p_adj=2.9e-15), E:R (+0.48), P:R (+0.52), P:K (+0.36), A:K (+0.44), A:R (+0.38). Co-enrichment of K and R at the A site is consistent with electrostatic slowing in the exit tunnel: positively charged nascent-chain residues interact with the negatively charged ribosomal RNA backbone and slow elongation through the A/P/E corridor. The mirror image at day 0 A site is N (-0.76 at p_adj=3.2e-8) — depletion of a small polar residue is harder to anchor mechanistically and may reflect compositional displacement by the over-represented basics rather than an N-specific stalling effect.
 
-**The day-0 P-site proline depletion is mechanistically anchored (concrete).** P-site P at day 0 is depleted at log₂(OR) = -0.46 (p_adj=1.3e-4). Pro is the canonical exit-tunnel stalling residue (eIF5A/EF-P-dependent rescue): if BWM has *fewer* stalls with P at the P site than control, the BWM stall population is shifted away from poly-Pro stall events at day 0 specifically. This is one of the few day-0 hits whose direction (depletion in BWM) cuts against a "BWM has more conventional stall events" reading, and is worth flagging at the synthesis layer.
+**The day-0 P-site proline depletion is mechanistically anchored (concrete).** P-site P at day 0 is depleted at log2(OR) = -0.46 (p_adj=1.3e-4). Pro is the canonical exit-tunnel stalling residue (eIF5A/EF-P-dependent rescue): if BWM has *fewer* stalls with P at the P site than control, the BWM stall population is shifted away from poly-Pro stall events at day 0 specifically. This is one of the few day-0 hits whose direction (depletion in BWM) cuts against a "BWM has more conventional stall events" reading, and is worth flagging at the synthesis layer.
 
-**The K-at-E flip between day 0 and day 5 is the file's only FDR-significant direction change (exploratory).** E:K is BWM-enriched at day 0 (+0.48, p_adj=2.9e-15, the file minimum) and BWM-depleted at day 5 (-0.20, p_adj=4.9e-3). Both rows clear FDR<0.05 in opposite directions, and the d0 row is flagged `iid-amp` — meaning the p magnitude is amplified by large-N anti-conservatism (BWM:control ratio 4.55:1 at day 0). Treating this as a real biphasic Lys-at-E phenomenon would require corroboration in the codon-resolution sister CSV (does AAG-at-E or AAA-at-E flip in the same direction?) and in the within-condition Fisher contrasts (is the d0→d5 step the carrier, or is the per-timepoint design picking up a small-effect crossing zero?). Hold as a hypothesis, not a finding.
+**The K-at-E flip between day 0 and day 5 is the file's only FDR-significant direction change (exploratory).** E:K is BWM-enriched at day 0 (+0.48, p_adj=2.9e-15, the file minimum) and BWM-depleted at day 5 (-0.20, p_adj=4.9e-3). Both rows clear FDR<0.05 in opposite directions, and the d0 row is flagged `iid-amp` — meaning the p magnitude is amplified by large-N anti-conservatism (BWM:control ratio 4.55:1 at day 0). Treating this as a real biphasic Lys-at-E phenomenon would require corroboration in the codon-resolution sister CSV (does AAG-at-E or AAA-at-E flip in the same direction?) and in the within-condition Fisher contrasts (is the d0->d5 step the carrier, or is the per-timepoint design picking up a small-effect crossing zero?). Hold as a hypothesis, not a finding.
 
-**The strong day-0 dominance is largely a power story, not a biology story (concrete).** Per-(timepoint, site) hit counts collapse from 18 at day 0 to 7 at day 5 to 2 at day 10, while file-minimum `p_adj` spans 12 orders of magnitude over the same gradient (2.9e-15 → 4.9e-3 → 1.9e-3). The control:BWM N ratio is 4.55:1 at day 0, 0.94:1 at day 5, 1.27:1 at day 10 — moderate effect sizes at day 0 inflate to extreme p magnitudes that the same effect sizes at later timepoints would not reach. The `n-asymmetry-affects-power-not-direction` caveat applies: per-cell hit-count differences are power-modulated, not evidence that BWM-control divergence is concentrated at day 0 in biology.
+**The strong day-0 dominance is largely a power story, not a biology story (concrete).** Per-(timepoint, site) hit counts collapse from 18 at day 0 to 7 at day 5 to 2 at day 10, while file-minimum `p_adj` spans 12 orders of magnitude over the same gradient (2.9e-15 -> 4.9e-3 -> 1.9e-3). The control:BWM N ratio is 4.55:1 at day 0, 0.94:1 at day 5, 1.27:1 at day 10 — moderate effect sizes at day 0 inflate to extreme p magnitudes that the same effect sizes at later timepoints would not reach. The `n-asymmetry-affects-power-not-direction` caveat applies: per-cell hit-count differences are power-modulated, not evidence that BWM-control divergence is concentrated at day 0 in biology.
 
 **A subset of cross-timepoint concordant cells points at stable BWM-vs-control composition differences (exploratory).** P:K (+0.25 mean, sig in 2/3 timepoints), P:R (+0.24), A:R (+0.22), and A:T (-0.18) are direction-consistent across all three timepoints with moderate magnitudes. The basic-residue enrichment direction matches the day-0 headline but holds across the time axis at smaller magnitudes — consistent with a stable BWM-vs-control compositional offset on top of which the day-0 amplification rides. These cells are worth carrying into the codon sister CSV (do they aggregate from AGA/CGC/CGT at codon resolution?) and the within-condition binomial (are they baseline features shared by both conditions, or BWM-specific?).
 
-**What to carry forward.** *Concrete*: the day-0 basic-residue enrichment (K/R at A/P/E) and P-site Pro depletion; the file-wide null at A/E sites by day 10. *Exploratory*: the E:K direction flip (needs codon-level and within-condition corroboration); the 21-cell cross-timepoint concordant set as a stable BWM-control offset hypothesis. *Noise*: the day-10 P-site row is structurally flat (min p_adj = 0.148) and contributes nothing; the file's largest single-cell magnitudes that are `rare-aa` flagged (A:N -0.755 sits at BWM_k=134 — high enough to count, but adjacent rows in the same cell with smaller k are unstable).
+**What to carry forward.** *Concrete*: the day-0 basic-residue enrichment (K/R at A/P/E) and P-site Pro depletion; the day_10 P-site has no statistically significant differences at FDR<0.05 and the day_10 A and E sites each carry only one FDR<0.05 hit. *Exploratory*: the E:K direction flip (needs codon-level and within-condition corroboration); the 21-cell cross-timepoint concordant set as a stable BWM-control offset hypothesis. *Noise*: the day-10 P-site row is structurally flat (min p_adj = 0.148) and contributes nothing; the file's largest single-cell magnitudes that are `rare-aa` flagged (A:N -0.755 sits at BWM_k=134 — high enough to count, but adjacent rows in the same cell with smaller k are unstable).
 
 ## Methods
-Dylan proposed Fisher's exact (two-sided) on a 2x2 contingency BWM_count vs control_count for each (timepoint, site, aa), with BH-FDR correction within each (timepoint, site) family of 20 AAs; user confirmed in the original triage and the answer is carried over to this re-run without re-litigation. Effect column is `odds_ratio` (re-expressed as log2OR in this report's tables for symmetry with sister files); test statistic and exact p are returned by `scipy.stats.fisher_exact`. The p-correction column is `p_adj` (BH per (timepoint, site) family). The test answers "is the BWM-vs-control AA composition at this site different at this timepoint?". It does *not* answer "is each condition's per-codon enrichment vs background informative" (that is the `within_condition_binomial` family) and *not* "is the BWM-vs-control difference itself shifting across timepoints" (that requires a 3-way model or an explicit between-timepoint contrast — see the `between_timepoint_wilcoxon` family for the within-condition variant of that question).
+Fisher's exact (two-sided) on a 2x2 contingency BWM_count vs control_count for each (timepoint, site, aa), with BH-FDR correction within each (timepoint, site) family of 20 AAs. Effect column is `odds_ratio` (re-expressed as log2OR in this report's tables for symmetry with sister files); test statistic and exact p are returned by `scipy.stats.fisher_exact`. The p-correction column is `p_adj` (BH per (timepoint, site) family). The test answers "is the BWM-vs-control AA composition at this site different at this timepoint?". It does *not* answer "is each condition's per-codon enrichment vs background informative" (that is the `within_condition_binomial` family) and *not* "is the BWM-vs-control difference itself shifting across timepoints" (that requires a 3-way model or an explicit between-timepoint contrast — see the `between_timepoint_wilcoxon` family for the within-condition variant of that question).
 
 ## What the caveats mean for reading this file
 
-- **pseudorep.** 2×2 contingencies pool replicates by design; per-replicate variation is invisible to the statistic, so p-values are anti-conservative — read `odds_ratio` as the primary effect column and treat the smallest p-magnitudes as inflated, not as evidence of additional certainty.
+- **pseudorep.** 2x2 contingencies pool replicates by design; per-replicate variation is invisible to the statistic, so p-values are anti-conservative — read `odds_ratio` as the primary effect column and treat the smallest p-magnitudes as inflated, not as evidence of additional certainty.
 - **large-N-Fisher-anticonservative.** With many thousands of pooled stall events and stalls correlated on shared motifs/transcripts, Fisher's effective N is smaller than `k_total`; treat tiny p magnitudes (`p_adj` < 1e-10) as inflated and rank by `log2_OR`.
 - **imbalanced-N.** At day 0, control_total (27732) dwarfs BWM_total (6091); Fisher concentrates its information in the larger arm and inflates `p_adj` at moderate effects — read day-0 magnitudes against day-5/day-10 with the imbalance in mind, not as a count of "more biology."
 - **bh-per-(timepoint,site).** BH is run independently within each of the 9 (timepoint, site) families of 20; two cells with the same raw p in different cells can land at different `p_adj` — rank within a (timepoint, site) cell, not across the full 180-test grid.
@@ -274,20 +331,20 @@ Dylan proposed Fisher's exact (two-sided) on a 2x2 contingency BWM_count vs cont
 
 ## Plots — individual
 
-![Day-0 A-site BWM-vs-control volcano: log₂(OR) on x, −log₁₀(FDR) on y; triangles are FDR<0.05. Lysine (K, basic blue) at +0.44 log₂(OR) and asparagine (N, polar purple) at −0.76 are the largest-magnitude FDR<0.05 hits; arginine (R, basic blue) and glycine (G, neutral orange) are also enriched; threonine (T, polar), phenylalanine (F, hydrophobic green), and aspartate (D, acidic red) are modestly depleted.](../../plots/per_timepoint_fisher/individual/day_0_A_volcano.png)
+![Day-0 A-site BWM-vs-control volcano: log2(OR) on x, -log10(FDR) on y; triangles are FDR<0.05. Lysine (K, basic blue) at +0.44 log2(OR) and asparagine (N, polar purple) at -0.76 are the largest-magnitude FDR<0.05 hits; arginine (R, basic blue) and glycine (G, neutral orange) are also enriched; threonine (T, polar), phenylalanine (F, hydrophobic green), and aspartate (D, acidic red) are modestly depleted.](../../plots/per_timepoint_fisher/individual/day_0_A_volcano.png)
 
-![Day-0 P-site BWM-vs-control volcano: arginine (R, basic blue) at +0.52 log₂(OR) and lysine (K, basic) at +0.36 are the top-enriched FDR<0.05 hits; proline (P, neutral orange) at −0.46 is the strongest depletion; glycine (G, neutral) and serine (S, polar) are marginally significant.](../../plots/per_timepoint_fisher/individual/day_0_P_volcano.png)
+![Day-0 P-site BWM-vs-control volcano: arginine (R, basic blue) at +0.52 log2(OR) and lysine (K, basic) at +0.36 are the top-enriched FDR<0.05 hits; proline (P, neutral orange) at -0.46 is the strongest depletion; glycine (G, neutral) and serine (S, polar) are marginally significant.](../../plots/per_timepoint_fisher/individual/day_0_P_volcano.png)
 
-![Day-0 E-site BWM-vs-control volcano: lysine (K, basic blue) at +0.48 log₂(OR), p_adj=2.9e-15 sits highest on the y-axis (file-minimum); arginine (R, basic) is also enriched; glutamine (Q, polar), serine (S, polar), tyrosine (Y, hydrophobic green), and threonine (T, polar) are FDR<0.05 depletions.](../../plots/per_timepoint_fisher/individual/day_0_E_volcano.png)
+![Day-0 E-site BWM-vs-control volcano: lysine (K, basic blue) at +0.48 log2(OR), p_adj=2.9e-15 sits highest on the y-axis (file-minimum); arginine (R, basic) is also enriched; glutamine (Q, polar), serine (S, polar), tyrosine (Y, hydrophobic green), and threonine (T, polar) are FDR<0.05 depletions.](../../plots/per_timepoint_fisher/individual/day_0_E_volcano.png)
 
-![Day-5 A-site BWM-vs-control volcano: nearly all points collapse to the origin; leucine (L, hydrophobic green) at +0.28 log₂(OR) is the only FDR<0.05 hit. Scale and dashed FDR/effect-size guides are identical to the day-0 panels for cross-timepoint comparability.](../../plots/per_timepoint_fisher/individual/day_5_A_volcano.png)
+![Day-5 A-site BWM-vs-control volcano: nearly all points collapse to the origin; leucine (L, hydrophobic green) at +0.28 log2(OR) is the only FDR<0.05 hit. Scale and dashed FDR/effect-size guides are identical to the day-0 panels for cross-timepoint comparability.](../../plots/per_timepoint_fisher/individual/day_5_A_volcano.png)
 
-![Day-5 P-site BWM-vs-control volcano: a near-null panel; lysine (K, basic blue) at +0.21 log₂(OR) is the single FDR<0.05 hit, sitting just above the FDR threshold line.](../../plots/per_timepoint_fisher/individual/day_5_P_volcano.png)
+![Day-5 P-site BWM-vs-control volcano: a flat panel; lysine (K, basic blue) at +0.21 log2(OR) is the single FDR<0.05 hit, sitting just above the FDR threshold line.](../../plots/per_timepoint_fisher/individual/day_5_P_volcano.png)
 
-![Day-5 E-site BWM-vs-control volcano: 5 FDR<0.05 hits clustered tightly around the origin; proline (P, neutral orange) and alanine (A, hydrophobic green) are enriched (+0.30 to +0.36 log₂(OR)); lysine (K, basic blue), glycine (G, neutral), and glutamate (E, acidic red) are depleted (-0.17 to -0.20).](../../plots/per_timepoint_fisher/individual/day_5_E_volcano.png)
+![Day-5 E-site BWM-vs-control volcano: 5 FDR<0.05 hits clustered tightly around the origin; proline (P, neutral orange) and alanine (A, hydrophobic green) are enriched (+0.30 to +0.36 log2(OR)); lysine (K, basic blue), glycine (G, neutral), and glutamate (E, acidic red) are depleted (-0.17 to -0.20).](../../plots/per_timepoint_fisher/individual/day_5_E_volcano.png)
 
-![Day-10 A-site BWM-vs-control volcano: alanine (A, hydrophobic green) at -0.42 log₂(OR) is the single FDR<0.05 hit; all other amino acids collapse below the FDR threshold line within the ±0.3 log₂(OR) band.](../../plots/per_timepoint_fisher/individual/day_10_A_volcano.png)
+![Day-10 A-site BWM-vs-control volcano: alanine (A, hydrophobic green) at -0.42 log2(OR) is the single FDR<0.05 hit; all other amino acids collapse below the FDR threshold line within the +/-0.3 log2(OR) band.](../../plots/per_timepoint_fisher/individual/day_10_A_volcano.png)
 
-![Day-10 P-site BWM-vs-control volcano: no FDR<0.05 hits; all points fall below the FDR threshold and within the ±0.4 log₂(OR) band — the structurally flattest panel in the file (min `p_adj` = 0.148).](../../plots/per_timepoint_fisher/individual/day_10_P_volcano.png)
+![Day-10 P-site BWM-vs-control volcano: no FDR<0.05 hits; all points fall below the FDR threshold and within the +/-0.4 log2(OR) band — the structurally flattest panel in the file (min `p_adj` = 0.148).](../../plots/per_timepoint_fisher/individual/day_10_P_volcano.png)
 
-![Day-10 E-site BWM-vs-control volcano: arginine (R, basic blue) at +0.39 log₂(OR) is the single FDR<0.05 hit; all other amino acids fall below the FDR threshold.](../../plots/per_timepoint_fisher/individual/day_10_E_volcano.png)
+![Day-10 E-site BWM-vs-control volcano: arginine (R, basic blue) at +0.39 log2(OR) is the single FDR<0.05 hit; all other amino acids fall below the FDR threshold.](../../plots/per_timepoint_fisher/individual/day_10_E_volcano.png)

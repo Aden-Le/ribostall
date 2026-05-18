@@ -28,7 +28,12 @@ Each panel ranks the 61 sense codons by signed log2_FC (day_5 median / day_0 med
 
 - **CSV:** `between_timepoint_wilcoxon_d5_vs_d0_codon.csv`
 - **Family (from `_INDEX.md`):** `between_timepoint_wilcoxon`
-- **Sister CSV(s):** `between_timepoint_wilcoxon_d5_vs_d0_aa.csv`, `between_timepoint_wilcoxon_d10_vs_d0_aa.csv`, `between_timepoint_wilcoxon_d10_vs_d0_codon.csv`, `between_timepoint_wilcoxon_d10_vs_d5_aa.csv`, `between_timepoint_wilcoxon_d10_vs_d5_codon.csv`
+- **Sister CSV(s):**
+  - `between_timepoint_wilcoxon_d5_vs_d0_aa.csv`
+  - `between_timepoint_wilcoxon_d10_vs_d0_aa.csv`
+  - `between_timepoint_wilcoxon_d10_vs_d0_codon.csv`
+  - `between_timepoint_wilcoxon_d10_vs_d5_aa.csv`
+  - `between_timepoint_wilcoxon_d10_vs_d5_codon.csv`
 - **Test:** Mann-Whitney U / Wilcoxon rank-sum (two-sided) (source: user-confirmed)
 - **Design:** n=4 day_5 (BWM_d5_rep2/3 + control_d5_rep2/3) vs n=4 day_0 (BWM_d0_rep2/3 + control_d0_rep2/3); BWM and control reps pooled inside each timepoint; two-sided MW on per-replicate codon frequencies; BH-FDR per E/P/A site (each site = own family of 61 sense codons); effect column is `log2_FC` = log2(median_d5 / median_d0).
 

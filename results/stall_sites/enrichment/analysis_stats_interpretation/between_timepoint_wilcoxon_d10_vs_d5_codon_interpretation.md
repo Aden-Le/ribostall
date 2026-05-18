@@ -55,24 +55,6 @@ No statistically significant differences at FDR<0.05 (0/183) for codon-level day
 | depleted | ACT | -0.301 | 0.0571 | 0.498 |  |
 
 <details>
-<summary>P site (2 floor rows)</summary>
-
-| direction | feature | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- | --- |
-| enriched | GGA | +0.366 | 0.0286 | 0.581 | floor |
-| enriched | ACC | +0.281 | 0.0571 | 0.581 |  |
-| enriched | AGG | +0.371 | 0.1143 | 0.757 | low-count |
-| enriched | GAG | +0.197 | 0.2000 | 0.813 |  |
-| enriched | TGC | +0.151 | 0.2000 | 0.813 |  |
-| depleted | CTT | -0.189 | 0.0286 | 0.581 | floor |
-| depleted | CAA | -0.556 | 0.0571 | 0.581 |  |
-| depleted | ATT | -0.476 | 0.0571 | 0.581 |  |
-| depleted | TCT | -0.304 | 0.0571 | 0.581 |  |
-| depleted | TTT | -0.659 | 0.1143 | 0.757 | low-count |
-
-</details>
-
-<details>
 <summary>E site (1 floor row)</summary>
 
 | direction | feature | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
@@ -87,6 +69,24 @@ No statistically significant differences at FDR<0.05 (0/183) for codon-level day
 | depleted | ACG | -0.465 | 0.0571 | 0.871 | low-count |
 | depleted | GCG | -0.593 | 0.1143 | 0.938 | low-count |
 | depleted | GAT | -0.195 | 0.1143 | 0.938 |  |
+
+</details>
+
+<details>
+<summary>P site (2 floor rows)</summary>
+
+| direction | feature | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| enriched | GGA | +0.366 | 0.0286 | 0.581 | floor |
+| enriched | ACC | +0.281 | 0.0571 | 0.581 |  |
+| enriched | AGG | +0.371 | 0.1143 | 0.757 | low-count |
+| enriched | GAG | +0.197 | 0.2000 | 0.813 |  |
+| enriched | TGC | +0.151 | 0.2000 | 0.813 |  |
+| depleted | CTT | -0.189 | 0.0286 | 0.581 | floor |
+| depleted | CAA | -0.556 | 0.0571 | 0.581 |  |
+| depleted | ATT | -0.476 | 0.0571 | 0.581 |  |
+| depleted | TCT | -0.304 | 0.0571 | 0.581 |  |
+| depleted | TTT | -0.659 | 0.1143 | 0.757 | low-count |
 
 </details>
 

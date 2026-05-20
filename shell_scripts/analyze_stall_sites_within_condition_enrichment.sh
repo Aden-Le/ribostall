@@ -23,7 +23,7 @@ ENRICHMENT_TYPE="both"
 SHOW_CI="--show-ci"
 
 # Output format: "pdf", "png", or "both"
-FORMAT="png"
+FORMAT="both"
 
 # DPI for PNG output
 DPI=300

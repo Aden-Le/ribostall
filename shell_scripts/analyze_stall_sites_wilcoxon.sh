@@ -19,7 +19,7 @@ INPUT_DIR="./results/stall_sites/enrichment/analysis_stats"
 OUTPUT_DIR="./results/stall_sites/plots/between_condition"
 
 # Output format: "pdf", "png", or "both"
-FORMAT="png"
+FORMAT="both"
 
 # DPI for PNG output
 DPI=300

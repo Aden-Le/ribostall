@@ -22,6 +22,16 @@
 # script's classification against the `low-count` flag column in the
 # matching Olive .qmd. Override the threshold per block with
 # `--low-count-threshold 0.002` if you want to tighten it.
+#
+# Blocks 9b and 10b run `cross_tp_summary_checker.py` on the per_timepoint
+# fisher CSVs (#9 + #10) to reproduce the two summary tables that appear
+# under "Cross-timepoint summary (two ranking tables)" in the matching
+# Olive report: (1) Cross-timepoint direction concordance and (2)
+# Direction-flip cells across timepoints. The checker is feature-agnostic
+# (works for any CSV with `site, timepoint, <amino_acid|codon>,
+# odds_ratio, p_adj, BWM_count, control_count`) so any future per-timepoint
+# fisher CSV can be added by copying one of the two-line blocks below and
+# swapping the path.
 #----------------------------------------------------
 
 # When running the whole script via bash, cd to repo root so the relative
@@ -84,10 +94,22 @@ echo "---- 9. per_timepoint_fisher_aa ----"
 python3 scripts/dylan_table_checker.py "results/stall_sites/enrichment/analysis_stats/per_timepoint_fisher_aa.csv" --family fisher_aa
 
 # ============================================================
+# 9b. per_timepoint_fisher_aa -- cross-timepoint summary tables
+# ============================================================
+echo "---- 9b. per_timepoint_fisher_aa cross-timepoint summary ----"
+python3 scripts/cross_tp_summary_checker.py "results/stall_sites/enrichment/analysis_stats/per_timepoint_fisher_aa.csv"
+
+# ============================================================
 # 10. per_timepoint_fisher_codon  (family: fisher_codon)
 # ============================================================
 echo "---- 10. per_timepoint_fisher_codon ----"
 python3 scripts/dylan_table_checker.py "results/stall_sites/enrichment/analysis_stats/per_timepoint_fisher_codon.csv" --family fisher_codon
+
+# ============================================================
+# 10b. per_timepoint_fisher_codon -- cross-timepoint summary tables
+# ============================================================
+echo "---- 10b. per_timepoint_fisher_codon cross-timepoint summary ----"
+python3 scripts/cross_tp_summary_checker.py "results/stall_sites/enrichment/analysis_stats/per_timepoint_fisher_codon.csv"
 
 # ============================================================
 # 11. timepoint_fisher_within_condition_d10_vs_d0_aa  (family: tfwc)

@@ -19,7 +19,7 @@ OUTPUT_DIR="./results/global_occupancy/plots/within_condition"
 ENRICHMENT_TYPE="both"
 
 # Output format: "pdf", "png", or "both"
-FORMAT="png"
+FORMAT="both"
 
 # DPI for PNG output
 DPI=300

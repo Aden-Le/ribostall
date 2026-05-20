@@ -10,7 +10,7 @@ export PATH="$PATH:/c/Program Files/R/R-4.4.2/bin"
 # ── CONFIG ───────────────────────────────────────────────────
 INPUT_DIR="./results/stall_sites/enrichment/analysis_stats"
 PLOTS_DIR="./results/stall_sites/plots"
-FORMAT="png"
+FORMAT="both"
 DPI=300
 # ─────────────────────────────────────────────────────────────
 

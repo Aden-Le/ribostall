@@ -133,22 +133,30 @@ def select_wilcoxon(df: pd.DataFrame, top_n: int = 5,
 
 # -----------------------------------------------------------------------------
 # #9: per_timepoint_fisher (AA)
-#   Rule: Rows with p_adj < 0.10; up to 5 per direction (sign of log2_OR);
+#   Rule: Rows with p_adj < 0.05; up to 5 per direction (sign of log2_OR);
 #         ranked by |log2_OR| desc. No tiebreak needed (Fisher p's distinct).
 # -----------------------------------------------------------------------------
 
-def select_fisher_aa(df: pd.DataFrame, top_n: int = 5, p_thresh: float = 0.10) -> None:
+def select_fisher_aa(df: pd.DataFrame, top_n: int = 5, p_thresh: float = 0.05) -> None:
     feat = _feature_col(df)
     df = df.copy()
+    # Takes the odds ratio and replaces any 0 values with NaN to avoid -inf in log2, then computes log2_OR
     df["log2_OR"] = np.log2(df["odds_ratio"].replace(0, np.nan))
+    # Takes the absolute value of log2_OR for ranking purposes
     df["abs_effect"] = df["log2_OR"].abs()
+    # Drop rows where log2_OR is NaN (original odds_ratio was 0)
     df = df.dropna(subset=["log2_OR"])
+    # Filter rows based on the adjusted p-value threshold
     df = df[df["p_adj"] < p_thresh]
+
+    # Group by timepoint and site, then apply the selection rules per group
     for (tp, site), g in df.groupby(["timepoint", "site"], sort=False):
+        # Creates two subsets of the group: one for enriched features (log2_OR > 0) and one for depleted features (log2_OR < 0)
         for direction, sub in (
             ("Enriched (log2_OR > 0)", g[g["log2_OR"] > 0]),
             ("Depleted (log2_OR < 0)", g[g["log2_OR"] < 0]),
         ):
+            # Picked the top N rows from the subset, sorted by absolute log2_OR in descending order
             picked = sub.sort_values(by="abs_effect", ascending=False).head(top_n)
             _print_group(
                 f"{tp}, site {site} -- {direction}",
@@ -163,13 +171,30 @@ def select_fisher_aa(df: pd.DataFrame, top_n: int = 5, p_thresh: float = 0.10) -
 # -----------------------------------------------------------------------------
 
 def select_fisher_codon(df: pd.DataFrame, top_n: int = 5,
-                        p_thresh: float = 0.10, k_min: int = 50) -> None:
+                        p_thresh: float = 0.05, k_min: int = 50) -> None:
+    # Feature column is "codon" for this CSV, but we use the same helper to find it
     feat = _feature_col(df)
     df = df.copy()
+    # Takes the odds ratio and replaces any 0 values with NaN to avoid -inf in log2, then computes log2_OR
     df["log2_OR"] = np.log2(df["odds_ratio"].replace(0, np.nan))
+    # Take the absolute value of log2_OR for ranking purposes
     df["abs_effect"] = df["log2_OR"].abs()
+    # The combined count across BWM and control arms, used for filtering low-count codons
     df["combined_k"] = df["BWM_count"] + df["control_count"]
+    # Drop rows where log2_OR is NaN (original odds_ratio was 0)
     df = df.dropna(subset=["log2_OR"])
+
+    # Audit: report what the k_min threshold removes before ranking
+    below_k = df[df["combined_k"] < k_min]
+    print()
+    print(f"### k_min audit  (rule: BWM_count + control_count >= {k_min})")
+    print(f"  {len(below_k)} of {len(df)} rows fall below the threshold "
+          f"and are excluded from Top hits ranking.")
+    if not below_k.empty:
+        breakdown = below_k.groupby(["timepoint", "site"]).size().to_dict()
+        print(f"  per (timepoint, site) excluded counts: {breakdown}")
+
+    # Filter rows based on the adjusted p-value threshold and the combined count threshold
     df = df[(df["p_adj"] < p_thresh) & (df["combined_k"] >= k_min)]
     for (tp, site), g in df.groupby(["timepoint", "site"], sort=False):
         for direction, sub in (
@@ -195,11 +220,19 @@ def select_tfwc(df: pd.DataFrame, top_n: int = 5,
                 p_thresh: float = 0.10, min_candidates: int = 10) -> None:
     feat = _feature_col(df)
     df = df.copy()
+    # Takes the odds ratio and replaces any 0 values with NaN to avoid -inf in log2
     df["log2_OR"] = np.log2(df["odds_ratio"].replace(0, np.nan))
+    # Take the absolute value of log2_OR for ranking purposes
     df["abs_effect"] = df["log2_OR"].abs()
+    # Drop rows where log2_OR is NaN (original odds_ratio was 0)
     df = df.dropna(subset=["log2_OR"])
+
+    # Group by condition and site, then apply the selection rules per group
     for (cond, site), g in df.groupby(["condition", "site"], sort=False):
+        # First apply the FDR cutoff to find significant candidates, sig is a subset of g
         sig = g[g["p_adj"] < p_thresh]
+
+        # Condition and
         if len(sig) < min_candidates:
             print()
             print(f"# (condition={cond}, site={site}): only {len(sig)} candidates "

@@ -1,7 +1,7 @@
 ---
 title: "per_timepoint_fisher_aa — Olive report"
 subtitle: "ribostall stall_sites — enrichment stats"
-date: 2026-05-17
+date: 2026-05-18
 format:
   html:
     toc: true
@@ -21,7 +21,7 @@ execute:
 
 ## Composite figure
 
-![3x3 grid of BWM-vs-control amino-acid volcano panels: rows are timepoints (day 0 / day 5 / day 10) and columns are ribosome sites (A / P / E). Each panel plots -log10(FDR) against log2(odds ratio); triangles mark FDR<0.05 hits and circles are non-significant. Glyphs are coloured by amino-acid property (acidic = red, basic = blue, hydrophobic = green, neutral = orange, polar = purple). Day-0 panels are richly populated and span the widest log2(OR) range; day-5 and day-10 panels collapse toward the origin.](../../plots/per_timepoint_fisher/composite/aa_fisher_composite.png)
+![3x3 grid of BWM-vs-control amino-acid volcano panels: rows are timepoints (day 0 / day 5 / day 10) and columns are ribosome sites (A / P / E). Each panel plots -log10(FDR) against log2(odds ratio); triangles mark FDR<0.05 hits and circles are non-significant. Glyphs are coloured by amino-acid property (acidic = red, basic = blue, hydrophobic = green, neutral = orange, polar = purple). Day-0 panels are richly populated and span the widest log2(OR) range; day-5 and day-10 panels collapse toward the origin.](../../plots/per_timepoint_fisher/composite/aa_fisher_composite.png){fig-pos="H" width=92%}
 
 Each glyph is a single amino acid at one (timepoint, site) BH-FDR family of 20; horizontal dashed line is FDR = 0.05 and vertical dashed lines mark +/-0.5 log2(OR). Positive log2(OR) means BWM-enriched relative to control; negative means BWM-depleted.
 
@@ -46,11 +46,19 @@ Each glyph is a single amino acid at one (timepoint, site) BH-FDR family of 20; 
 
 ## Headline
 
-180 tests (3 timepoints x 3 sites x 20 AAs), 27 hits at p_adj<0.05 (15.0%), 35 at p_adj<0.10 (19.4%). Per-(timepoint, site) cell n_sig at p_adj<0.05: day_0 A=7, day_0 P=5, day_0 E=6; day_5 A=1, P=1, E=5; day_10 A=1, P=0, E=1. Of 60 (site, aa) cells, 21 are concordant in OR direction across all 3 timepoints (9 enriched in BWM, 12 depleted in BWM); 39 show at least one sign change across the 3 timepoint values. Only 1 of those 39 has the sign change at p_adj<0.05 on both opposite-sign rows: E:K (day_0 log2OR=+0.480, p_adj=2.87e-15; day_5 log2OR=-0.195, p_adj=4.93e-3; day_10 log2OR=-0.035, ns). Largest-magnitude single-cell signals at p_adj<0.05 (mixing directions): day_0 A:N -0.755 (rare-aa: BWM_k=134), day_0 P:R +0.519, day_0 E:R +0.482, day_0 E:K +0.480 (file-min p_adj), day_0 E:Q -0.467, day_0 P:P -0.460, day_0 A:K +0.439, day_10 A:A -0.415, day_0 A:R +0.381. Largest-magnitude cells in the cross-timepoint concordant set (mean log2OR across the 3 timepoints, single sign throughout): P:K +0.253 (BWM-enriched, 2/3 cell-sig), P:R +0.239, A:R +0.218, A:T -0.178. Treat per-cell n_sig differences across timepoints as power-modulated by the BWM/control N imbalance (control:BWM ratio 4.55:1 at day_0, 0.94:1 at day_5, 1.27:1 at day_10), not as direction-of-effect biology.
+Across 180 Fisher's exact tests (3 timepoints x 3 sites x 20 amino acids), 27 cells reach `p_adj` < 0.05 (15.0%) and 35 reach `p_adj` < 0.10 (19.4%). Eighteen of the FDR<0.05 hits sit at day 0 (A=7, P=5, E=6); day 5 contributes seven (A=1, P=1, E=5) and day 10 contributes two (A=1, P=0, E=1).
+
+Looking across the time axis, 21 of 60 (site, aa) cells hold a single OR direction across all 3 timepoints (7 BWM-enriched, 14 BWM-depleted), and 39 show at least one sign change. Only E:K registers that sign change with `p_adj` < 0.05 on both opposite-sign rows: day 0 log2OR = +0.480 (`p_adj` = 2.87e-15, file minimum), day 5 log2OR = -0.195 (`p_adj` = 4.93e-3), and day 10 log2OR = -0.035 (ns).
+
+The largest-magnitude FDR<0.05 hits cluster at day 0 — A:N -0.755, P:R +0.519, E:R +0.482, E:K +0.480, E:Q -0.467, P:P -0.460, A:K +0.439, A:R +0.381 — with one later-timepoint hit at day 10 A:A -0.415. Among the 21 direction-concordant cells, the most stable cross-timepoint signals are P:K (+0.253 mean, 2/3 cell-sig), P:R (+0.239), A:R (+0.218), and A:T (-0.178).
+
+The day-0 dominance should be read as power-modulated, not as direction-of-effect biology. The control:BWM count ratio is 4.55:1 at day 0, 0.94:1 at day 5, and 1.27:1 at day 10; the 12-orders-of-magnitude span in file-minimum `p_adj` across timepoints (2.87e-15 -> 4.93e-3 -> 1.86e-3) reflects asymmetric pooled N, not stronger biology at day 0.
 
 ## Top hits
 
-The effect column is `log2_OR` (the log2 of the `odds_ratio` column). Direction is fixed by the BWM-vs-control contingency layout: positive log2(OR) = BWM-enriched, negative = BWM-depleted. `p_value` is the raw two-sided Fisher's exact p; `p_adj` is BH-corrected within each (timepoint, site) family of 20 AAs. Sub-tables below are split per-direction within each (timepoint, site) group. *Rows with `p_adj` < 0.10; up to 5 per direction, ranked by `|log2_OR|` descending.*
+The effect column is `log2_OR` (the log2 of the `odds_ratio` column). Direction is fixed by the BWM-vs-control contingency layout: positive log2(OR) = BWM-enriched, negative = BWM-depleted. `p_value` is the raw two-sided Fisher's exact p; `p_adj` is BH-corrected within each (timepoint, site) family of 20 AAs. Sub-tables below are split per-direction within each (timepoint, site) group.
+
+**Inclusion criterion.** An amino acid appears in a sub-table only if its `p_adj` is below 0.10 within its own (timepoint, site) family of 20 — i.e. it is at least nominally significant after BH correction inside that family. Cells that do not clear `p_adj` < 0.10 are not displayed here even when their raw `|log2_OR|` is large. Up to 5 rows are shown per direction, ranked by `|log2_OR|` descending. A `### day_10, P site` block appears below with a no-rows note because no day-10 P amino acid clears the threshold.
 
 The two summary tables that follow the per-(timepoint, site) blocks (cross-timepoint direction concordance and direction-flip cells) are reproduced under "Cross-timepoint summary" at the end of this section.
 
@@ -223,55 +231,62 @@ The two summary tables that follow the per-(timepoint, site) blocks (cross-timep
 
 #### Cross-timepoint direction concordance
 
-21 of 60 (site, aa) cells have the same OR direction in all 3 timepoints. Sorted by |mean log2OR| across the 3 timepoint values. `#sig` is the count (out of 3) of timepoints where this row reaches p_adj<0.05; `min_p_adj` is the smallest of the 3 per-timepoint values.
+21 of 60 (site, aa) cells hold the same OR direction across all 3 timepoints. Below the cells are split by displayed mean-log2OR direction into BWM-enriched and BWM-depleted sub-tables; each is sorted by `#sig (FDR<0.05)` descending, then by `|mean log2OR|` descending. `#sig` is the count (out of 3) of timepoints where the row reaches `p_adj` < 0.05; `min p_adj` is the smallest of the 3 per-timepoint values.
 
-| direction | cell (site:aa) | mean log2OR | per-tp log2OR (d0, d5, d10) | #sig (FDR<0.05) | min p_adj | flag |
-| --- | --- | --- | --- | --- | --- | --- |
-| enriched | P:K | +0.253 | +0.36, +0.21, +0.19 | 2/3 | 1.05e-06 | multi-tp-coherent |
-| enriched | P:R | +0.239 | +0.52, +0.09, +0.10 | 1/3 | 4.65e-09 | single-tp-driven |
-| enriched | A:R | +0.218 | +0.38, +0.13, +0.15 | 1/3 | 2.34e-05 | single-tp-driven |
-| depleted | A:T | -0.178 | -0.34, -0.05, -0.14 | 1/3 | 5.98e-03 | single-tp-driven |
-| enriched | A:W | +0.172 | +0.09, +0.12, +0.31 | 0/3 | 3.96e-01 | rare-aa |
-| depleted | P:T | -0.166 | -0.22, -0.04, -0.23 | 0/3 | 7.07e-02 |  |
-| enriched | A:H | +0.153 | +0.23, +0.11, +0.12 | 0/3 | 1.90e-01 |  |
-| depleted | A:C | -0.146 | -0.08, -0.14, -0.22 | 0/3 | 4.95e-01 | rare-aa |
-| depleted | P:A | -0.137 | -0.09, -0.13, -0.19 | 0/3 | 1.64e-01 |  |
-| depleted | P:S | -0.136 | -0.28, -0.11, -0.02 | 1/3 | 2.96e-02 | single-tp-driven |
-| depleted | P:C | -0.118 | -0.16, -0.12, -0.07 | 0/3 | 6.49e-01 | rare-aa |
-| enriched | P:L | +0.117 | +0.04, +0.11, +0.20 | 0/3 | 1.48e-01 |  |
-| depleted | P:E | -0.108 | -0.19, -0.12, -0.01 | 0/3 | 5.59e-02 |  |
-| depleted | P:D | -0.091 | -0.10, -0.02, -0.15 | 0/3 | 1.64e-01 |  |
-| depleted | E:D | -0.084 | -0.12, -0.05, -0.08 | 0/3 | 3.47e-01 |  |
-| depleted | E:E | -0.080 | -0.05, -0.17, -0.02 | 1/3 | 3.32e-02 | single-tp-driven |
-| enriched | E:L | +0.065 | +0.02, +0.15, +0.02 | 0/3 | 1.19e-01 |  |
-| depleted | P:N | -0.049 | -0.09, -0.01, -0.05 | 0/3 | 5.72e-01 |  |
-| depleted | P:F | -0.046 | -0.01, -0.06, -0.07 | 0/3 | 7.34e-01 |  |
-| depleted | E:H | -0.045 | -0.04, -0.05, -0.04 | 0/3 | 7.43e-01 |  |
-| depleted | E:N | -0.043 | -0.04, -0.05, -0.04 | 0/3 | 5.96e-01 |  |
+##### Concordance — BWM-enriched (mean log2OR > 0)
+
+| Amino Acid | mean log2OR | per-tp log2OR (d0, d5, d10) | #sig (FDR<0.05) | min p_adj | flag |
+| --- | --- | --- | --- | --- | --- |
+| P:K | +0.253 | +0.36, +0.21, +0.19 | 2/3 | 1.05e-06 | multi-tp-coherent |
+| P:R | +0.239 | +0.52, +0.09, +0.10 | 1/3 | 4.65e-09 | single-tp-driven |
+| A:R | +0.218 | +0.38, +0.13, +0.15 | 1/3 | 2.34e-05 | single-tp-driven |
+| A:W | +0.172 | +0.09, +0.12, +0.31 | 0/3 | 3.96e-01 | rare-aa |
+| A:H | +0.153 | +0.23, +0.11, +0.12 | 0/3 | 1.90e-01 |  |
+| P:L | +0.117 | +0.04, +0.11, +0.20 | 0/3 | 1.48e-01 |  |
+| E:L | +0.065 | +0.02, +0.15, +0.02 | 0/3 | 1.19e-01 |  |
+
+##### Concordance — BWM-depleted (mean log2OR < 0)
+
+| Amino Acid | mean log2OR | per-tp log2OR (d0, d5, d10) | #sig (FDR<0.05) | min p_adj | flag |
+| --- | --- | --- | --- | --- | --- |
+| A:T | -0.178 | -0.34, -0.05, -0.14 | 1/3 | 5.98e-03 | single-tp-driven |
+| P:S | -0.136 | -0.28, -0.11, -0.02 | 1/3 | 2.96e-02 | single-tp-driven |
+| E:E | -0.080 | -0.05, -0.17, -0.02 | 1/3 | 3.32e-02 | single-tp-driven |
+| P:T | -0.166 | -0.22, -0.04, -0.23 | 0/3 | 7.07e-02 |  |
+| A:C | -0.146 | -0.08, -0.14, -0.22 | 0/3 | 4.95e-01 | rare-aa |
+| P:A | -0.137 | -0.09, -0.13, -0.19 | 0/3 | 1.64e-01 |  |
+| P:C | -0.118 | -0.16, -0.12, -0.07 | 0/3 | 6.49e-01 | rare-aa |
+| P:E | -0.108 | -0.19, -0.12, -0.01 | 0/3 | 5.59e-02 |  |
+| P:D | -0.091 | -0.10, -0.02, -0.15 | 0/3 | 1.64e-01 |  |
+| E:D | -0.084 | -0.12, -0.05, -0.08 | 0/3 | 3.47e-01 |  |
+| P:N | -0.049 | -0.09, -0.01, -0.05 | 0/3 | 5.72e-01 |  |
+| P:F | -0.046 | -0.01, -0.06, -0.07 | 0/3 | 7.34e-01 |  |
+| E:H | -0.045 | -0.04, -0.05, -0.04 | 0/3 | 7.43e-01 |  |
+| E:N | -0.043 | -0.04, -0.05, -0.04 | 0/3 | 5.96e-01 |  |
 
 #### Direction-flip cells across timepoints
 
-39 of 60 (site, aa) cells show at least one sign change across the 3 timepoint values. Only 1 has the flip register at p_adj<0.05 on both opposite-sign rows. Sorted by max single-cell |log2OR|.
+39 of 60 (site, aa) cells show at least one sign change across the 3 timepoint values. Only 1 (E:K) has the flip register at `p_adj` < 0.05 on both opposite-sign rows — flagged `both-flip-sig` below. `#sig (FDR<0.05)` is the count (out of 3 timepoints) of rows reaching `p_adj` < 0.05; `*` marks each per-timepoint value that reaches the threshold. Sorted by `#sig` descending, then by max single-cell `|log2OR|` descending.
 
-| cell (site:aa) | log2OR range | per-tp log2OR (sig at p_adj<0.05 marked `*`) | sig-flip | flag |
+| Amino Acid | log2OR range | per-tp log2OR (d0, d5, d10) | #sig (FDR<0.05) | flag |
 | --- | --- | --- | --- | --- |
-| A:N | [-0.755, +0.302] | -0.75*, -0.25, +0.30 | no | rare-aa (d10 BWM_k=267) |
-| E:W | [-0.211, +0.621] | -0.21, -0.16, +0.62 | no | rare-aa |
-| E:C | [-0.310, +0.520] | -0.31, -0.21, +0.52 | no | rare-aa |
-| E:R | [-0.095, +0.482] | +0.48*, -0.10, +0.39* | no |  |
-| E:K | [-0.195, +0.480] | +0.48*, -0.19*, -0.04 | yes (d0 vs d5 both p_adj<0.05) | iid-amp (d0 cell only) |
-| E:Q | [-0.467, +0.121] | -0.47*, -0.06, +0.12 | no |  |
-| P:P | [-0.460, +0.025] | -0.46*, +0.03, -0.22 | no |  |
-| A:K | [-0.062, +0.439] | +0.44*, -0.06, +0.13 | no |  |
-| A:A | [-0.415, +0.031] | -0.08, +0.03, -0.42* | no |  |
-| P:Q | [-0.255, +0.378] | -0.26, +0.20, +0.38 | no |  |
-| E:S | [-0.375, +0.009] | -0.37*, +0.01, -0.02 | no |  |
-| E:Y | [-0.371, +0.243] | -0.37*, +0.24, +0.21 | no |  |
-| E:P | [-0.133, +0.358] | -0.15, +0.36*, -0.13 | no |  |
-| A:Q | [-0.201, +0.336] | -0.20, +0.11, +0.34 | no |  |
-| A:F | [-0.321, +0.116] | -0.32*, +0.12, -0.01 | no |  |
+| E:R | [-0.096, +0.482] | +0.48*, -0.10, +0.39* | 2/3 |  |
+| E:K | [-0.195, +0.480] | +0.48*, -0.19*, -0.04 | 2/3 | both-flip-sig; iid-amp (d0) |
+| A:N | [-0.755, +0.297] | -0.75*, -0.25, +0.30 | 1/3 |  |
+| E:Q | [-0.467, +0.120] | -0.47*, -0.06, +0.12 | 1/3 |  |
+| P:P | [-0.460, +0.025] | -0.46*, +0.03, -0.22 | 1/3 |  |
+| A:K | [-0.062, +0.439] | +0.44*, -0.06, +0.13 | 1/3 |  |
+| A:A | [-0.415, +0.031] | -0.08, +0.03, -0.42* | 1/3 |  |
+| E:S | [-0.375, +0.009] | -0.37*, +0.01, -0.02 | 1/3 |  |
+| E:Y | [-0.371, +0.242] | -0.37*, +0.24, +0.21 | 1/3 |  |
+| E:P | [-0.150, +0.358] | -0.15, +0.36*, -0.13 | 1/3 |  |
+| A:F | [-0.321, +0.117] | -0.32*, +0.12, -0.01 | 1/3 |  |
+| E:A | [-0.099, +0.299] | -0.08, +0.30*, -0.10 | 1/3 |  |
+| A:G | [-0.056, +0.283] | +0.28*, +0.02, -0.06 | 1/3 |  |
+| A:L | [-0.147, +0.280] | -0.02, +0.28*, -0.15 | 1/3 |  |
+| E:T | [-0.248, +0.219] | -0.25*, +0.22, -0.12 | 1/3 |  |
 
-(15 highest-magnitude flip cells shown; 24 more lower-magnitude flip cells are in the data but all have max |log2OR| < 0.30.)
+(15 highest-magnitude flip cells shown; 24 more flip cells below the cutoff (#sig, |log2OR|) = (1/3, 0.248) are in the data but not listed.)
 
 ### Flag glossary
 
@@ -279,6 +294,7 @@ The two summary tables that follow the per-(timepoint, site) blocks (cross-timep
 - `rare-aa` — at least one of the 3 per-timepoint rows for this cell has `BWM_k` < 100 (or similarly low `ctrl_k`). Odds-ratio estimate is unstable; large |log2OR| values may reflect sampling noise rather than biology.
 - `multi-tp-coherent` — cell reaches `p_adj` < 0.05 in 2 or 3 of 3 timepoints; signal is reproducible across the time axis.
 - `single-tp-driven` — cell reaches `p_adj` < 0.05 in exactly 1 of 3 timepoints; the cross-timepoint mean is carried by that one timepoint and is exploratory across the others.
+- `both-flip-sig` — direction-flip cell where both opposite-sign timepoint rows reach `p_adj` < 0.05; the cell records a genuine FDR-significant sign change rather than a sub-threshold near-zero crossing. Only E:K qualifies in this file.
 
 ## Numbers at a glance
 - `n_tests`: 180 (3 timepoints x 3 sites x 20 AAs)
@@ -295,7 +311,7 @@ The two summary tables that follow the per-(timepoint, site) blocks (cross-timep
 | day_5 | 1/20 (min p 4.98e-03) | 1/20 (min p 4.43e-02) | 5/20 (min p 4.93e-03) | 11935 | 11177 | 0.94 |
 | day_10 | 1/20 (min p 2.91e-03) | 0/20 (min p 1.48e-01) | 1/20 (min p 1.86e-03) | 6945 | 8788 | 1.27 |
 
-- Cross-timepoint (site, aa) cells, all 3 timepoints same OR direction: 21/60 (9 BWM-enriched, 12 BWM-depleted)
+- Cross-timepoint (site, aa) cells, all 3 timepoints same OR direction: 21/60 (7 BWM-enriched, 14 BWM-depleted)
 - Cross-timepoint (site, aa) cells with at least one sign change: 39/60
 - Cells with sign change at p_adj<0.05 on both opposite-sign rows: 1 (E:K)
 
@@ -311,7 +327,7 @@ The two summary tables that follow the per-(timepoint, site) blocks (cross-timep
 
 **A subset of cross-timepoint concordant cells points at stable BWM-vs-control composition differences (exploratory).** P:K (+0.25 mean, sig in 2/3 timepoints), P:R (+0.24), A:R (+0.22), and A:T (-0.18) are direction-consistent across all three timepoints with moderate magnitudes. The basic-residue enrichment direction matches the day-0 headline but holds across the time axis at smaller magnitudes — consistent with a stable BWM-vs-control compositional offset on top of which the day-0 amplification rides. These cells are worth carrying into the codon sister CSV (do they aggregate from AGA/CGC/CGT at codon resolution?) and the within-condition binomial (are they baseline features shared by both conditions, or BWM-specific?).
 
-**What to carry forward.** *Concrete*: the day-0 basic-residue enrichment (K/R at A/P/E) and P-site Pro depletion; the day_10 P-site has no statistically significant differences at FDR<0.05 and the day_10 A and E sites each carry only one FDR<0.05 hit. *Exploratory*: the E:K direction flip (needs codon-level and within-condition corroboration); the 21-cell cross-timepoint concordant set as a stable BWM-control offset hypothesis. *Noise*: the day-10 P-site row is structurally flat (min p_adj = 0.148) and contributes nothing; the file's largest single-cell magnitudes that are `rare-aa` flagged (A:N -0.755 sits at BWM_k=134 — high enough to count, but adjacent rows in the same cell with smaller k are unstable).
+**What to carry forward.** *Concrete*: the day-0 basic-residue enrichment (K/R at A/P/E) and P-site Pro depletion; the day_10 P-site has no statistically significant differences at FDR<0.05 and the day_10 A and E sites each carry only one FDR<0.05 hit. *Exploratory*: the E:K direction flip (needs codon-level and within-condition corroboration); the 21-cell cross-timepoint concordant set as a stable BWM-control offset hypothesis. *Noise*: the day-10 P-site row is structurally flat (min p_adj = 0.148) and contributes nothing; A:N at day 0 (-0.755) sits at BWM_k=134, just above the `rare-aa` threshold of 100 — high enough to count, but adjacent rows in the same cell with smaller k are unstable.
 
 ## Methods
 Fisher's exact (two-sided) on a 2x2 contingency BWM_count vs control_count for each (timepoint, site, aa), with BH-FDR correction within each (timepoint, site) family of 20 AAs. Effect column is `odds_ratio` (re-expressed as log2OR in this report's tables for symmetry with sister files); test statistic and exact p are returned by `scipy.stats.fisher_exact`. The p-correction column is `p_adj` (BH per (timepoint, site) family). The test answers "is the BWM-vs-control AA composition at this site different at this timepoint?". It does *not* answer "is each condition's per-codon enrichment vs background informative" (that is the `within_condition_binomial` family) and *not* "is the BWM-vs-control difference itself shifting across timepoints" (that requires a 3-way model or an explicit between-timepoint contrast — see the `between_timepoint_wilcoxon` family for the within-condition variant of that question).

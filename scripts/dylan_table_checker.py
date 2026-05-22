@@ -54,6 +54,7 @@ def _tp_rank(value: object) -> int:
     return int(digits) if digits else 10**9
 
 
+def _sort_by_site(df: pd.DataFrame, *outer_keys: str) -> pd.DataFrame:
     """Stable-sort `df` so that within each combination of `outer_keys` the
     `site` column iterates in A -> P -> E order.
 

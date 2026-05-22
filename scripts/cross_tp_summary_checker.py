@@ -7,7 +7,7 @@ appear under "Cross-timepoint summary (two ranking tables)" in the Olive report:
 
     1. Cross-timepoint direction concordance
          Cells whose per-timepoint `log2_OR` values all share the same sign.
-         Sorted by |mean log2OR| desc.
+         Sorted by #sig desc, then |mean log2OR| desc.
     2. Direction-flip cells across timepoints
          Cells with at least one sign change across the per-timepoint values.
          Sorted by max single-cell |log2OR| desc; truncated to --top-flip rows
@@ -257,9 +257,11 @@ def _print_concordance(cells: pd.DataFrame, timepoints: list[str],
     # Must have same_sign == True and a valid log2OR value at every timepoint (n_valid_tp == len(timepoints))
     concord = cells[cells["same_sign"] & (cells["n_valid_tp"] == len(timepoints))].copy()
 
-    # Takes abs of log2OR mean for sorting
+    # Sort by #sig desc (primary), then |mean log2OR| desc (tiebreak), so
+    # concordant cells with the most FDR-significant timepoints surface
+    # first regardless of effect magnitude.
     concord["abs_mean"] = concord["mean_log2OR"].abs()
-    concord = concord.sort_values("abs_mean", ascending=False)
+    concord = concord.sort_values(["n_sig", "abs_mean"], ascending=[False, False])
 
     # Split into enriched and depleted for printing purposes
     n_enriched = int((concord["mean_log2OR"] > 0).sum())
@@ -268,7 +270,8 @@ def _print_concordance(cells: pd.DataFrame, timepoints: list[str],
     print()
     print(f"### Cross-timepoint direction concordance "
           f"({len(concord)} of {len(cells)} cells share the same OR direction in all "
-          f"{len(timepoints)} timepoints; {n_enriched} enriched, {n_depleted} depleted)")
+          f"{len(timepoints)} timepoints; {n_enriched} enriched, {n_depleted} depleted; "
+          f"sorted by #sig desc, then |mean log2OR| desc)")
     if concord.empty:
         print("  (no concordant cells)")
         return

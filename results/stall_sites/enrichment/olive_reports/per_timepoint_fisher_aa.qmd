@@ -50,7 +50,7 @@ Across 180 Fisher's exact tests (3 timepoints x 3 sites x 20 amino acids), 27 ce
 
 Looking across the time axis, 21 of 60 (site, aa) cells hold a single OR direction across all 3 timepoints (7 BWM-enriched, 14 BWM-depleted), and 39 show at least one sign change. Only E:K registers that sign change with `p_adj` < 0.05 on both opposite-sign rows: day 0 log2OR = +0.480 (`p_adj` = 2.87e-15, file minimum), day 5 log2OR = -0.195 (`p_adj` = 4.93e-3), and day 10 log2OR = -0.035 (ns).
 
-The largest-magnitude FDR<0.05 hits cluster at day 0 — A:N -0.755, P:R +0.519, E:R +0.482, E:K +0.480, E:Q -0.467, P:P -0.460, A:K +0.439, A:R +0.381 — with one later-timepoint hit at day 10 A:A -0.415. Among the 21 direction-concordant cells, the most stable cross-timepoint signals are P:K (+0.253 mean, 2/3 cell-sig), P:R (+0.239), A:R (+0.218), and A:T (-0.178).
+The largest-magnitude FDR<0.05 hits cluster at day 0 — A:N -0.755, P:R +0.519, E:R +0.482, E:K +0.480, E:Q -0.467, P:P -0.460, A:K +0.439, A:R +0.381 — with one later-timepoint hit at day 10 A:A -0.415. Among the 21 direction-concordant cells, the most stable cross-timepoint signals are P:K (+0.253 mean, #sig 2/3), P:R (+0.239), A:R (+0.218), and A:T (-0.178).
 
 The day-0 dominance should be read as power-modulated, not as direction-of-effect biology. The control:BWM count ratio is 4.55:1 at day 0, 0.94:1 at day 5, and 1.27:1 at day 10; the 12-orders-of-magnitude span in file-minimum `p_adj` across timepoints (2.87e-15 -> 4.93e-3 -> 1.86e-3) reflects asymmetric pooled N, not stronger biology at day 0.
 
@@ -60,7 +60,7 @@ The effect column is `log2_OR` (the log2 of the `odds_ratio` column). Direction 
 
 **Inclusion criterion.** An amino acid appears in a table only if its `p_adj` is below 0.05 within its own (timepoint, site) family of 20 — i.e. it clears BH-FDR correction inside that family. Every row clearing `p_adj` < 0.05 is shown (no row cap). Each table merges all three ribosome sites for a (timepoint, direction) pair; rows are grouped by `site` in A -> P -> E order and within each site sorted by `|log2_OR|` descending. If no rows clear the threshold for a given (timepoint, direction) combination, that table is omitted entirely.
 
-The two summary tables that follow the per-(timepoint, site) blocks (cross-timepoint direction concordance and direction-flip cells) are reproduced under "Cross-timepoint summary" at the end of this section.
+Two cross-timepoint summary tables (direction concordance and direction-flip cells) appear under "Cross-timepoint summary" at the end of this section, after the per-(timepoint, direction) blocks.
 
 ```{=latex}
 \needspace{14\baselineskip}
@@ -187,7 +187,7 @@ The two summary tables that follow the per-(timepoint, site) blocks (cross-timep
 
 #### Direction-flip cells across timepoints
 
-39 of 60 (site, aa) cells show at least one sign change across the 3 timepoint values. Only 1 (E:K) has the flip register at `p_adj` < 0.05 on both opposite-sign rows — flagged `both-flip-sig` below. `#sig` is the count (out of 3 timepoints) of rows reaching `p_adj` < 0.05 (the FDR-corrected threshold); the `per-tp log2OR` column lists the three per-timepoint values in chronological order (day 0, day 5, day 10); `*` marks each per-timepoint value that reaches the threshold. Sorted by `#sig` descending, then by max single-cell `|log2OR|` descending.
+39 of 60 (site, aa) cells show at least one sign change across the 3 timepoint values. Only 1 (E:K) has both opposite-sign rows reaching `p_adj` < 0.05 — flagged `both-flip-sig` below. `#sig` is the count (out of 3 timepoints) of rows reaching `p_adj` < 0.05 (the FDR-corrected threshold); the `per-tp log2OR` column lists the three per-timepoint values in chronological order (day 0, day 5, day 10); `*` marks each per-timepoint value that reaches the threshold. Sorted by `#sig` descending, then by max single-cell `|log2OR|` descending.
 
 | Amino Acid | log2OR range | per-tp log2OR | #sig | flag |
 | :---: | :---: | :---: | :---: | :---: |
@@ -252,10 +252,10 @@ Each `A` / `P` / `E` cell shows `n_sig / n_tests` — the number of amino acids 
 
 **A subset of cross-timepoint concordant cells points at stable BWM-vs-control composition differences (exploratory).** P:K (+0.25 mean, sig in 2/3 timepoints), P:R (+0.24), A:R (+0.22), and A:T (-0.18) are direction-consistent across all three timepoints with moderate magnitudes. The basic-residue enrichment direction matches the day-0 headline but holds across the time axis at smaller magnitudes — consistent with a stable BWM-vs-control compositional offset on top of which the day-0 amplification rides. These cells are worth carrying into the codon sister CSV (do they aggregate from AGA/CGC/CGT at codon resolution?) and the within-condition binomial (are they baseline features shared by both conditions, or BWM-specific?).
 
-**What to carry forward.** *Concrete*: the day-0 basic-residue enrichment (K/R at A/P/E) and P-site Pro depletion; the day_10 P-site has no statistically significant differences at FDR<0.05 and the day_10 A and E sites each carry only one FDR<0.05 hit. *Exploratory*: the E:K direction flip (needs codon-level and within-condition corroboration); the 21-cell cross-timepoint concordant set as a stable BWM-control offset hypothesis. *Noise*: the day-10 P-site row is structurally flat (min p_adj = 0.148) and contributes nothing; A:N at day 0 (-0.755) is the file's largest depletion magnitude in the FDR<0.05 set, but its Top hits row carries no flag and it appears in the Direction-flip table at range [-0.755, +0.297] with only 1/3 FDR-sig — read it as a single-timepoint hit, not a stable cross-timepoint feature.
+**What to carry forward.** *Concrete*: the day-0 basic-residue enrichment (K/R at A/P/E) and P-site Pro depletion; the day_10 P-site has no statistically significant differences at FDR<0.05 and the day_10 A and E sites each carry only one FDR<0.05 hit. *Exploratory*: the E:K direction flip (needs codon-level and within-condition corroboration); the 21-cell cross-timepoint concordant set as a stable BWM-control offset hypothesis. *Noise*: the day-10 P-site row is flat (min p_adj = 0.148) and contributes nothing; A:N at day 0 (-0.755) is the file's largest depletion magnitude in the FDR<0.05 set, but its Top hits row carries no flag and it appears in the Direction-flip table at range [-0.755, +0.297] with only 1/3 FDR-sig — read it as a single-timepoint hit, not a stable cross-timepoint feature.
 
 ## Methods
-Fisher's exact (two-sided) on a 2x2 contingency BWM_count vs control_count for each (timepoint, site, aa), with BH-FDR correction within each (timepoint, site) family of 20 AAs. Effect column is `odds_ratio` (re-expressed as log2OR in this report's tables for symmetry with sister files); test statistic and exact p are returned by `scipy.stats.fisher_exact`. The p-correction column is `p_adj` (BH per (timepoint, site) family). The test answers "is the BWM-vs-control AA composition at this site different at this timepoint?". It does *not* answer "is each condition's per-codon enrichment vs background informative" (that is the `within_condition_binomial` family) and *not* "is the BWM-vs-control difference itself shifting across timepoints" (that requires a 3-way model or an explicit between-timepoint contrast — see the `between_timepoint_wilcoxon` family for the within-condition variant of that question).
+Fisher's exact (two-sided) on a 2x2 contingency BWM_count vs control_count for each (timepoint, site, aa), with BH-FDR correction within each (timepoint, site) family of 20 AAs. Effect column is `odds_ratio` (re-expressed as log2OR in this report's tables for symmetry with sister files); test statistic and exact p are returned by `scipy.stats.fisher_exact`. The p-correction column is `p_adj` (BH per (timepoint, site) family). The test answers "is the BWM-vs-control AA composition at this site different at this timepoint?". It does *not* answer "is each condition's per-aa enrichment vs background informative" (that is the `within_condition_binomial` family) and *not* "is the BWM-vs-control difference itself shifting across timepoints" (that requires a 3-way model or an explicit between-timepoint contrast — see the `between_timepoint_wilcoxon` family for the within-condition variant of that question).
 
 ## What the caveats mean for reading this file
 
@@ -286,6 +286,6 @@ Fisher's exact (two-sided) on a 2x2 contingency BWM_count vs control_count for e
 
 ![Day-10 A-site BWM-vs-control volcano: alanine (A, hydrophobic green) at -0.42 log2(OR) is the single FDR<0.05 hit; all other amino acids collapse below the FDR threshold line within the +/-0.3 log2(OR) band.](../../plots/per_timepoint_fisher/individual/day_10_A_volcano.png)
 
-![Day-10 P-site BWM-vs-control volcano: no FDR<0.05 hits; all points fall below the FDR threshold and within the +/-0.4 log2(OR) band — the structurally flattest panel in the file (min `p_adj` = 0.148).](../../plots/per_timepoint_fisher/individual/day_10_P_volcano.png)
+![Day-10 P-site BWM-vs-control volcano: no FDR<0.05 hits; all points fall below the FDR threshold and within the +/-0.4 log2(OR) band — the flattest panel in the file (min `p_adj` = 0.148).](../../plots/per_timepoint_fisher/individual/day_10_P_volcano.png)
 
 ![Day-10 E-site BWM-vs-control volcano: arginine (R, basic blue) at +0.39 log2(OR) is the single FDR<0.05 hit; all other amino acids fall below the FDR threshold.](../../plots/per_timepoint_fisher/individual/day_10_E_volcano.png)

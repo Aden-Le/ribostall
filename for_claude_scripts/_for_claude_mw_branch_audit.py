@@ -12,17 +12,17 @@ three between_timepoint pairs).
 Usage examples:
 
   # CSV 1 (between_condition AA, default):
-  python scripts/_for_claude_mw_branch_audit.py
+  python for_claude_scripts/_for_claude_mw_branch_audit.py
 
   # CSV 2 (between_condition codon):
-  python scripts/_for_claude_mw_branch_audit.py --level codon
+  python for_claude_scripts/_for_claude_mw_branch_audit.py --level codon
 
   # CSV 3 (between_timepoint d10_vs_d0 AA):
-  python scripts/_for_claude_mw_branch_audit.py --design between_timepoint \\
+  python for_claude_scripts/_for_claude_mw_branch_audit.py --design between_timepoint \\
       --timepoints day10 day0
 
   # CSV 4 (between_timepoint d10_vs_d0 codon):
-  python scripts/_for_claude_mw_branch_audit.py --design between_timepoint \\
+  python for_claude_scripts/_for_claude_mw_branch_audit.py --design between_timepoint \\
       --timepoints day10 day0 --level codon
 """
 from __future__ import annotations

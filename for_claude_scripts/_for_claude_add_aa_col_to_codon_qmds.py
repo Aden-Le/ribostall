@@ -16,7 +16,7 @@ This is a one-shot maintenance helper used to action the
 checklist item in `results/stall_sites/enrichment/olive_reports/_MANUAL_REVIEW.md`.
 
 Usage:
-    python scripts/_for_claude_add_aa_col_to_codon_qmds.py <qmd_path> [<qmd_path> ...]
+    python for_claude_scripts/_for_claude_add_aa_col_to_codon_qmds.py <qmd_path> [<qmd_path> ...]
 """
 
 import argparse

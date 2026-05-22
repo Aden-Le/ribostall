@@ -88,7 +88,23 @@ def _fmt_p(x: float) -> str:
     return f"{x: .2e}".strip()
 
 
-def _concordance_flag(n_sig: int, any_rare: bool, any_iid_amp: bool,
+# Short tokens used in the `rare-*` flag suffix that names which timepoints
+# tripped the rare-k threshold (e.g. `rare-aa (d0, d10)`).
+TP_TOKEN = {"day_0": "d0", "day_5": "d5", "day_10": "d10"}
+
+
+def _tp_token(tp: str) -> str:
+    """Map `day_0`/`day_5`/`day_10` -> `d0`/`d5`/`d10`; fall back to the raw value."""
+    return TP_TOKEN.get(tp, str(tp))
+
+
+def _rare_label_with_tps(rare_label: str, rare_tps: list[str]) -> str:
+    """Suffix the rare label with the chronological list of triggering TPs."""
+    tokens = ", ".join(_tp_token(tp) for tp in rare_tps)
+    return f"{rare_label} ({tokens})"
+
+
+def _concordance_flag(n_sig: int, rare_tps: list[str], any_iid_amp: bool,
                       rare_label: str) -> str:
     """All applicable concordance flags, semicolon-joined.
 
@@ -97,6 +113,11 @@ def _concordance_flag(n_sig: int, any_rare: bool, any_iid_amp: bool,
     Differs from the qmd, which keeps only the first match by precedence;
     here we surface every applicable flag so caveats aren't masked when a
     cell is also significant.
+
+    The rare-aa / rare-codon label is suffixed with the chronological list
+    of triggering timepoints (e.g. `rare-aa (d0, d10)`) so it can be pasted
+    back into the matching Concordance / Direction-flip rows in the .qmd
+    without a second lookup.
     """
     flags: list[str] = []
     if n_sig >= 2:
@@ -105,23 +126,24 @@ def _concordance_flag(n_sig: int, any_rare: bool, any_iid_amp: bool,
         flags.append("single-tp-driven")
     if any_iid_amp:
         flags.append("iid-amp")
-    if any_rare:
-        flags.append(rare_label)
+    if rare_tps:
+        flags.append(_rare_label_with_tps(rare_label, rare_tps))
     return "; ".join(flags)
 
 
-def _flip_flag(any_rare: bool, any_iid_amp: bool, rare_label: str) -> str:
+def _flip_flag(rare_tps: list[str], any_iid_amp: bool, rare_label: str) -> str:
     """All applicable flip-table flags, semicolon-joined.
 
     Flip-table cells have no significance label; only caveats apply. The
     qmd shows iid-amp OR rare via precedence; here we surface both when
-    both are true.
+    both are true. The rare label is suffixed with the chronological list
+    of triggering timepoints (see `_concordance_flag`).
     """
     flags: list[str] = []
     if any_iid_amp:
         flags.append("iid-amp")
-    if any_rare:
-        flags.append(rare_label)
+    if rare_tps:
+        flags.append(_rare_label_with_tps(rare_label, rare_tps))
     return "; ".join(flags)
 
 
@@ -174,12 +196,14 @@ def _aggregate_cells(df: pd.DataFrame, feat: str, rare_k: int,
 
         # Number of signficant timepoints (p_adj < sig_thresh); only count non-nan p_adj values.
         n_sig = int(sum((p < sig_thresh) for p in per_tp_padj if not pd.isna(p)))
-        # Checks if any Rare (Flag as True or False)
-        any_rare = any(
-            (k_b < rare_k) or (k_c < rare_k)
-            for k_b, k_c in zip(per_tp_bwmk, per_tp_ctlk)
+        # List the timepoints (chronological, via the outer `timepoints` order)
+        # where either arm dips below `rare_k`. Empty list == not rare. Used
+        # downstream to render `rare-aa (d0, d10)` style suffixes.
+        rare_tps = [
+            tp for tp, k_b, k_c in zip(timepoints, per_tp_bwmk, per_tp_ctlk)
             if not (pd.isna(k_b) or pd.isna(k_c))
-        )
+            and ((k_b < rare_k) or (k_c < rare_k))
+        ]
         # Checks for any iid-amp timepoints among the non-nan p_adj values. (Flag as True or False)
         any_iid_amp = any(
             (p < iid_amp_thresh) for p in per_tp_padj if not pd.isna(p)
@@ -213,7 +237,7 @@ def _aggregate_cells(df: pd.DataFrame, feat: str, rare_k: int,
             "min_p_adj": float(np.nanmin(per_tp_padj)) if any(not pd.isna(p) for p in per_tp_padj) else np.nan,
             "n_sig": n_sig,
             "n_valid_tp": len(valid_log2),
-            "any_rare": any_rare,
+            "rare_tps": rare_tps,
             "any_iid_amp": any_iid_amp,
             "same_sign": same_sign,
             "sig_pos_tps": sig_pos_tps,
@@ -274,7 +298,7 @@ def _print_concordance(cells: pd.DataFrame, timepoints: list[str],
             per_tp = ", ".join(_fmt_signed(v) for v in row["per_tp_log2OR"])
             flag = _concordance_flag(
                 n_sig=row["n_sig"],
-                any_rare=row["any_rare"],
+                rare_tps=row["rare_tps"],
                 any_iid_amp=row["any_iid_amp"],
                 rare_label=rare_label,
             )
@@ -346,7 +370,7 @@ def _print_flip(cells: pd.DataFrame, timepoints: list[str],
 
         # Returns applicable flags
         flag = _flip_flag(
-            any_rare=row["any_rare"],
+            rare_tps=row["rare_tps"],
             any_iid_amp=row["any_iid_amp"],
             rare_label=rare_label,
         )

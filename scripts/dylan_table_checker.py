@@ -35,11 +35,54 @@ import pandas as pd
 # Helpers
 # -----------------------------------------------------------------------------
 
+# Ribosome-canonical site order (A -> P -> E) used for all per-site iteration
+# and printing. Alphabetical order would yield A/E/P, which we override here.
+SITE_ORDER = ["A", "P", "E"]
+
+
 def _feature_col(df: pd.DataFrame) -> str:
     for c in ("amino_acid", "codon"):
         if c in df.columns:
             return c
     raise ValueError("Neither 'amino_acid' nor 'codon' column present.")
+
+
+def _tp_rank(value: object) -> int:
+    """Chronological rank for `timepoint` values like `day_0`, `day_5`, `day_10`."""
+    s = str(value)
+    digits = "".join(ch for ch in s if ch.isdigit())
+    return int(digits) if digits else 10**9
+
+
+    """Stable-sort `df` so that within each combination of `outer_keys` the
+    `site` column iterates in A -> P -> E order.
+
+    Outer keys are ranked as follows:
+      - `timepoint`: chronological (day_0, day_5, day_10) via embedded number
+      - any other key: first-seen order in the input dataframe
+
+    Returns a copy. Downstream `groupby(..., sort=False)` callers will then walk
+    groups in canonical ribosome-site order.
+    """
+    if "site" not in df.columns:
+        return df
+    df = df.copy()
+    site_rank = {s: i for i, s in enumerate(SITE_ORDER)}
+    df["__site_order__"] = df["site"].map(site_rank).fillna(99)
+    sort_cols = []
+    for k in outer_keys:
+        if k not in df.columns:
+            continue
+        tag = f"__{k}_order__"
+        if k == "timepoint":
+            df[tag] = df[k].map(_tp_rank)
+        else:
+            seen = {v: i for i, v in enumerate(df[k].drop_duplicates().tolist())}
+            df[tag] = df[k].map(seen)
+        sort_cols.append(tag)
+    sort_cols.append("__site_order__")
+    df = df.sort_values(sort_cols, kind="stable")
+    return df.drop(columns=[c for c in df.columns if c.startswith("__") and c.endswith("__")])
 
 
 def _print_group(title: str, df: pd.DataFrame, cols: list[str]) -> None:
@@ -101,8 +144,11 @@ def _print_lowcount_audit(df: pd.DataFrame, feat: str, arm_a: str, arm_b: str,
     print(f"  {len(flagged)} of {len(df)} rows fall below the threshold.")
     if flagged.empty:
         return
-    flagged = flagged.sort_values(["site", "min_median"])
-    print("  per-site counts:", flagged.groupby("site").size().to_dict())
+    site_rank = {s: i for i, s in enumerate(SITE_ORDER)}
+    flagged["__site_order__"] = flagged["site"].map(site_rank).fillna(99)
+    flagged = flagged.sort_values(["__site_order__", "min_median"], kind="stable").drop(columns="__site_order__")
+    per_site = {s: int((flagged["site"] == s).sum()) for s in SITE_ORDER if (flagged["site"] == s).any()}
+    print(f"  per-site counts: {per_site}")
     print("  rows flagged low-count (sorted by site, then min_median asc):")
     cols = ["site", feat, arm_a, arm_b, "min_median", "log2_FC", "p_value", "p_adj"]
     _print_group("low-count rows (full list)", flagged, cols)
@@ -113,6 +159,7 @@ def select_wilcoxon(df: pd.DataFrame, top_n: int = 5,
     feat = _feature_col(df)
     df, arm_a, arm_b = _wilcoxon_with_lowcount(df, low_count_threshold)
     df["abs_effect"] = df["log2_FC"].abs()
+    df = _sort_by_site(df)
 
     _print_lowcount_audit(df, feat, arm_a, arm_b, low_count_threshold)
 
@@ -132,12 +179,51 @@ def select_wilcoxon(df: pd.DataFrame, top_n: int = 5,
 
 
 # -----------------------------------------------------------------------------
+# Rare-k flag (fisher_aa + fisher_codon)
+#   A row is flagged `rare-aa` / `rare-codon` when BWM_count < rare_k OR
+#   control_count < rare_k. This mirrors the qmd flag-glossary rule and the
+#   audit printed by `cross_tp_summary_checker.py` (which aggregates the
+#   per-timepoint flag into the cross-tp suffix `rare-aa (d0, d10)`).
+# -----------------------------------------------------------------------------
+
+def _fisher_with_rareflag(df: pd.DataFrame, rare_k: int,
+                          rare_col: str) -> pd.DataFrame:
+    """Add a boolean `<rare_col>` column to `df`.
+
+    Returns a copy; does not mutate the caller's DataFrame.
+    """
+    df = df.copy()
+    df[rare_col] = (df["BWM_count"] < rare_k) | (df["control_count"] < rare_k)
+    return df
+
+
+def _print_rare_audit(df: pd.DataFrame, rare_k: int, rare_col: str) -> None:
+    """Pre-filter audit: how many rows in the CSV trip the rare-k threshold."""
+    print()
+    print(f"### {rare_col.replace('_', '-')} audit  "
+          f"(rule: BWM_count < {rare_k} OR control_count < {rare_k})")
+    flagged = df[df[rare_col]].copy()
+    print(f"  {len(flagged)} of {len(df)} rows fall below the threshold.")
+    if flagged.empty:
+        return
+    per_site = {s: int((flagged["site"] == s).sum())
+                for s in SITE_ORDER if (flagged["site"] == s).any()}
+    print(f"  per-site counts: {per_site}")
+
+
+# -----------------------------------------------------------------------------
 # #9: per_timepoint_fisher (AA)
 #   Rule: Rows with p_adj < 0.05; up to 5 per direction (sign of log2_OR);
 #         ranked by |log2_OR| desc. No tiebreak needed (Fisher p's distinct).
+#
+#   Rare-aa flag: a row is flagged `rare_aa` when BWM_count < rare_k OR
+#   control_count < rare_k (default 100). Included as a column in the
+#   printed Top-hits sub-tables so the script's classification can be
+#   compared directly against the `flag` column in the matching Olive .qmd.
 # -----------------------------------------------------------------------------
 
-def select_fisher_aa(df: pd.DataFrame, top_n: int = 5, p_thresh: float = 0.05) -> None:
+def select_fisher_aa(df: pd.DataFrame, top_n: int = 5, p_thresh: float = 0.05,
+                     rare_k: int = 100) -> None:
     feat = _feature_col(df)
     df = df.copy()
     # Takes the odds ratio and replaces any 0 values with NaN to avoid -inf in log2, then computes log2_OR
@@ -146,8 +232,16 @@ def select_fisher_aa(df: pd.DataFrame, top_n: int = 5, p_thresh: float = 0.05) -
     df["abs_effect"] = df["log2_OR"].abs()
     # Drop rows where log2_OR is NaN (original odds_ratio was 0)
     df = df.dropna(subset=["log2_OR"])
+    # Add the rare-aa flag column BEFORE the p_adj filter so the audit
+    # totals reflect the full CSV (matches how the wilcoxon low-count audit
+    # reports against the pre-filter row set).
+    df = _fisher_with_rareflag(df, rare_k, rare_col="rare_aa")
+
+    _print_rare_audit(df, rare_k, rare_col="rare_aa")
+
     # Filter rows based on the adjusted p-value threshold
     df = df[df["p_adj"] < p_thresh]
+    df = _sort_by_site(df, "timepoint")
 
     # Group by timepoint and site, then apply the selection rules per group
     for (tp, site), g in df.groupby(["timepoint", "site"], sort=False):
@@ -161,17 +255,23 @@ def select_fisher_aa(df: pd.DataFrame, top_n: int = 5, p_thresh: float = 0.05) -
             _print_group(
                 f"{tp}, site {site} -- {direction}",
                 picked,
-                [feat, "log2_OR", "p_value", "p_adj"],
+                [feat, "log2_OR", "p_value", "p_adj",
+                 "BWM_count", "control_count", "rare_aa"],
             )
 
 
 # -----------------------------------------------------------------------------
 # #10: per_timepoint_fisher (codon)
 #   Rule: same as #9 + additional filter BWM_count + control_count >= 50.
+#   Rare-codon flag: same rule as fisher_aa (BWM_count < rare_k OR
+#   control_count < rare_k). The rare-k flag and the k_min filter are
+#   separate concerns -- a row can pass k_min (e.g. combined_k = 60 split
+#   55/5) yet still be rare-codon (ctrl_k = 5 < 100).
 # -----------------------------------------------------------------------------
 
 def select_fisher_codon(df: pd.DataFrame, top_n: int = 5,
-                        p_thresh: float = 0.05, k_min: int = 50) -> None:
+                        p_thresh: float = 0.05, k_min: int = 50,
+                        rare_k: int = 100) -> None:
     # Feature column is "codon" for this CSV, but we use the same helper to find it
     feat = _feature_col(df)
     df = df.copy()
@@ -183,6 +283,10 @@ def select_fisher_codon(df: pd.DataFrame, top_n: int = 5,
     df["combined_k"] = df["BWM_count"] + df["control_count"]
     # Drop rows where log2_OR is NaN (original odds_ratio was 0)
     df = df.dropna(subset=["log2_OR"])
+
+    # Rare-codon audit (pre k_min filter, so totals reflect the full CSV).
+    df = _fisher_with_rareflag(df, rare_k, rare_col="rare_codon")
+    _print_rare_audit(df, rare_k, rare_col="rare_codon")
 
     # Audit: report what the k_min threshold removes before ranking
     below_k = df[df["combined_k"] < k_min]
@@ -196,6 +300,7 @@ def select_fisher_codon(df: pd.DataFrame, top_n: int = 5,
 
     # Filter rows based on the adjusted p-value threshold and the combined count threshold
     df = df[(df["p_adj"] < p_thresh) & (df["combined_k"] >= k_min)]
+    df = _sort_by_site(df, "timepoint")
     for (tp, site), g in df.groupby(["timepoint", "site"], sort=False):
         for direction, sub in (
             ("Enriched (log2_OR > 0)", g[g["log2_OR"] > 0]),
@@ -205,7 +310,8 @@ def select_fisher_codon(df: pd.DataFrame, top_n: int = 5,
             _print_group(
                 f"{tp}, site {site} -- {direction}",
                 picked,
-                [feat, "log2_OR", "combined_k", "p_value", "p_adj"],
+                [feat, "log2_OR", "combined_k", "p_value", "p_adj",
+                 "BWM_count", "control_count", "rare_codon"],
             )
 
 
@@ -226,6 +332,7 @@ def select_tfwc(df: pd.DataFrame, top_n: int = 5,
     df["abs_effect"] = df["log2_OR"].abs()
     # Drop rows where log2_OR is NaN (original odds_ratio was 0)
     df = df.dropna(subset=["log2_OR"])
+    df = _sort_by_site(df, "condition")
 
     # Group by condition and site, then apply the selection rules per group
     for (cond, site), g in df.groupby(["condition", "site"], sort=False):
@@ -283,6 +390,7 @@ def _select_binom_impl(df: pd.DataFrame, top_n: int, k_min: int, p_thresh: float
     df = df.copy()
     df["abs_effect"] = df["log2_enrichment"].abs()
     df = df[(df["observed_count"] >= k_min) & (df["p_adj"] < p_thresh)]
+    df = _sort_by_site(df, "group")
     for (group, site), g in df.groupby(["group", "site"], sort=False):
         for direction, sub in (
             ("Enriched (log2_enrichment > 0)", g[g["log2_enrichment"] > 0]),
@@ -325,6 +433,12 @@ def main() -> int:
                              "if min(median_arm_A, median_arm_B) is strictly less "
                              "than this value (default 0.005, matching Dylan's "
                              "rare-codon `low-count` rule)")
+    parser.add_argument("--rare-k-threshold", type=int, default=100,
+                        help="fisher_aa / fisher_codon only: a row is flagged "
+                             "`rare_aa` / `rare_codon` if BWM_count or "
+                             "control_count is strictly less than this value "
+                             "(default 100, matching the Olive flag-glossary "
+                             "rule for rare-aa / rare-codon)")
     args = parser.parse_args()
 
     if not args.csv.is_file():
@@ -340,6 +454,9 @@ def main() -> int:
     if args.family == "wilcoxon":
         FAMILY_MAP[args.family](df, top_n=args.top_n,
                                 low_count_threshold=args.low_count_threshold)
+    elif args.family in ("fisher_aa", "fisher_codon"):
+        FAMILY_MAP[args.family](df, top_n=args.top_n,
+                                rare_k=args.rare_k_threshold)
     else:
         FAMILY_MAP[args.family](df, top_n=args.top_n)
     return 0

@@ -1,7 +1,7 @@
 ---
 title: "per_timepoint_fisher_aa — Olive report"
 subtitle: "ribostall stall_sites — enrichment stats"
-date: 2026-05-18
+date: 2026-05-21
 format:
   html:
     toc: true
@@ -14,7 +14,7 @@ format:
     include-in-header:
       text: |
         \usepackage{needspace}
-tbl-colwidths: [26, 20, 17, 17, 20]
+tbl-colwidths: [8, 22, 18, 16, 16, 20]
 execute:
   echo: false
 ---
@@ -56,9 +56,9 @@ The day-0 dominance should be read as power-modulated, not as direction-of-effec
 
 ## Top hits
 
-The effect column is `log2_OR` (the log2 of the `odds_ratio` column). Direction is fixed by the BWM-vs-control contingency layout: positive log2(OR) = BWM-enriched, negative = BWM-depleted. `p_value` is the raw two-sided Fisher's exact p; `p_adj` is BH-corrected within each (timepoint, site) family of 20 AAs. Sub-tables below are split per-direction within each (timepoint, site) group.
+The effect column is `log2_OR` (the log2 of the `odds_ratio` column). Direction is fixed by the BWM-vs-control contingency layout: positive log2(OR) = BWM-enriched, negative = BWM-depleted. `p_value` is the raw two-sided Fisher's exact p; `p_adj` is BH-corrected within each (timepoint, site) family of 20 AAs. Tables below merge all three ribosome sites and are split per-direction within each timepoint.
 
-**Inclusion criterion.** An amino acid appears in a sub-table only if its `p_adj` is below 0.10 within its own (timepoint, site) family of 20 — i.e. it is at least nominally significant after BH correction inside that family. Cells that do not clear `p_adj` < 0.10 are not displayed here even when their raw `|log2_OR|` is large. Up to 5 rows are shown per direction, ranked by `|log2_OR|` descending. A `### day_10, P site` block appears below with a no-rows note because no day-10 P amino acid clears the threshold.
+**Inclusion criterion.** An amino acid appears in a table only if its `p_adj` is below 0.05 within its own (timepoint, site) family of 20 — i.e. it clears BH-FDR correction inside that family. Every row clearing `p_adj` < 0.05 is shown (no row cap). Each table merges all three ribosome sites for a (timepoint, direction) pair; rows are grouped by `site` in A -> P -> E order and within each site sorted by `|log2_OR|` descending. If no rows clear the threshold for a given (timepoint, direction) combination, that table is omitted entirely.
 
 The two summary tables that follow the per-(timepoint, site) blocks (cross-timepoint direction concordance and direction-flip cells) are reproduced under "Cross-timepoint summary" at the end of this section.
 
@@ -66,225 +66,148 @@ The two summary tables that follow the per-(timepoint, site) blocks (cross-timep
 \needspace{14\baselineskip}
 ```
 
-### day_0, A site — Enriched (BWM > control)
+### day_0 — Enriched (BWM > control)
 
-| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- |
-| K (lysine) | +0.439 (OR=1.356) | 1.16e-10 | 2.31e-09 |  |
-| R (arginine) | +0.381 (OR=1.302) | 3.50e-06 | 2.34e-05 |  |
-| G (glycine) | +0.283 (OR=1.217) | 1.35e-04 | 6.72e-04 |  |
-
-```{=latex}
-\needspace{14\baselineskip}
-```
-
-### day_0, A site — Depleted (BWM < control)
-
-| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- |
-| N (asparagine) | -0.755 (OR=0.593) | 3.17e-09 | 3.17e-08 |  |
-| T (threonine) | -0.339 (OR=0.791) | 1.50e-03 | 5.98e-03 |  |
-| F (phenylalanine) | -0.321 (OR=0.800) | 5.90e-03 | 1.98e-02 |  |
-| D (aspartate) | -0.203 (OR=0.869) | 1.47e-02 | 4.21e-02 |  |
+| site| amino acid| effect (`log2_OR`)| raw p (`p_value`)| adjusted p (`p_adj`)| flag|
+| ---| ---| ---| ---| ---| --- |
+| A| K (lysine)| +0.439| 1.16e-10| 2.31e-09| |
+| A| R (arginine)| +0.381| 3.50e-06| 2.34e-05| |
+| A| G (glycine)| +0.283| 1.35e-04| 6.72e-04| |
+| P| R (arginine)| +0.519| 2.32e-10| 4.65e-09| |
+| P| K (lysine)| +0.360| 1.05e-07| 1.05e-06| |
+| P| G (glycine)| +0.195| 7.10e-03| 2.96e-02| |
+| E| R (arginine)| +0.482| 1.09e-08| 1.09e-07| |
+| E | K (lysine) | +0.480 | 1.43e-16 | 2.87e-15 | iid-amp |
 
 ```{=latex}
 \needspace{14\baselineskip}
 ```
 
-### day_0, P site — Enriched (BWM > control)
+### day_0 — Depleted (BWM < control)
 
-| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- |
-| R (arginine) | +0.519 (OR=1.433) | 2.32e-10 | 4.65e-09 |  |
-| K (lysine) | +0.360 (OR=1.283) | 1.05e-07 | 1.05e-06 |  |
-| G (glycine) | +0.195 (OR=1.145) | 7.10e-03 | 2.96e-02 |  |
-
-```{=latex}
-\needspace{14\baselineskip}
-```
-
-### day_0, P site — Depleted (BWM < control)
-
-| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- |
-| P (proline) | -0.460 (OR=0.727) | 1.95e-05 | 1.30e-04 |  |
-| S (serine) | -0.281 (OR=0.823) | 7.40e-03 | 2.96e-02 |  |
-| T (threonine) | -0.224 (OR=0.856) | 2.48e-02 | 7.07e-02 |  |
-| E (glutamate) | -0.192 (OR=0.875) | 1.68e-02 | 5.59e-02 |  |
+| site| amino acid| effect (`log2_OR`)| raw p (`p_value`)| adjusted p (`p_adj`)| flag|
+| ---| ---| ---| ---| ---| --- |
+| A| N (asparagine)| -0.755| 3.17e-09| 3.17e-08| |
+| A| T (threonine)| -0.339| 1.50e-03| 5.98e-03| |
+| A| F (phenylalanine)| -0.321| 5.90e-03| 1.98e-02| |
+| A| D (aspartate)| -0.203| 1.47e-02| 4.21e-02| |
+| P| P (proline)| -0.460| 1.95e-05| 1.30e-04| |
+| P| S (serine)| -0.281| 7.40e-03| 2.96e-02| |
+| E| Q (glutamine)| -0.467| 2.49e-05| 1.66e-04| |
+| E| S (serine)| -0.375| 4.53e-04| 2.26e-03| |
+| E| Y (tyrosine)| -0.371| 7.50e-03| 3.00e-02| |
+| E | T (threonine) | -0.248 | 1.43e-02 | 4.78e-02 | |
 
 ```{=latex}
 \needspace{14\baselineskip}
 ```
 
-### day_0, E site — Enriched (BWM > control)
+### day_5 — Enriched (BWM > control)
 
-| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- |
-| R (arginine) | +0.482 (OR=1.396) | 1.09e-08 | 1.09e-07 |  |
-| K (lysine) | +0.480 (OR=1.395) | 1.43e-16 | 2.87e-15 | iid-amp |
-
-```{=latex}
-\needspace{14\baselineskip}
-```
-
-### day_0, E site — Depleted (BWM < control)
-
-| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- |
-| Q (glutamine) | -0.467 (OR=0.723) | 2.49e-05 | 1.66e-04 |  |
-| S (serine) | -0.375 (OR=0.771) | 4.53e-04 | 2.26e-03 |  |
-| Y (tyrosine) | -0.371 (OR=0.773) | 7.50e-03 | 3.00e-02 |  |
-| T (threonine) | -0.248 (OR=0.842) | 1.43e-02 | 4.78e-02 |  |
+| site| amino acid| effect (`log2_OR`)| raw p (`p_value`)| adjusted p (`p_adj`)| flag|
+| ---| ---| ---| ---| ---| --- |
+| A| L (leucine)| +0.280| 2.49e-04| 4.98e-03| |
+| P| K (lysine)| +0.211| 2.20e-03| 4.43e-02| |
+| E| P (proline)| +0.358| 4.89e-04| 4.93e-03| |
+| E | A (alanine) | +0.299 | 1.40e-03 | 9.35e-03 | |
 
 ```{=latex}
 \needspace{14\baselineskip}
 ```
 
-### day_5, A site — Enriched (BWM > control)
+### day_5 — Depleted (BWM < control)
 
-| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- |
-| L (leucine) | +0.280 (OR=1.215) | 2.49e-04 | 4.98e-03 |  |
-| P (proline) | +0.236 (OR=1.177) | 1.84e-02 | 8.62e-02 |  |
-
-```{=latex}
-\needspace{14\baselineskip}
-```
-
-### day_5, A site — Depleted (BWM < control)
-
-| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- |
-| N (asparagine) | -0.255 (OR=0.838) | 7.80e-03 | 5.17e-02 |  |
-| E (glutamate) | -0.180 (OR=0.883) | 5.50e-03 | 5.17e-02 |  |
-| I (isoleucine) | -0.177 (OR=0.884) | 2.16e-02 | 8.62e-02 |  |
+| site| amino acid| effect (`log2_OR`)| raw p (`p_value`)| adjusted p (`p_adj`)| flag|
+| ---| ---| ---| ---| ---| --- |
+| E| G (glycine)| -0.202| 8.30e-03| 3.32e-02| |
+| E| K (lysine)| -0.195| 4.93e-04| 4.93e-03| |
+| E | E (glutamate) | -0.174 | 7.20e-03 | 3.32e-02 | |
 
 ```{=latex}
 \needspace{14\baselineskip}
 ```
 
-### day_5, P site — Enriched (BWM > control)
+### day_10 — Enriched (BWM > control)
 
-| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- |
-| K (lysine) | +0.211 (OR=1.157) | 2.20e-03 | 4.43e-02 |  |
-
-```{=latex}
-\needspace{14\baselineskip}
-```
-
-### day_5, P site — Depleted (BWM < control)
-
-| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- |
-| V (valine) | -0.196 (OR=0.873) | 8.40e-03 | 8.38e-02 |  |
+| site| amino acid| effect (`log2_OR`)| raw p (`p_value`)| adjusted p (`p_adj`)| flag|
+| ---| ---| ---| ---| ---| --- |
+| E | R (arginine) | +0.388 | 9.29e-05 | 1.86e-03 | |
 
 ```{=latex}
 \needspace{14\baselineskip}
 ```
 
-### day_5, E site — Enriched (BWM > control)
+### day_10 — Depleted (BWM < control)
 
-| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- |
-| P (proline) | +0.358 (OR=1.282) | 4.89e-04 | 4.93e-03 |  |
-| A (alanine) | +0.299 (OR=1.230) | 1.40e-03 | 9.35e-03 |  |
-| T (threonine) | +0.219 (OR=1.164) | 1.81e-02 | 6.05e-02 |  |
+| site| amino acid| effect (`log2_OR`)| raw p (`p_value`)| adjusted p (`p_adj`)| flag|
+| ---| ---| ---| ---| ---| --- |
+| A | A (alanine) | -0.415 | 1.45e-04 | 2.91e-03 | |
 
-```{=latex}
-\needspace{14\baselineskip}
-```
-
-### day_5, E site — Depleted (BWM < control)
-
-| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- |
-| G (glycine) | -0.202 (OR=0.869) | 8.30e-03 | 3.32e-02 |  |
-| K (lysine) | -0.195 (OR=0.874) | 4.93e-04 | 4.93e-03 |  |
-| E (glutamate) | -0.174 (OR=0.886) | 7.20e-03 | 3.32e-02 |  |
-
-```{=latex}
-\needspace{14\baselineskip}
-```
-
-### day_10, A site — Depleted (BWM < control)
-
-| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- |
-| A (alanine) | -0.415 (OR=0.750) | 1.45e-04 | 2.91e-03 |  |
-
-### day_10, P site
-
-*(no rows clear `p_adj` < 0.10; closest are P:I, P:K, P:L all at `p_adj` = 0.148, log2(OR) ~+0.16 to +0.21.)*
-
-```{=latex}
-\needspace{14\baselineskip}
-```
-
-### day_10, E site — Enriched (BWM > control)
-
-| amino acid | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- |
-| R (arginine) | +0.388 (OR=1.308) | 9.29e-05 | 1.86e-03 |  |
 
 ### Cross-timepoint summary (two ranking tables)
 
 #### Cross-timepoint direction concordance
 
-21 of 60 (site, aa) cells hold the same OR direction across all 3 timepoints. Below the cells are split by displayed mean-log2OR direction into BWM-enriched and BWM-depleted sub-tables; each is sorted by `#sig (FDR<0.05)` descending, then by `|mean log2OR|` descending. `#sig` is the count (out of 3) of timepoints where the row reaches `p_adj` < 0.05; `min p_adj` is the smallest of the 3 per-timepoint values.
+21 of 60 (site, aa) cells hold the same OR direction across all 3 timepoints. Below the cells are split by displayed mean-log2OR direction into BWM-enriched and BWM-depleted sub-tables; each is sorted by `#sig` descending, then by `|mean log2OR|` descending. `#sig` is the count (out of 3) of timepoints where the row reaches `p_adj` < 0.05 (the FDR-corrected threshold); `min p_adj` is the smallest of the 3 per-timepoint values. The `per-tp log2OR` column lists the three per-timepoint values in chronological order (day 0, day 5, day 10); `\*` marks each per-timepoint value at `p_adj` < 0.05.
 
 ##### Concordance — BWM-enriched (mean log2OR > 0)
 
-| Amino Acid | mean log2OR | per-tp log2OR (d0, d5, d10) | #sig (FDR<0.05) | min p_adj | flag |
-| --- | --- | --- | --- | --- | --- |
-| P:K | +0.253 | +0.36, +0.21, +0.19 | 2/3 | 1.05e-06 | multi-tp-coherent |
-| P:R | +0.239 | +0.52, +0.09, +0.10 | 1/3 | 4.65e-09 | single-tp-driven |
-| A:R | +0.218 | +0.38, +0.13, +0.15 | 1/3 | 2.34e-05 | single-tp-driven |
-| A:W | +0.172 | +0.09, +0.12, +0.31 | 0/3 | 3.96e-01 | rare-aa |
-| A:H | +0.153 | +0.23, +0.11, +0.12 | 0/3 | 1.90e-01 |  |
-| P:L | +0.117 | +0.04, +0.11, +0.20 | 0/3 | 1.48e-01 |  |
-| E:L | +0.065 | +0.02, +0.15, +0.02 | 0/3 | 1.19e-01 |  |
+| Amino Acid | mean log2OR | per-tp log2OR | #sig | min p_adj | flag |
+| --- | --- | :---: | --- | --- | --- |
+| P:K | +0.253 | +0.36\* +0.21\* +0.19 | 2/3 | 1.05e-06 | |
+| P:R | +0.239 | +0.52\* +0.09 +0.10 | 1/3 | 4.65e-09 | |
+| A:R | +0.218 | +0.38\* +0.13 +0.15 | 1/3 | 2.34e-05 | |
+| A:W | +0.172 | +0.09 +0.12 +0.31 | 0/3 | 3.96e-01 | rare-aa (0, 5, 10) |
+| A:H | +0.153 | +0.23 +0.11 +0.12 | 0/3 | 1.90e-01 | |
+| P:L | +0.117 | +0.04 +0.11 +0.20 | 0/3 | 1.48e-01 | |
+| E:L | +0.065 | +0.02 +0.15 +0.02 | 0/3 | 1.19e-01 | |
+
+: {tbl-colwidths="[14, 14, 30, 14, 14, 14]"}
 
 ##### Concordance — BWM-depleted (mean log2OR < 0)
 
-| Amino Acid | mean log2OR | per-tp log2OR (d0, d5, d10) | #sig (FDR<0.05) | min p_adj | flag |
-| --- | --- | --- | --- | --- | --- |
-| A:T | -0.178 | -0.34, -0.05, -0.14 | 1/3 | 5.98e-03 | single-tp-driven |
-| P:S | -0.136 | -0.28, -0.11, -0.02 | 1/3 | 2.96e-02 | single-tp-driven |
-| E:E | -0.080 | -0.05, -0.17, -0.02 | 1/3 | 3.32e-02 | single-tp-driven |
-| P:T | -0.166 | -0.22, -0.04, -0.23 | 0/3 | 7.07e-02 |  |
-| A:C | -0.146 | -0.08, -0.14, -0.22 | 0/3 | 4.95e-01 | rare-aa |
-| P:A | -0.137 | -0.09, -0.13, -0.19 | 0/3 | 1.64e-01 |  |
-| P:C | -0.118 | -0.16, -0.12, -0.07 | 0/3 | 6.49e-01 | rare-aa |
-| P:E | -0.108 | -0.19, -0.12, -0.01 | 0/3 | 5.59e-02 |  |
-| P:D | -0.091 | -0.10, -0.02, -0.15 | 0/3 | 1.64e-01 |  |
-| E:D | -0.084 | -0.12, -0.05, -0.08 | 0/3 | 3.47e-01 |  |
-| P:N | -0.049 | -0.09, -0.01, -0.05 | 0/3 | 5.72e-01 |  |
-| P:F | -0.046 | -0.01, -0.06, -0.07 | 0/3 | 7.34e-01 |  |
-| E:H | -0.045 | -0.04, -0.05, -0.04 | 0/3 | 7.43e-01 |  |
-| E:N | -0.043 | -0.04, -0.05, -0.04 | 0/3 | 5.96e-01 |  |
+| Amino Acid | mean log2OR | per-tp log2OR | #sig | min p_adj | flag |
+| --- | --- | :---: | --- | --- | --- |
+| A:T | -0.178 | -0.34\* -0.05 -0.14 | 1/3 | 5.98e-03 | |
+| P:S | -0.136 | -0.28\* -0.11 -0.02 | 1/3 | 2.96e-02 | |
+| E:E | -0.080 | -0.05 -0.17\* -0.02 | 1/3 | 3.32e-02 | |
+| P:T | -0.166 | -0.22 -0.04 -0.23 | 0/3 | 7.07e-02 | |
+| A:C | -0.146 | -0.08 -0.14 -0.22 | 0/3 | 4.95e-01 | rare-aa (0, 10) |
+| P:A | -0.137 | -0.09 -0.13 -0.19 | 0/3 | 1.64e-01 | |
+| P:C | -0.118 | -0.16 -0.12 -0.07 | 0/3 | 6.49e-01 | rare-aa (0, 10) |
+| P:E | -0.108 | -0.19 -0.12 -0.01 | 0/3 | 5.59e-02 | |
+| P:D | -0.091 | -0.10 -0.02 -0.15 | 0/3 | 1.64e-01 | |
+| E:D | -0.084 | -0.12 -0.05 -0.08 | 0/3 | 3.47e-01 | |
+| P:N | -0.049 | -0.09 -0.01 -0.05 | 0/3 | 5.72e-01 | |
+| P:F | -0.046 | -0.01 -0.06 -0.07 | 0/3 | 7.34e-01 | |
+| E:H | -0.045 | -0.04 -0.05 -0.04 | 0/3 | 7.43e-01 | |
+| E:N | -0.043 | -0.04 -0.05 -0.04 | 0/3 | 5.96e-01 | |
+
+: {tbl-colwidths="[14, 14, 30, 14, 14, 14]"}
 
 #### Direction-flip cells across timepoints
 
-39 of 60 (site, aa) cells show at least one sign change across the 3 timepoint values. Only 1 (E:K) has the flip register at `p_adj` < 0.05 on both opposite-sign rows — flagged `both-flip-sig` below. `#sig (FDR<0.05)` is the count (out of 3 timepoints) of rows reaching `p_adj` < 0.05; `*` marks each per-timepoint value that reaches the threshold. Sorted by `#sig` descending, then by max single-cell `|log2OR|` descending.
+39 of 60 (site, aa) cells show at least one sign change across the 3 timepoint values. Only 1 (E:K) has the flip register at `p_adj` < 0.05 on both opposite-sign rows — flagged `both-flip-sig` below. `#sig` is the count (out of 3 timepoints) of rows reaching `p_adj` < 0.05 (the FDR-corrected threshold); the `per-tp log2OR` column lists the three per-timepoint values in chronological order (day 0, day 5, day 10); `\*` marks each per-timepoint value that reaches the threshold. Sorted by `#sig` descending, then by max single-cell `|log2OR|` descending.
 
-| Amino Acid | log2OR range | per-tp log2OR (d0, d5, d10) | #sig (FDR<0.05) | flag |
-| --- | --- | --- | --- | --- |
-| E:R | [-0.096, +0.482] | +0.48*, -0.10, +0.39* | 2/3 |  |
-| E:K | [-0.195, +0.480] | +0.48*, -0.19*, -0.04 | 2/3 | both-flip-sig; iid-amp (d0) |
-| A:N | [-0.755, +0.297] | -0.75*, -0.25, +0.30 | 1/3 |  |
-| E:Q | [-0.467, +0.120] | -0.47*, -0.06, +0.12 | 1/3 |  |
-| P:P | [-0.460, +0.025] | -0.46*, +0.03, -0.22 | 1/3 |  |
-| A:K | [-0.062, +0.439] | +0.44*, -0.06, +0.13 | 1/3 |  |
-| A:A | [-0.415, +0.031] | -0.08, +0.03, -0.42* | 1/3 |  |
-| E:S | [-0.375, +0.009] | -0.37*, +0.01, -0.02 | 1/3 |  |
-| E:Y | [-0.371, +0.242] | -0.37*, +0.24, +0.21 | 1/3 |  |
-| E:P | [-0.150, +0.358] | -0.15, +0.36*, -0.13 | 1/3 |  |
-| A:F | [-0.321, +0.117] | -0.32*, +0.12, -0.01 | 1/3 |  |
-| E:A | [-0.099, +0.299] | -0.08, +0.30*, -0.10 | 1/3 |  |
-| A:G | [-0.056, +0.283] | +0.28*, +0.02, -0.06 | 1/3 |  |
-| A:L | [-0.147, +0.280] | -0.02, +0.28*, -0.15 | 1/3 |  |
-| E:T | [-0.248, +0.219] | -0.25*, +0.22, -0.12 | 1/3 |  |
+| Amino Acid | log2OR range | per-tp log2OR | #sig | flag |
+| --- | --- | :---: | --- | --- |
+| E:R | [-0.096, +0.482] | +0.48\* -0.10 +0.39\* | 2/3 | |
+| E:K | [-0.195, +0.480] | +0.48\* -0.19\* -0.04 | 2/3 | both-flip-sig; iid-amp (0) |
+| A:N | [-0.755, +0.297] | -0.75\* -0.25 +0.30 | 1/3 | |
+| E:Q | [-0.467, +0.120] | -0.47\* -0.06 +0.12 | 1/3 | |
+| P:P | [-0.460, +0.025] | -0.46\* +0.03 -0.22 | 1/3 | |
+| A:K | [-0.062, +0.439] | +0.44\* -0.06 +0.13 | 1/3 | |
+| A:A | [-0.415, +0.031] | -0.08 +0.03 -0.42\* | 1/3 | |
+| E:S | [-0.375, +0.009] | -0.37\* +0.01 -0.02 | 1/3 | |
+| E:Y | [-0.371, +0.242] | -0.37\* +0.24 +0.21 | 1/3 | |
+| E:P | [-0.150, +0.358] | -0.15 +0.36\* -0.13 | 1/3 | |
+| A:F | [-0.321, +0.117] | -0.32\* +0.12 -0.01 | 1/3 | |
+| E:A | [-0.099, +0.299] | -0.08 +0.30\* -0.10 | 1/3 | |
+| A:G | [-0.056, +0.283] | +0.28\* +0.02 -0.06 | 1/3 | |
+| A:L | [-0.147, +0.280] | -0.02 +0.28\* -0.15 | 1/3 | |
+| E:T | [-0.248, +0.219] | -0.25\* +0.22 -0.12 | 1/3 | |
+
+: {tbl-colwidths="[14, 22, 30, 14, 20]"}
 
 (15 highest-magnitude flip cells shown; 24 more flip cells below the cutoff (#sig, |log2OR|) = (1/3, 0.248) are in the data but not listed.)
 
@@ -292,8 +215,6 @@ The two summary tables that follow the per-(timepoint, site) blocks (cross-timep
 
 - `iid-amp` — single per-timepoint `p_adj` falls below 1e-10. The magnitude of `-log10(p_adj)` is inflated by Fisher's anti-conservative behaviour at large pooled N + correlated stall positions; rank by effect size, not by p magnitude.
 - `rare-aa` — at least one of the 3 per-timepoint rows for this cell has `BWM_k` < 100 (or similarly low `ctrl_k`). Odds-ratio estimate is unstable; large |log2OR| values may reflect sampling noise rather than biology.
-- `multi-tp-coherent` — cell reaches `p_adj` < 0.05 in 2 or 3 of 3 timepoints; signal is reproducible across the time axis.
-- `single-tp-driven` — cell reaches `p_adj` < 0.05 in exactly 1 of 3 timepoints; the cross-timepoint mean is carried by that one timepoint and is exploratory across the others.
 - `both-flip-sig` — direction-flip cell where both opposite-sign timepoint rows reach `p_adj` < 0.05; the cell records a genuine FDR-significant sign change rather than a sub-threshold near-zero crossing. Only E:K qualifies in this file.
 
 ## Numbers at a glance
@@ -305,10 +226,10 @@ The two summary tables that follow the per-(timepoint, site) blocks (cross-timep
 - Cells with p_adj < 1e-10: 1 of 180 (only day_0 E K); flagged `iid-amp`
 - Cross-(timepoint, site) BH families and their n_sig at p_adj<0.05:
 
-| timepoint | A | P | E | BWM_total | control_total | ctrl:BWM ratio |
-| --- | --- | --- | --- | --- | --- | --- |
-| day_0 | 7/20 (min p 2.31e-09) | 5/20 (min p 4.65e-09) | 6/20 (min p 2.87e-15) | 6091 | 27732 | 4.55 |
-| day_5 | 1/20 (min p 4.98e-03) | 1/20 (min p 4.43e-02) | 5/20 (min p 4.93e-03) | 11935 | 11177 | 0.94 |
+| timepoint| A| P| E| BWM_total| control_total| ctrl:BWM ratio|
+| ---| ---| ---| ---| ---| ---| ---|
+| day_0| 7/20 (min p 2.31e-09)| 5/20 (min p 4.65e-09)| 6/20 (min p 2.87e-15)| 6091| 27732| 4.55|
+| day_5| 1/20 (min p 4.98e-03)| 1/20 (min p 4.43e-02)| 5/20 (min p 4.93e-03)| 11935| 11177| 0.94|
 | day_10 | 1/20 (min p 2.91e-03) | 0/20 (min p 1.48e-01) | 1/20 (min p 1.86e-03) | 6945 | 8788 | 1.27 |
 
 - Cross-timepoint (site, aa) cells, all 3 timepoints same OR direction: 21/60 (7 BWM-enriched, 14 BWM-depleted)

@@ -19,7 +19,7 @@ Idempotent: safe to re-run; existing copies are overwritten. Originals under
 prints the offending paths if any expected source file is missing.
 
 Usage:
-    python scripts/_for_claude_build_c_elegan_upload.py
+    python for_claude_scripts/_for_claude_build_c_elegan_upload.py
 """
 
 import re

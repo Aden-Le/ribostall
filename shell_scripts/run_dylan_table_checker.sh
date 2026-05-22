@@ -32,6 +32,14 @@
 # odds_ratio, p_adj, BWM_count, control_count`) so any future per-timepoint
 # fisher CSV can be added by copying one of the two-line blocks below and
 # swapping the path.
+#
+# The `rare-aa` / `rare-codon` flag printed by 9b/10b in those summary
+# tables is suffixed with the chronological list of timepoints that trip
+# the rare-k threshold (e.g. `rare-aa (d0, d10)`), so the resolved label
+# can be pasted straight back into the matching Concordance / Direction-
+# flip rows in the .qmd without a second lookup. Per-timepoint Top-hits
+# sub-tables (8/9/10/...) keep the bare `rare-aa` / `rare-codon` flag --
+# the section header already names the TP.
 #----------------------------------------------------
 
 # When running the whole script via bash, cd to repo root so the relative

@@ -28,7 +28,12 @@ Each glyph is a single codon at one (condition, site) BH-FDR family of 61; horiz
 
 - **CSV:** `timepoint_fisher_within_condition_d10_vs_d5_codon.csv`
 - **Family (from `_INDEX.md`):** `timepoint_fisher_within_condition`
-- **Sister CSV(s):** `timepoint_fisher_within_condition_d10_vs_d0_aa.csv`, `timepoint_fisher_within_condition_d10_vs_d0_codon.csv`, `timepoint_fisher_within_condition_d10_vs_d5_aa.csv`, `timepoint_fisher_within_condition_d5_vs_d0_aa.csv`, `timepoint_fisher_within_condition_d5_vs_d0_codon.csv`
+- **Sister CSV(s):**
+  - `timepoint_fisher_within_condition_d10_vs_d0_aa.csv`
+  - `timepoint_fisher_within_condition_d10_vs_d0_codon.csv`
+  - `timepoint_fisher_within_condition_d10_vs_d5_aa.csv`
+  - `timepoint_fisher_within_condition_d5_vs_d0_aa.csv`
+  - `timepoint_fisher_within_condition_d5_vs_d0_codon.csv`
 - **Test:** Fisher's exact (two-sided), day-10-vs-day-5 2×2 contingency per (condition, site, codon); BH-FDR within each (condition, site) family of 61 codons (source: user-confirmed)
 - **Design:** Per (condition, site, codon) 2×2 day-10-vs-day-5 contingency tested by two-sided Fisher's exact within one condition; replicates summed before the test (pseudoreplicated); BH-FDR applied independently within each of 6 (condition, site) families of 61 codons (366 tests total). The test is **within-condition**: BWM and control are tested separately and never share a contingency.
 

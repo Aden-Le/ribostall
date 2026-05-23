@@ -318,45 +318,104 @@ def select_fisher_codon(df: pd.DataFrame, top_n: int = 5,
 
 # -----------------------------------------------------------------------------
 # #11-#16: timepoint_fisher_within_condition (AA + codon)
-#   Rule: same as #9 (p_adj<0.10 + top-5 by |log2_OR|) per (condition, site);
-#         FALLBACK per cell: if <10 candidates clear FDR<0.10, drop the FDR
-#         cutoff and rank by raw p_value asc (|log2_OR| as tiebreaker).
+#   Rule: hard cutoff at `p_adj < p_thresh` (default 0.05) per (condition,
+#         site); NO top-N cap and NO fallback -- every row clearing the
+#         threshold is printed. Within each cell, rows are ranked by p_adj
+#         ascending with |log2_OR| descending as the tie-breaker. Override
+#         the cutoff via `--tfwc-p-adj-threshold`.
+#
+#   Rare-low-count flag: a row is flagged `rare_low_count` when at least one
+#   of its two `day_X_count` columns is below a per-condition stability
+#   threshold. Defaults match the qmd flag glossary -- AA resolution: < 100
+#   in BWM, < 200 in control; codon resolution: < 50 in both. Override via
+#   `--rare-low-bwm-threshold` / `--rare-low-control-threshold`. The flag is
+#   included as a column in the Top-hits sub-tables so the script's
+#   classification can be compared directly against the `rare-aa-low-count`
+#   / `rare-codon-low-count` flag column in the matching Olive .qmd.
 # -----------------------------------------------------------------------------
 
-def select_tfwc(df: pd.DataFrame, top_n: int = 5,
-                p_thresh: float = 0.10, min_candidates: int = 10) -> None:
+def _tfwc_day_cols(df: pd.DataFrame) -> tuple[str, str]:
+    """Return the pair of `day_*_count` columns (e.g. day_10_count, day_0_count)."""
+    cols = [c for c in df.columns if c.startswith("day_") and c.endswith("_count")]
+    if len(cols) != 2:
+        raise ValueError(f"expected 2 day_*_count columns, got {cols}")
+    return cols[0], cols[1]
+
+
+def _tfwc_with_rareflag(df: pd.DataFrame, low_bwm: int, low_control: int,
+                        day_a: str, day_b: str) -> pd.DataFrame:
+    """Add `min_day_count` and `rare_low_count` columns to `df`.
+
+    The rule is condition-dependent: a row is flagged when min(day_a, day_b)
+    falls below `low_bwm` for BWM rows or below `low_control` for control rows.
+    """
+    df = df.copy()
+    df["min_day_count"] = df[[day_a, day_b]].min(axis=1)
+    thresh = df["condition"].map({"BWM": low_bwm, "control": low_control})
+    df["rare_low_count"] = df["min_day_count"] < thresh
+    return df
+
+
+def _print_tfwc_rare_audit(df: pd.DataFrame, low_bwm: int, low_control: int,
+                           day_a: str, day_b: str, feat: str) -> None:
+    print()
+    print(f"### rare-low-count audit  "
+          f"(rule: min({day_a}, {day_b}) < {low_bwm} for BWM, "
+          f"< {low_control} for control)")
+    flagged = df[df["rare_low_count"]].copy()
+    print(f"  {len(flagged)} of {len(df)} rows fall below the threshold.")
+    if flagged.empty:
+        return
+    breakdown = (flagged.groupby(["condition", "site"]).size()
+                 .reindex(pd.MultiIndex.from_product(
+                     [sorted(flagged["condition"].unique()), SITE_ORDER],
+                     names=["condition", "site"]), fill_value=0)
+                 .to_dict())
+    breakdown = {k: v for k, v in breakdown.items() if v > 0}
+    print(f"  per (condition, site) counts: {breakdown}")
+    site_rank = {s: i for i, s in enumerate(SITE_ORDER)}
+    flagged["__site_order__"] = flagged["site"].map(site_rank).fillna(99)
+    flagged = (flagged.sort_values(["condition", "__site_order__", "min_day_count"],
+                                   kind="stable")
+                      .drop(columns="__site_order__"))
+    cols = ["condition", "site", feat, day_a, day_b, "min_day_count",
+            "odds_ratio", "p_adj"]
+    _print_group("rare-low-count rows (full list)", flagged, cols)
+
+
+def select_tfwc(df: pd.DataFrame, p_thresh: float = 0.05,
+                low_bwm: int = 100, low_control: int = 200) -> None:
     feat = _feature_col(df)
+    day_a, day_b = _tfwc_day_cols(df)
     df = df.copy()
     # Takes the odds ratio and replaces any 0 values with NaN to avoid -inf in log2
     df["log2_OR"] = np.log2(df["odds_ratio"].replace(0, np.nan))
-    # Take the absolute value of log2_OR for ranking purposes
     df["abs_effect"] = df["log2_OR"].abs()
-    # Drop rows where log2_OR is NaN (original odds_ratio was 0)
     df = df.dropna(subset=["log2_OR"])
+    # Tag rare-low-count BEFORE the FDR filter so the audit totals reflect the
+    # full CSV (matches how the wilcoxon low-count and fisher rare-k audits
+    # report against the pre-filter row set).
+    df = _tfwc_with_rareflag(df, low_bwm, low_control, day_a, day_b)
+    _print_tfwc_rare_audit(df, low_bwm, low_control, day_a, day_b, feat)
+
+    # Hard cutoff: keep every row with p_adj < p_thresh. No fallback, no
+    # top-N cap. Rank by p_adj asc with |log2_OR| desc as tiebreaker.
+    df = df[df["p_adj"] < p_thresh]
     df = _sort_by_site(df, "condition")
 
-    # Group by condition and site, then apply the selection rules per group
     for (cond, site), g in df.groupby(["condition", "site"], sort=False):
-        # First apply the FDR cutoff to find significant candidates, sig is a subset of g
-        sig = g[g["p_adj"] < p_thresh]
-
-        # Condition and
-        if len(sig) < min_candidates:
-            print()
-            print(f"# (condition={cond}, site={site}): only {len(sig)} candidates "
-                  f"at p_adj<{p_thresh} -> fallback to raw-p ranking, no FDR cutoff")
-            pool, sort_cols, asc = g, ["p_value", "abs_effect"], [True, False]
-        else:
-            pool, sort_cols, asc = sig, ["abs_effect"], [False]
         for direction, sub in (
-            ("Enriched (log2_OR > 0)", pool[pool["log2_OR"] > 0]),
-            ("Depleted (log2_OR < 0)", pool[pool["log2_OR"] < 0]),
+            ("Enriched (log2_OR > 0)", g[g["log2_OR"] > 0]),
+            ("Depleted (log2_OR < 0)", g[g["log2_OR"] < 0]),
         ):
-            picked = sub.sort_values(by=sort_cols, ascending=asc).head(top_n)
+            picked = sub.sort_values(by=["p_adj", "abs_effect"],
+                                     ascending=[True, False])
             _print_group(
-                f"{cond}, site {site} -- {direction}",
+                f"{cond}, site {site} -- {direction}  "
+                f"(all rows with p_adj < {p_thresh})",
                 picked,
-                [feat, "log2_OR", "p_value", "p_adj"],
+                [feat, "log2_OR", "p_value", "p_adj",
+                 day_a, day_b, "min_day_count", "rare_low_count"],
             )
 
 
@@ -440,6 +499,25 @@ def main() -> int:
                              "control_count is strictly less than this value "
                              "(default 100, matching the Olive flag-glossary "
                              "rule for rare-aa / rare-codon)")
+    parser.add_argument("--rare-low-bwm-threshold", type=int, default=None,
+                        help="tfwc family only: a BWM row is flagged "
+                             "`rare_low_count` if min(day_X_count, day_Y_count) "
+                             "is strictly less than this value (default 100 at "
+                             "AA resolution, 50 at codon resolution -- matches "
+                             "Olive flag-glossary rule for rare-aa-low-count / "
+                             "rare-codon-low-count)")
+    parser.add_argument("--rare-low-control-threshold", type=int, default=None,
+                        help="tfwc family only: a control row is flagged "
+                             "`rare_low_count` if min(day_X_count, day_Y_count) "
+                             "is strictly less than this value (default 200 at "
+                             "AA resolution, 50 at codon resolution)")
+    parser.add_argument("--tfwc-p-adj-threshold", type=float, default=0.05,
+                        help="tfwc family only: hard cutoff on p_adj for the "
+                             "per-(condition, site) Top-hits sub-tables. Every "
+                             "row with p_adj strictly less than this value is "
+                             "printed, ranked by p_adj asc with |log2_OR| desc "
+                             "as tiebreaker. No fallback and no top-N cap. "
+                             "Default 0.05.")
     args = parser.parse_args()
 
     if not args.csv.is_file():
@@ -458,6 +536,19 @@ def main() -> int:
     elif args.family in ("fisher_aa", "fisher_codon"):
         FAMILY_MAP[args.family](df, top_n=args.top_n,
                                 rare_k=args.rare_k_threshold)
+    elif args.family == "tfwc":
+        # Resolution-dependent defaults: AA -> (100, 200), codon -> (50, 50).
+        # Picked from the qmd flag glossary; CLI flags override.
+        is_aa = "amino_acid" in df.columns
+        low_bwm = args.rare_low_bwm_threshold
+        if low_bwm is None:
+            low_bwm = 100 if is_aa else 50
+        low_control = args.rare_low_control_threshold
+        if low_control is None:
+            low_control = 200 if is_aa else 50
+        # tfwc ignores --top-n (the family rule has no top-N cap).
+        FAMILY_MAP[args.family](df, p_thresh=args.tfwc_p_adj_threshold,
+                                low_bwm=low_bwm, low_control=low_control)
     else:
         FAMILY_MAP[args.family](df, top_n=args.top_n)
     return 0

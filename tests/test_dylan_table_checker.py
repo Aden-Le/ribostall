@@ -8,6 +8,8 @@ use pytest's `capsys` fixture and assert on substrings of stdout.
 
 from __future__ import annotations
 
+import sys
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -383,47 +385,327 @@ class TestSelectFisherCodon:
 
 
 # -----------------------------------------------------------------------------
+# _tfwc_day_cols + _tfwc_with_rareflag
+# -----------------------------------------------------------------------------
+
+class TestTfwcHelpers:
+
+    def test_finds_d10_vs_d0_cols(self):
+        df = _df([{"day_10_count": 1, "day_0_count": 2, "x": 0}])
+        assert dtc._tfwc_day_cols(df) == ("day_10_count", "day_0_count")
+
+    def test_finds_d5_vs_d0_cols(self):
+        # Dynamic detection: same helper must work for the d5_vs_d0 layout.
+        df = _df([{"day_5_count": 1, "day_0_count": 2, "x": 0}])
+        assert dtc._tfwc_day_cols(df) == ("day_5_count", "day_0_count")
+
+    def test_rejects_wrong_count(self):
+        with pytest.raises(ValueError, match="expected 2 day_"):
+            dtc._tfwc_day_cols(_df([{"day_10_count": 1}]))
+
+    def test_flag_uses_per_condition_threshold(self):
+        df = _df([
+            {"condition": "BWM",     "day_10_count":  99, "day_0_count": 500},  # BWM < 100  -> flagged
+            {"condition": "BWM",     "day_10_count": 500, "day_0_count": 500},  # BWM >= 100 -> not
+            {"condition": "control", "day_10_count": 199, "day_0_count": 500},  # ctrl < 200 -> flagged
+            {"condition": "control", "day_10_count": 500, "day_0_count": 500},  # ctrl >= 200 -> not
+        ])
+        out = dtc._tfwc_with_rareflag(df, low_bwm=100, low_control=200,
+                                      day_a="day_10_count", day_b="day_0_count")
+        assert list(out["rare_low_count"]) == [True, False, True, False]
+        assert list(out["min_day_count"]) == [99, 500, 199, 500]
+
+    def test_threshold_is_strict_less_than(self):
+        # day_count == threshold is NOT flagged (matches the existing
+        # wilcoxon low-count and fisher rare-k rules).
+        df = _df([
+            {"condition": "BWM",     "day_10_count": 100, "day_0_count": 500},  # == 100, not flagged
+            {"condition": "control", "day_10_count": 200, "day_0_count": 500},  # == 200, not flagged
+        ])
+        out = dtc._tfwc_with_rareflag(df, low_bwm=100, low_control=200,
+                                      day_a="day_10_count", day_b="day_0_count")
+        assert list(out["rare_low_count"]) == [False, False]
+
+    def test_flag_checks_min_across_both_day_cols(self):
+        # The flag is min(day_a, day_b) < threshold, so either column dipping
+        # below trips it.
+        df = _df([
+            {"condition": "BWM", "day_10_count":  50, "day_0_count": 500},  # day_a low
+            {"condition": "BWM", "day_10_count": 500, "day_0_count":  50},  # day_b low
+            {"condition": "BWM", "day_10_count": 500, "day_0_count": 500},  # neither low
+        ])
+        out = dtc._tfwc_with_rareflag(df, low_bwm=100, low_control=200,
+                                      day_a="day_10_count", day_b="day_0_count")
+        assert list(out["rare_low_count"]) == [True, True, False]
+
+
+# -----------------------------------------------------------------------------
 # select_tfwc (family #11-#16)
 # -----------------------------------------------------------------------------
 
 class TestSelectTfwc:
 
-    def test_fallback_when_few_significant(self, capsys):
-        # condition=BWM, site=A: only 2 rows with p_adj<0.10 -> fallback to raw-p
-        # ranking with no FDR cutoff. Build 12 rows total so the pool is
-        # non-trivial.
-        rows = []
-        for i in range(2):
-            rows.append({
-                "condition": "BWM", "site": "A",
-                "amino_acid": f"E{i}",  # bogus AA labels are fine
-                "odds_ratio": 2.0,
-                "p_value": 1e-5, "p_adj": 0.01,  # passes 0.10 cutoff
-            })
-        for i in range(10):
-            rows.append({
-                "condition": "BWM", "site": "A",
-                "amino_acid": f"N{i}",
-                "odds_ratio": 1.1,
-                "p_value": 0.2 + 0.01 * i, "p_adj": 0.5,  # all fail 0.10
-            })
-        dtc.select_tfwc(_df(rows), top_n=5, p_thresh=0.10, min_candidates=10)
+    def test_hard_cutoff_no_topn_cap(self, capsys):
+        # 12 enriched rows all clearing p_adj<0.05; with no top-N cap, all 12
+        # should appear in the Enriched sub-table. (Previous rule capped at 5.)
+        rows = [
+            {"condition": "BWM", "site": "A", "amino_acid": f"X{i}",
+             "odds_ratio": 2.0 + 0.01 * i,
+             "p_value": 1e-3, "p_adj": 0.01,
+             "day_10_count": 500, "day_0_count": 500}
+            for i in range(12)
+        ]
+        dtc.select_tfwc(_df(rows), p_thresh=0.05)
         out = capsys.readouterr().out
-        assert "fallback to raw-p ranking" in out
-
-    def test_normal_path_when_enough_significant(self, capsys):
-        # >=10 candidates at p_adj<0.10 -> use FDR-cut pool, rank by |log2_OR|.
-        rows = []
+        enr = out.split("### BWM, site A -- Enriched")[1].split("###")[0]
         for i in range(12):
-            rows.append({
-                "condition": "BWM", "site": "A",
-                "amino_acid": f"X{i}",
-                "odds_ratio": 2.0 + 0.1 * i,
-                "p_value": 1e-3, "p_adj": 0.01,
-            })
-        dtc.select_tfwc(_df(rows), top_n=5, p_thresh=0.10, min_candidates=10)
+            assert f"X{i}" in enr
+
+    def test_hard_cutoff_excludes_above_threshold(self, capsys):
+        # Two rows: one clears p_adj<0.05, one does not. The above-threshold
+        # row must NOT appear in any Top-hits sub-table -- no fallback.
+        rows = [
+            {"condition": "BWM", "site": "A", "amino_acid": "K",
+             "odds_ratio": 2.0,
+             "p_value": 1e-5, "p_adj": 0.01,  # passes
+             "day_10_count": 500, "day_0_count": 500},
+            {"condition": "BWM", "site": "A", "amino_acid": "R",
+             "odds_ratio": 2.5,
+             "p_value": 0.05, "p_adj": 0.08,  # fails
+             "day_10_count": 500, "day_0_count": 500},
+        ]
+        dtc.select_tfwc(_df(rows), p_thresh=0.05)
         out = capsys.readouterr().out
-        assert "fallback to raw-p ranking" not in out
+        enr = out.split("### BWM, site A -- Enriched")[1].split("###")[0]
+        assert " K " in enr
+        assert " R " not in enr  # excluded by hard cutoff, no fallback
+        # The Enriched section header advertises the active cutoff.
+        assert "all rows with p_adj < 0.05" in out
+
+    def test_p_thresh_threshold_is_strict_less_than(self, capsys):
+        # p_adj == p_thresh is NOT kept (matches every other audit's strict <).
+        # When the only row is excluded, the (condition, site) groupby is empty
+        # so no sub-table header prints.
+        rows = [
+            {"condition": "BWM", "site": "A", "amino_acid": "K",
+             "odds_ratio": 2.0,
+             "p_value": 0.05, "p_adj": 0.05,  # == threshold, excluded
+             "day_10_count": 500, "day_0_count": 500},
+        ]
+        dtc.select_tfwc(_df(rows), p_thresh=0.05)
+        out = capsys.readouterr().out
+        # Sanity: select_tfwc ran (the pre-filter audit always prints).
+        assert "### rare-low-count audit" in out
+        # No per-(condition, site) sub-table -- the row was excluded.
+        assert "### BWM, site A" not in out
+
+    def test_p_thresh_override_changes_membership(self, capsys):
+        # Same row, two thresholds. p_adj=0.07 fails 0.05 but passes 0.10.
+        rows = [
+            {"condition": "BWM", "site": "A", "amino_acid": "K",
+             "odds_ratio": 2.0,
+             "p_value": 0.05, "p_adj": 0.07,
+             "day_10_count": 500, "day_0_count": 500},
+        ]
+        df = _df(rows)
+
+        # Default 0.05 -> row excluded -> no sub-table for (BWM, A).
+        dtc.select_tfwc(df, p_thresh=0.05)
+        out = capsys.readouterr().out
+        assert "### BWM, site A" not in out
+
+        # Threshold raised to 0.10 -> row passes -> sub-table prints with K.
+        dtc.select_tfwc(df, p_thresh=0.10)
+        out = capsys.readouterr().out
+        enr = out.split("### BWM, site A -- Enriched")[1].split("###")[0]
+        assert " K " in enr
+
+    def test_ranking_by_padj_then_abs_effect(self, capsys):
+        # Three enriched rows in one (condition, site) cell. Ranking is p_adj
+        # ascending, then |log2_OR| descending as tiebreaker.
+        rows = [
+            # smallest p_adj -> first
+            {"condition": "BWM", "site": "A", "amino_acid": "A1",
+             "odds_ratio": 1.5, "p_value": 1e-3, "p_adj": 0.001,
+             "day_10_count": 500, "day_0_count": 500},
+            # tied p_adj with A3 -> larger |log2_OR| wins -> A2 before A3
+            {"condition": "BWM", "site": "A", "amino_acid": "A2",
+             "odds_ratio": 4.0, "p_value": 1e-3, "p_adj": 0.020,
+             "day_10_count": 500, "day_0_count": 500},
+            {"condition": "BWM", "site": "A", "amino_acid": "A3",
+             "odds_ratio": 1.5, "p_value": 1e-3, "p_adj": 0.020,
+             "day_10_count": 500, "day_0_count": 500},
+        ]
+        dtc.select_tfwc(_df(rows), p_thresh=0.05)
+        out = capsys.readouterr().out
+        enr = out.split("### BWM, site A -- Enriched")[1].split("###")[0]
+        # Confirm A1 prints first (smallest p_adj), then A2 (larger |log2_OR|
+        # at tied p_adj), then A3.
+        order = [aa for aa in ["A1", "A2", "A3"] if aa in enr]
+        idx = [enr.index(aa) for aa in order]
+        assert order == ["A1", "A2", "A3"]
+        assert idx == sorted(idx)
+
+    def test_rare_low_count_audit_and_flag_column(self, capsys):
+        # Two BWM enriched rows at site A: K is well-sampled; rare_W has
+        # day_10=40 (below 100, flagged). Both clear FDR<0.10 so they enter
+        # the Top-hits sub-table with the `rare_low_count` column attached.
+        rows = [
+            {"condition": "BWM", "site": "A", "amino_acid": "K",
+             "odds_ratio": 2.0, "p_value": 1e-8, "p_adj": 1e-7,
+             "day_10_count": 300, "day_0_count": 200},
+            {"condition": "BWM", "site": "A", "amino_acid": "W",
+             "odds_ratio": 3.0, "p_value": 1e-6, "p_adj": 1e-5,
+             "day_10_count":  40, "day_0_count": 200},
+        ]
+        dtc.select_tfwc(_df(rows), p_thresh=0.05,
+                        low_bwm=100, low_control=200)
+        out = capsys.readouterr().out
+
+        # Pre-filter audit fires: 1 of 2 rows trips rare-low-count.
+        assert "### rare-low-count audit" in out
+        assert "1 of 2 rows fall below the threshold" in out
+        # Audit header echoes the active rule (used for cross-check vs the qmd).
+        assert "< 100 for BWM" in out and "< 200 for control" in out
+
+        # Enriched sub-table includes `rare_low_count` + the day_*_count columns.
+        enr = out.split("### BWM, site A -- Enriched")[1].split("###")[0]
+        assert "rare_low_count" in enr
+        assert "day_10_count" in enr and "day_0_count" in enr
+        # K -> False (well-sampled); W -> True (rare).
+        k_line = [ln for ln in enr.splitlines() if " K " in ln][0]
+        w_line = [ln for ln in enr.splitlines() if " W " in ln][0]
+        assert k_line.rstrip().endswith("False")
+        assert w_line.rstrip().endswith("True")
+
+    def test_per_condition_threshold_in_one_call(self, capsys):
+        # Mixed-condition CSV: BWM uses 100, control uses 200. Build one rare
+        # row per condition that would NOT be flagged if the thresholds were
+        # swapped, so the audit count uniquely fixes the per-condition routing.
+        rows = [
+            # day_10=99, BWM -> flagged (99 < 100). With control's 200 it would
+            # also be flagged, so this row doesn't disambiguate.
+            {"condition": "BWM", "site": "A", "amino_acid": "K",
+             "odds_ratio": 2.0, "p_value": 1e-3, "p_adj": 1e-3,
+             "day_10_count": 99, "day_0_count": 500},
+            # day_10=150, control -> flagged (150 < 200). With BWM's 100 it
+            # would NOT be flagged -> only flagged if the control branch is hit.
+            {"condition": "control", "site": "A", "amino_acid": "R",
+             "odds_ratio": 2.0, "p_value": 1e-3, "p_adj": 1e-3,
+             "day_10_count": 150, "day_0_count": 500},
+            # day_10=120, BWM -> NOT flagged (120 >= 100). With control's 200
+            # it WOULD be flagged -> only NOT flagged if the BWM branch is hit.
+            {"condition": "BWM", "site": "A", "amino_acid": "G",
+             "odds_ratio": 2.0, "p_value": 1e-3, "p_adj": 1e-3,
+             "day_10_count": 120, "day_0_count": 500},
+        ]
+        dtc.select_tfwc(_df(rows), p_thresh=0.05,
+                        low_bwm=100, low_control=200)
+        out = capsys.readouterr().out
+        # Exactly 2 of 3 -> per-condition routing wired correctly.
+        assert "2 of 3 rows fall below the threshold" in out
+
+    def test_threshold_override_via_args(self, capsys):
+        # Mirrors the real-data boundary case (control,P,Q at day_10=204).
+        # With the default 200 threshold the row is NOT flagged; raising to
+        # 250 flips it to True.
+        rows = [{
+            "condition": "control", "site": "P", "amino_acid": "Q",
+            "odds_ratio": 0.7, "p_value": 1e-4, "p_adj": 1e-3,
+            "day_10_count": 204, "day_0_count": 865,
+        }]
+        df = _df(rows)
+
+        dtc.select_tfwc(df, p_thresh=0.05,
+                        low_bwm=100, low_control=200)
+        out = capsys.readouterr().out
+        assert "0 of 1 rows fall below the threshold" in out
+
+        dtc.select_tfwc(df, p_thresh=0.05,
+                        low_bwm=100, low_control=250)
+        out = capsys.readouterr().out
+        assert "1 of 1 rows fall below the threshold" in out
+
+    def test_handles_d5_vs_d0_layout(self, capsys):
+        # The day_*_count columns are detected dynamically, so a CSV using
+        # the d5_vs_d0 layout works without any per-CSV configuration.
+        rows = [{
+            "condition": "BWM", "site": "A", "amino_acid": "K",
+            "odds_ratio": 2.0, "p_value": 1e-5, "p_adj": 1e-4,
+            "day_5_count": 50, "day_0_count": 500,
+        }]
+        dtc.select_tfwc(_df(rows), p_thresh=0.05,
+                        low_bwm=100, low_control=200)
+        out = capsys.readouterr().out
+        assert "min(day_5_count, day_0_count)" in out
+        assert "1 of 1 rows fall below the threshold" in out
+
+
+# -----------------------------------------------------------------------------
+# main() — CLI default routing for tfwc thresholds
+# -----------------------------------------------------------------------------
+
+class TestMainTfwcDefaults:
+    """The AA-vs-codon default routing lives in main() (not select_tfwc), so
+    these tests cover the CLI entry point. The audit-header line echoes the
+    active thresholds, which lets us assert defaults without coupling to
+    internal call args."""
+
+    @staticmethod
+    def _write_csv(tmp_path, feature_col: str):
+        rows = [{
+            "condition": "BWM", "site": "A", feature_col: "K",
+            "odds_ratio": 2.0, "p_value": 1e-3, "p_adj": 1e-3,
+            "day_10_count": 500, "day_0_count": 500,
+        }]
+        path = tmp_path / f"tfwc_{feature_col}.csv"
+        _df(rows).to_csv(path, index=False)
+        return path
+
+    def test_aa_defaults_to_100_and_200(self, tmp_path, capsys, monkeypatch):
+        csv = self._write_csv(tmp_path, "amino_acid")
+        monkeypatch.setattr(sys, "argv",
+                            ["dylan_table_checker.py", str(csv), "--family", "tfwc"])
+        assert dtc.main() == 0
+        out = capsys.readouterr().out
+        assert "< 100 for BWM, < 200 for control" in out
+
+    def test_codon_defaults_to_50_and_50(self, tmp_path, capsys, monkeypatch):
+        csv = self._write_csv(tmp_path, "codon")
+        monkeypatch.setattr(sys, "argv",
+                            ["dylan_table_checker.py", str(csv), "--family", "tfwc"])
+        assert dtc.main() == 0
+        out = capsys.readouterr().out
+        assert "< 50 for BWM, < 50 for control" in out
+
+    def test_cli_flag_overrides_default(self, tmp_path, capsys, monkeypatch):
+        csv = self._write_csv(tmp_path, "amino_acid")
+        monkeypatch.setattr(sys, "argv", [
+            "dylan_table_checker.py", str(csv), "--family", "tfwc",
+            "--rare-low-bwm-threshold", "75",
+            "--rare-low-control-threshold", "250",
+        ])
+        assert dtc.main() == 0
+        out = capsys.readouterr().out
+        assert "< 75 for BWM, < 250 for control" in out
+
+    def test_p_adj_default_is_005(self, tmp_path, capsys, monkeypatch):
+        csv = self._write_csv(tmp_path, "amino_acid")
+        monkeypatch.setattr(sys, "argv",
+                            ["dylan_table_checker.py", str(csv), "--family", "tfwc"])
+        assert dtc.main() == 0
+        out = capsys.readouterr().out
+        assert "all rows with p_adj < 0.05" in out
+
+    def test_p_adj_cli_override(self, tmp_path, capsys, monkeypatch):
+        csv = self._write_csv(tmp_path, "amino_acid")
+        monkeypatch.setattr(sys, "argv", [
+            "dylan_table_checker.py", str(csv), "--family", "tfwc",
+            "--tfwc-p-adj-threshold", "0.10",
+        ])
+        assert dtc.main() == 0
+        out = capsys.readouterr().out
+        assert "all rows with p_adj < 0.1" in out
 
 
 # -----------------------------------------------------------------------------

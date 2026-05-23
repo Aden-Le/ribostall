@@ -1,9 +1,10 @@
 """
 Assemble the `C_elegan_upload/` drag-and-drop hand-off package.
 
-For each of the first 8 reports in
-`results/stall_sites/enrichment/olive_reports/_MANUAL_REVIEW.md` (all stall_sites
-Wilcoxon reports), create `C_elegan_upload/stall_sites/<stem>/` and copy in:
+For each of the first 10 reports in
+`results/stall_sites/enrichment/olive_reports/_MANUAL_REVIEW.md` (stall_sites
+Wilcoxon reports plus the per-timepoint Fisher reports), create
+`C_elegan_upload/stall_sites/<stem>/` and copy in:
 
   * the report PDF      (olive_reports/<stem>.pdf)
   * its plot PDFs       (every image referenced by olive_reports/<stem>.qmd,
@@ -32,7 +33,7 @@ OLIVE_REPORTS = REPO_ROOT / "results" / "stall_sites" / "enrichment" / "olive_re
 ANALYSIS_STATS = REPO_ROOT / "results" / "stall_sites" / "enrichment" / "analysis_stats"
 UPLOAD_ROOT = REPO_ROOT / "C_elegan_upload"
 
-# First 8 reports, in the order they appear in
+# First 10 reports, in the order they appear in
 # results/stall_sites/enrichment/olive_reports/_MANUAL_REVIEW.md.
 REPORT_STEMS = [
     "between_condition_wilcoxon_aa",
@@ -43,6 +44,8 @@ REPORT_STEMS = [
     "between_timepoint_wilcoxon_d10_vs_d5_codon",
     "between_timepoint_wilcoxon_d5_vs_d0_aa",
     "between_timepoint_wilcoxon_d5_vs_d0_codon",
+    "per_timepoint_fisher_aa",
+    "per_timepoint_fisher_codon",
 ]
 
 # Markdown image: ![alt](path). Alt text here contains parentheses but never a
@@ -75,6 +78,7 @@ def main():
     (UPLOAD_ROOT / "stall_sites").mkdir(exist_ok=True)
     (UPLOAD_ROOT / "global_occupancy").mkdir(exist_ok=True)
 
+    n = len(REPORT_STEMS)
     for i, stem in enumerate(REPORT_STEMS, start=1):
         report_pdf = OLIVE_REPORTS / f"{stem}.pdf"
         qmd = OLIVE_REPORTS / f"{stem}.qmd"
@@ -96,7 +100,7 @@ def main():
             shutil.copy2(src, dest / src.name)
             copied += 1
 
-        print(f"[{i}/8] {stem}: {copied} files copied -> {dest}")
+        print(f"[{i}/{n}] {stem}: {copied} files copied -> {dest}")
 
     if missing:
         print(f"\nERROR: {len(missing)} expected source file(s) missing:", file=sys.stderr)

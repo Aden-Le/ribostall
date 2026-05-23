@@ -28,7 +28,12 @@ Each glyph is a single amino acid at one (condition, site) BH-FDR family of 20; 
 
 - **CSV:** `timepoint_fisher_within_condition_d5_vs_d0_aa.csv`
 - **Family (from `_INDEX.md`):** `timepoint_fisher_within_condition`
-- **Sister CSV(s):** `timepoint_fisher_within_condition_d10_vs_d0_aa.csv`, `timepoint_fisher_within_condition_d10_vs_d0_codon.csv`, `timepoint_fisher_within_condition_d10_vs_d5_aa.csv`, `timepoint_fisher_within_condition_d10_vs_d5_codon.csv`, `timepoint_fisher_within_condition_d5_vs_d0_codon.csv`
+- **Sister CSV(s):**
+  - `timepoint_fisher_within_condition_d10_vs_d0_aa.csv`
+  - `timepoint_fisher_within_condition_d10_vs_d0_codon.csv`
+  - `timepoint_fisher_within_condition_d10_vs_d5_aa.csv`
+  - `timepoint_fisher_within_condition_d10_vs_d5_codon.csv`
+  - `timepoint_fisher_within_condition_d5_vs_d0_codon.csv`
 - **Test:** Fisher's exact (two-sided), day-5-vs-day-0 2×2 contingency per (condition, site, aa); BH-FDR within each (condition, site) family of 20 AAs (source: user-confirmed)
 - **Design:** Per (condition, site, aa) 2×2 day-5-vs-day-0 contingency tested by two-sided Fisher's exact within one condition; replicates summed before the test (pseudoreplicated); BH-FDR applied independently within each of 6 (condition, site) families of 20 AAs (120 tests total). The test is **within-condition**: BWM and control are tested separately and never share a contingency.
 
@@ -148,7 +153,7 @@ The effect column is `odds_ratio`. Direction is fixed by the day-5-vs-day-0 cont
 
 ### Flag glossary
 
-- `rare-aa-low-count` — at least one timepoint cell for this (condition, site, aa) row has `day_X_count` below the test's stability threshold (~200 at amino-acid resolution for the family's typical pooled totals). OR estimates and CIs are unstable at small k; large `|log₂(OR)|` values for flagged rows may reflect sampling noise rather than biology. Applied here to BWM,A,W (78 vs 89), control,A,W (93 vs 382), and control,P,M (186 vs 607). Direction is reliable; magnitude is not.
+- `rare-aa-low-count` — at least one timepoint cell for this (condition, site, aa) row has `day_X_count` below the test's stability threshold (~200 at amino-acid resolution for the family's typical pooled totals). OR estimates and CIs are unstable at small k; large `|log₂(OR)|` values for flagged rows may reflect sampling noise rather than biology. Applied here to BWM,A,W (78 vs 89), control,A,W (93 vs 382), and control,P,M (186 vs 607). Direction is reliable; magnitude is not. **Threshold asymmetry rationale (family-wide):** the canonical family rule is < 100 in BWM and < 200 in control (BWM_total ~6k vs control_total ~28k, ~4.55:1). The 100/200 split is heuristic, calibrated to catch rare AAs (W, C, M) in both arms — symmetric (100/100) under-flags control's rare cells (which sit at 150–300), proportional (100/450) over-flags. Fisher OR variance is dominated by the smallest cell ($\approx 1/a + 1/b + 1/c + 1/d$), so absolute count — not proportion — is the relevant axis. Codon resolution stays symmetric at 50/50 because the AA-vs-codon dilution narrows the relative cell-size spread.
 
 ## Numbers at a glance
 - `n_tests`: 120 (60 per condition; BH families of 20 AAs per (condition, site))

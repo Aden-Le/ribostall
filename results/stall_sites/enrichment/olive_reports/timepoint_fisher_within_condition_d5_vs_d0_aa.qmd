@@ -1,5 +1,5 @@
 ---
-title: "timepoint_fisher_within_condition_d5_vs_d0_aa — Olive report"
+title: "timepoint_fisher_within_condition_d5_vs_d0_aa"
 subtitle: "ribostall stall_sites — enrichment stats"
 date: 2026-05-25
 format:
@@ -21,7 +21,7 @@ execute:
 
 ## Composite figure
 
-![2x3 grid of day-5-vs-day-0 amino-acid Fisher volcano panels: rows are conditions (top = BWM, bottom = control); columns are ribosome sites (A / P / E). Each panel plots -log10(FDR) against log2(odds ratio); triangles mark FDR<0.05 hits and circles are non-significant. Glyphs are coloured by amino-acid property (acidic = red, basic = blue, hydrophobic = green, neutral = orange, polar = purple). The control,E panel carries the file's tallest single point (P depleted — the file minimum); BWM,E shows a striking opposite-direction Lys pattern (K depleted) which mirrors control,E,K enriched. BWM,A: N is the largest enriched hit. control,A is the most-populated panel; control,P and control,E are also densely populated while the BWM panels are sparser.](../../plots/within_condition_timepoint_fisher/d5_vs_d0/composite/aa_fisher_composite.png)
+![2x3 grid of day-5-vs-day-0 amino-acid Fisher volcano panels: rows are conditions (top = BWM, bottom = control); columns are ribosome sites (A / P / E). Each panel plots -log10(FDR) against log2(odds ratio); triangles mark FDR<0.05 hits and circles are non-significant. Glyphs are coloured by amino-acid property (acidic = red, basic = blue, hydrophobic = green, neutral = orange, polar = purple).](../../plots/within_condition_timepoint_fisher/d5_vs_d0/composite/aa_fisher_composite.png)
 
 Each glyph is a single amino acid at one (condition, site) BH-FDR family of 20; horizontal dashed line is FDR = 0.05 and vertical dashed lines mark +/-0.5 log2(OR). Positive log2(OR) means day-5-enriched relative to day-0 *within the same condition*; negative means day-5-depleted relative to day-0. The test does not compare BWM to control directly — that contrast is implied by reading paired top/bottom rows of the grid side-by-side. Panels are arranged in A / P / E ribosome-site order across columns.
 
@@ -51,7 +51,7 @@ Each glyph is a single amino acid at one (condition, site) BH-FDR family of 20; 
 
 ## Headline
 
-d5 vs d0 within-condition Fisher (aa-level): 36/120 hits at FDR<0.05 (15/60 BWM, 21/60 control). Largest-magnitude divergence cell: E:K — BWM E:K `log2_OR`=-0.42 FDR=1.95e-9 vs control E:K `log2_OR`=+0.26 FDR=7.94e-7. Cross-contrast hook for Chumeng: the d10_vs_d0_aa cell (BWM `log2_OR`=-0.34 / control `log2_OR`=+0.18) carries similar direction and magnitude; the d10_vs_d5_aa sister has E:K null in both conditions (BWM `log2_OR`=+0.08 ns / control `log2_OR`=-0.08 ns) — Chumeng to weigh whether the numerical sequence supports a single d0-anchored pattern vs other readings. Largest-magnitude shared-direction cells: A:N enriched in both (BWM `log2_OR`=+0.83 vs control `log2_OR`=+0.33, both sig); A:W depleted in both (BWM `log2_OR`=-0.70 vs control `log2_OR`=-0.74, both sig — rare-aa flagged); A:Y depleted in both (BWM `log2_OR`=-0.46 vs control `log2_OR`=-0.40, both sig). Other large-magnitude divergence cells: A:K (BWM `log2_OR`=-0.17 ns vs control `log2_OR`=+0.33 FDR<1e-7) and E:A (BWM `log2_OR`=+0.02 ns vs control `log2_OR`=-0.36 FDR<6e-5).
+d5 vs d0 within-condition Fisher (aa-level): 36/120 hits at FDR<0.05 (15/60 BWM, 21/60 control). Largest-magnitude divergence cell: E:K — BWM E:K `log2_OR`=-0.42 FDR=1.95e-9 vs control E:K `log2_OR`=+0.26 FDR=7.94e-7. Cross-contrast hook: the d10_vs_d0_aa cell (BWM `log2_OR`=-0.34 / control `log2_OR`=+0.18) carries similar direction and magnitude; the d10_vs_d5_aa sister has E:K null in both conditions (BWM `log2_OR`=+0.08 ns / control `log2_OR`=-0.08 ns) — downstream reading should weigh whether the numerical sequence supports a single d0-anchored pattern vs other readings. Largest-magnitude shared-direction cells: A:N enriched in both (BWM `log2_OR`=+0.83 vs control `log2_OR`=+0.33, both sig); A:W depleted in both (BWM `log2_OR`=-0.70 vs control `log2_OR`=-0.74, both sig — rare-aa flagged); A:Y depleted in both (BWM `log2_OR`=-0.46 vs control `log2_OR`=-0.40, both sig). Other large-magnitude divergence cells: A:K (BWM `log2_OR`=-0.17 ns vs control `log2_OR`=+0.33 FDR<1e-7) and E:A (BWM `log2_OR`=+0.02 ns vs control `log2_OR`=-0.36 FDR<6e-5).
 
 ## Top hits
 
@@ -172,7 +172,7 @@ Fisher's exact (two-sided) is applied to a 2x2 of (aa_count, total - aa_count) a
 - **within-condition-clean.** No condition pooling and no timepoint pooling; the file structurally answers "does day_5 differ from day_0 *within* this condition" cleanly, leaving the BWM-vs-control comparison to be done by reading paired panels side-by-side rather than by the test itself.
 - **rare-aa-low-count.** Three Top-hits cells have small per-timepoint counts: BWM,A,W (108 vs 89), control,A,W (93 vs 382), control,P,M (186 vs 607). Direction is reliable; magnitude unstable for these rows.
 - **OR-direction-asymmetry.** No zero-cell rows in this file. Caveat preserved as ranking-axis discipline only — `log2_OR` is the reported effect column (already log-transformed), so positive/negative bands are symmetric by construction; rank directly on it.
-- **control-vs-BWM-divergent-direction.** Three large-magnitude direction flips flagged for Chumeng's reconciliation:
+- **control-vs-BWM-divergent-direction.** Three large-magnitude direction flips flagged for downstream reconciliation:
   - **E:K** — BWM `log2_OR`=-0.42 (FDR<2e-9) vs control `log2_OR`=+0.26 (FDR<8e-7); direction flip, both massively significant. Reproduces the d10_vs_d0 finding (BWM `log2_OR`=-0.34 / control `log2_OR`=+0.18).
   - **A:K** — BWM `log2_OR`=-0.17 (`p_adj`=0.056, near-sig depleted) vs control `log2_OR`=+0.33 (FDR<1e-7); divergent direction, control side decisively significant.
   - **E:A** — BWM `log2_OR`=+0.02 ns vs control `log2_OR`=-0.36 (FDR<6e-5); control-only depletion.

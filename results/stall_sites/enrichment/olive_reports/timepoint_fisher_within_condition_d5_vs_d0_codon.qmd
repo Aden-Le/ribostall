@@ -1,5 +1,5 @@
 ---
-title: "timepoint_fisher_within_condition_d5_vs_d0_codon — Olive report"
+title: "timepoint_fisher_within_condition_d5_vs_d0_codon"
 subtitle: "ribostall stall_sites — enrichment stats"
 date: 2026-05-25
 format:
@@ -21,7 +21,7 @@ execute:
 
 ## Composite figure
 
-![2x3 grid of day-5-vs-day-0 codon Fisher volcano panels: rows are conditions (top = BWM, bottom = control); columns are ribosome sites (A / P / E). Each panel plots -log10(FDR) against log2(odds ratio); triangles mark FDR<0.05 hits and circles are non-significant. Glyphs are coloured by the encoded amino-acid's property (acidic = red, basic = blue, hydrophobic = green, neutral = orange, polar = purple). The BWM row is sparsely populated across all three sites; the control row is densely populated, with control,A and control,E each carrying multiple high -log10(FDR) hits. One BWM,E hydrophobic glyph at log2(OR) ~ +10 sits at the far-right edge of its panel (a near-zero-cell row); it is non-significant.](../../plots/within_condition_timepoint_fisher/d5_vs_d0/codon/composite/codon_fisher_composite.png)
+![2x3 grid of day-5-vs-day-0 codon Fisher volcano panels: rows are conditions (top = BWM, bottom = control); columns are ribosome sites (A / P / E). Each panel plots -log10(FDR) against log2(odds ratio); triangles mark FDR<0.05 hits and circles are non-significant. Glyphs are coloured by the encoded amino-acid's property (acidic = red, basic = blue, hydrophobic = green, neutral = orange, polar = purple).](../../plots/within_condition_timepoint_fisher/d5_vs_d0/codon/composite/codon_fisher_composite.png)
 
 Each glyph is a single sense codon at one (condition, site) BH-FDR family of 61; horizontal dashed line is FDR = 0.05 and vertical dashed lines mark +/-0.5 log2(OR). Positive log2(OR) means day-5-enriched relative to day-0 *within the same condition*; negative means day-5-depleted relative to day-0. The test does not compare BWM to control directly — that contrast is implied by reading paired top/bottom rows of the grid side-by-side. Panels are arranged in A / P / E ribosome-site order across columns.
 

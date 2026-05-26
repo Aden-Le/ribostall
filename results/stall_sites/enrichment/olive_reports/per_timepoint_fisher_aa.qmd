@@ -1,5 +1,5 @@
 ---
-title: "per_timepoint_fisher_aa — Olive report"
+title: "per_timepoint_fisher_aa"
 subtitle: "ribostall stall_sites — enrichment stats"
 date: 2026-05-22
 format:

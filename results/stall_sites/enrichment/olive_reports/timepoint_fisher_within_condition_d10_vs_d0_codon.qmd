@@ -1,5 +1,5 @@
 ---
-title: "timepoint_fisher_within_condition_d10_vs_d0_codon — Olive report"
+title: "timepoint_fisher_within_condition_d10_vs_d0_codon"
 subtitle: "ribostall stall_sites — enrichment stats"
 date: 2026-05-23
 format:
@@ -21,7 +21,7 @@ execute:
 
 ## Composite figure
 
-![2x3 grid of day-10-vs-day-0 codon Fisher volcano panels: rows are conditions (top = BWM, bottom = control); columns are ribosome sites (A / P / E). Each panel plots -log10(FDR) against log2(odds ratio); triangles mark FDR<0.05 hits and circles are non-significant. Glyphs are coloured by the encoded amino-acid's property (acidic = red, basic = blue, hydrophobic = green, neutral = orange, polar = purple). The BWM row is sparse while the control row is densely populated.](../../plots/within_condition_timepoint_fisher/d10_vs_d0/codon/composite/codon_fisher_composite.png)
+![2x3 grid of day-10-vs-day-0 codon Fisher volcano panels: rows are conditions (top = BWM, bottom = control); columns are ribosome sites (A / P / E). Each panel plots -log10(FDR) against log2(odds ratio); triangles mark FDR<0.05 hits and circles are non-significant. Glyphs are coloured by the encoded amino-acid's property (acidic = red, basic = blue, hydrophobic = green, neutral = orange, polar = purple).](../../plots/within_condition_timepoint_fisher/d10_vs_d0/codon/composite/codon_fisher_composite.png)
 
 Each glyph is a single sense codon at one (condition, site) BH-FDR family of 61; horizontal dashed line is FDR = 0.05 and vertical dashed lines mark +/-0.5 log2(OR). Positive log2(OR) means day-10-enriched relative to day-0 *within the same condition*; negative means day-10-depleted relative to day-0. Two zero-cell BWM rows (E,ATA with `day_0=0` -> OR=inf; P,TTA with `day_10=0` -> OR=0) are visible at the panel extremes but are not significant.
 

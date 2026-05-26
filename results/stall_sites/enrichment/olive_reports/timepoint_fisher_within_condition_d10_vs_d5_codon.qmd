@@ -1,5 +1,5 @@
 ---
-title: "timepoint_fisher_within_condition_d10_vs_d5_codon — Olive report"
+title: "timepoint_fisher_within_condition_d10_vs_d5_codon"
 subtitle: "ribostall stall_sites — enrichment stats"
 date: 2026-05-23
 format:
@@ -21,7 +21,7 @@ execute:
 
 ## Composite figure
 
-![2x3 grid of day-10-vs-day-5 codon Fisher volcano panels: rows are conditions (top = BWM, bottom = control); columns are ribosome sites (A / P / E). Each panel plots -log10(FDR) against log2(odds ratio); triangles mark FDR<0.05 hits and circles are non-significant. Glyphs are coloured by codon biochemistry (acidic = red, basic = blue, hydrophobic = green, neutral = orange, polar = purple). The control,P panel carries the file's tallest single point; control,A is the next most-populated panel. The BWM row is sparse; **BWM,E is completely null** — every glyph is a circle below the FDR=0.05 line. The control row is densely populated across all three sites.](../../plots/within_condition_timepoint_fisher/d10_vs_d5/codon/composite/codon_fisher_composite.png)
+![2x3 grid of day-10-vs-day-5 codon Fisher volcano panels: rows are conditions (top = BWM, bottom = control); columns are ribosome sites (A / P / E). Each panel plots -log10(FDR) against log2(odds ratio); triangles mark FDR<0.05 hits and circles are non-significant. Glyphs are coloured by codon biochemistry (acidic = red, basic = blue, hydrophobic = green, neutral = orange, polar = purple).](../../plots/within_condition_timepoint_fisher/d10_vs_d5/codon/composite/codon_fisher_composite.png)
 
 Each glyph is a single codon at one (condition, site) BH-FDR family of 61; horizontal dashed line is FDR = 0.05 and vertical dashed lines mark +/-0.5 log2(OR). Positive log2(OR) means day-10-enriched relative to day-5 *within the same condition*; negative means day-10-depleted relative to day-5. The test does not compare BWM to control directly — that contrast is implied by reading paired top/bottom rows of the grid side-by-side. Panels are arranged in A / P / E ribosome-site order across columns.
 

@@ -1,5 +1,5 @@
 ---
-title: "timepoint_fisher_within_condition_d10_vs_d5_aa — Olive report"
+title: "timepoint_fisher_within_condition_d10_vs_d5_aa"
 subtitle: "ribostall stall_sites — enrichment stats"
 date: 2026-05-23
 format:
@@ -21,7 +21,7 @@ execute:
 
 ## Composite figure
 
-![2x3 grid of day-10-vs-day-5 amino-acid Fisher volcano panels: rows are conditions (top = BWM, bottom = control); columns are ribosome sites (A / P / E). Each panel plots -log10(FDR) against log2(odds ratio); triangles mark FDR<0.05 hits and circles are non-significant. Glyphs are coloured by amino-acid property (acidic = red, basic = blue, hydrophobic = green, neutral = orange, polar = purple). The control,P panel carries the file's tallest single point; control,A is the next most-populated panel. The BWM row is sparser overall — A:L depleted and A:G enriched are the standout BWM,A points; BWM,P shows only G enriched; BWM,E shows I depleted and G/R enriched at small magnitudes.](../../plots/within_condition_timepoint_fisher/d10_vs_d5/composite/aa_fisher_composite.png)
+![2x3 grid of day-10-vs-day-5 amino-acid Fisher volcano panels: rows are conditions (top = BWM, bottom = control); columns are ribosome sites (A / P / E). Each panel plots -log10(FDR) against log2(odds ratio); triangles mark FDR<0.05 hits and circles are non-significant. Glyphs are coloured by amino-acid property (acidic = red, basic = blue, hydrophobic = green, neutral = orange, polar = purple).](../../plots/within_condition_timepoint_fisher/d10_vs_d5/composite/aa_fisher_composite.png)
 
 Each glyph is a single amino acid at one (condition, site) BH-FDR family of 20; horizontal dashed line is FDR = 0.05 and vertical dashed lines mark +/-0.5 log2(OR). Positive log2(OR) means day-10-enriched relative to day-5 *within the same condition*; negative means day-10-depleted relative to day-5. The test does not compare BWM to control directly — that contrast is implied by reading paired top/bottom rows of the grid side-by-side.
 
@@ -51,7 +51,7 @@ Each glyph is a single amino acid at one (condition, site) BH-FDR family of 20; 
 
 ## Headline
 
-Moderate signal at AA-level within-condition Fisher d10 vs d5: 23/120 hits at FDR<0.05 (8/60 BWM, 15/60 control). Largest-magnitude shared-direction cells: site-A G (BWM `log2_OR`=+0.31 / control `log2_OR`=+0.39, both FDR<0.05) and site-P G (BWM `log2_OR`=+0.30 / control `log2_OR`=+0.43, both FDR<0.05 — control,P,G is the file minimum at p_adj=5.80e-08). Largest-magnitude divergence cells: site-E R (BWM `log2_OR`=+0.28 FDR<0.05 vs control `log2_OR`=-0.21 ns), site-A A (BWM `log2_OR`=-0.18 ns vs control `log2_OR`=+0.27 FDR<0.05), and site-P V (BWM `log2_OR`=+0.10 ns vs control `log2_OR`=-0.24 FDR<0.05). Cross-contrast note for Chumeng: site-E K (the d10_vs_d0 divergence) is null in both conditions here (BWM `log2_OR`=+0.08 ns / control `log2_OR`=-0.08 ns).
+Moderate signal at AA-level within-condition Fisher d10 vs d5: 23/120 hits at FDR<0.05 (8/60 BWM, 15/60 control). Largest-magnitude shared-direction cells: site-A G (BWM `log2_OR`=+0.31 / control `log2_OR`=+0.39, both FDR<0.05) and site-P G (BWM `log2_OR`=+0.30 / control `log2_OR`=+0.43, both FDR<0.05 — control,P,G is the file minimum at p_adj=5.80e-08). Largest-magnitude divergence cells: site-E R (BWM `log2_OR`=+0.28 FDR<0.05 vs control `log2_OR`=-0.21 ns), site-A A (BWM `log2_OR`=-0.18 ns vs control `log2_OR`=+0.27 FDR<0.05), and site-P V (BWM `log2_OR`=+0.10 ns vs control `log2_OR`=-0.24 FDR<0.05). Cross-contrast note: site-E K (the d10_vs_d0 divergence) is null in both conditions here (BWM `log2_OR`=+0.08 ns / control `log2_OR`=-0.08 ns).
 
 ## Top hits
 
@@ -155,8 +155,8 @@ Fisher's exact (two-sided) is applied to a 2x2 of (feature_count, total - featur
 - **within-condition-clean.** No condition pooling and no timepoint pooling; the file structurally answers "does day_10 differ from day_5 *within* this condition" cleanly, leaving the BWM-vs-control comparison to be done by reading paired panels side-by-side rather than by the test itself.
 - **rare-aa-low-count.** Trp (BWM W: 78 vs 108) and Cys (BWM C: 69 vs 82, control C: 61 vs 89) sit below count = 100. Neither enters Top hits at FDR<0.05 in this contrast, so no Top-hits flags carry the label here, but any downstream reading of the file should not over-read magnitude on those rows — `log2_OR` is unstable at small k. **Threshold asymmetry rationale (family-wide):** BWM_total ~6k vs control_total ~28k (~4.55:1); the family-rule 100/200 split (BWM/control) is heuristic, calibrated to catch rare AAs (W, C, M) in both arms — symmetric (100/100) under-flags control's rare cells (which sit at 150-300), proportional (100/450) over-flags. Fisher OR variance is dominated by the smallest cell ($\approx 1/a + 1/b + 1/c + 1/d$), so absolute count — not proportion — is the relevant axis. Codon resolution stays symmetric at 50/50 because the AA-vs-codon dilution narrows the relative cell-size spread.
 - **OR-direction-asymmetry.** No zero-cell rows in this file, so no infinite/zero ORs; the caveat is preserved as a ranking-axis discipline note — `log2_OR` is the reported effect column (already log-transformed), so positive/negative bands are symmetric by construction; rank directly on it.
-- **control-vs-BWM-divergent-direction.** Three site x aa cells flip direction or move on only one side: **site-E R** (BWM `log2_OR`=+0.275 FDR<0.05 vs control `log2_OR`=-0.208 ns — cleanest flip in the contrast), **site-A A** (BWM `log2_OR`=-0.179 ns vs control `log2_OR`=+0.268 FDR<0.05), **site-P V** (BWM `log2_OR`=+0.102 ns vs control `log2_OR`=-0.238 FDR<0.05). The d10_vs_d0 E:K flip does NOT recur here (BWM `log2_OR`=+0.080 ns / control `log2_OR`=-0.080 ns); cross-contrast cells provided for Chumeng's reconciliation.
-- **shared-time-trajectory-A/P-Gly.** Both BWM and control enrich Gly at sites A and P from d5-to-d10 (BWM A:G `log2_OR`=+0.312 / P:G `log2_OR`=+0.297; control A:G `log2_OR`=+0.388 / P:G `log2_OR`=+0.430, control,P,G is the file minimum at p_adj=5.80e-08). Coherent shared-time signal across both conditions — not perturbation-specific. Treat as a control-aligned time-axis feature for Chumeng, not a BWM-specific finding.
+- **control-vs-BWM-divergent-direction.** Three site x aa cells flip direction or move on only one side: **site-E R** (BWM `log2_OR`=+0.275 FDR<0.05 vs control `log2_OR`=-0.208 ns — cleanest flip in the contrast), **site-A A** (BWM `log2_OR`=-0.179 ns vs control `log2_OR`=+0.268 FDR<0.05), **site-P V** (BWM `log2_OR`=+0.102 ns vs control `log2_OR`=-0.238 FDR<0.05). The d10_vs_d0 E:K flip does NOT recur here (BWM `log2_OR`=+0.080 ns / control `log2_OR`=-0.080 ns); cross-contrast cells provided for downstream reconciliation.
+- **shared-time-trajectory-A/P-Gly.** Both BWM and control enrich Gly at sites A and P from d5-to-d10 (BWM A:G `log2_OR`=+0.312 / P:G `log2_OR`=+0.297; control A:G `log2_OR`=+0.388 / P:G `log2_OR`=+0.430, control,P,G is the file minimum at p_adj=5.80e-08). Coherent shared-time signal across both conditions — not perturbation-specific. Treat as a control-aligned time-axis feature, not a BWM-specific finding.
 
 ---
 

@@ -1,5 +1,5 @@
 ---
-title: "timepoint_fisher_within_condition_d10_vs_d0_aa — Olive report"
+title: "timepoint_fisher_within_condition_d10_vs_d0_aa"
 subtitle: "ribostall stall_sites — enrichment stats"
 date: 2026-05-26
 format:

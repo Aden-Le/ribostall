@@ -1,7 +1,7 @@
 ---
 title: "timepoint_fisher_within_condition_d10_vs_d0_aa — Olive report"
 subtitle: "ribostall stall_sites — enrichment stats"
-date: 2026-05-23
+date: 2026-05-26
 format:
   html:
     toc: true
@@ -136,8 +136,8 @@ The effect column is `log2_OR` (log2 of the Fisher odds ratio; positive = day-10
 ## Numbers at a glance
 - `n_tests`: 120 (60 per condition)
 - `n_significant` (adjusted-p < 0.05): 36 (BWM 12, control 24)
-- `n_significant` (adjusted-p < 0.10): 39 (BWM 13, control 26)
-- `min adjusted-p`: 9.89e-08 (tied: control,A,G and control,A,Q)
+- `n_significant` (adjusted-p < 0.10): 40 (BWM 13, control 27)
+- `min adjusted-p`: 9.89e-08 (tied: control,A,G and control,A,Q within their family); 5.67e-08 (control,P,G, the file minimum)
 - `p_floor`: n/a — Fisher with pooled N in the thousands has no meaningful floor; the dominant statistical-design concern is `large-N-Fisher-anticonservative` (family-wide), not floor.
 - Per (condition, site):
   - BWM,A: 6 sig at FDR<0.05 (N, L, Y, A, I, F); min p_adj = 9.17e-07
@@ -186,6 +186,6 @@ Fisher's exact (two-sided) is applied to a 2x2 of (feature_count, total - featur
 
 ![Day-10-vs-day-0 control A-site amino-acid volcano: 9 FDR<0.05 hits clustered across the +/-0.5 log2(OR) band — glutamine (Q, polar purple) and glycine (G, neutral orange) at log2(OR) ~= -0.6 and +0.36 sit at the top of the y-axis (-log10(FDR) ~= 7); leucine (L, green) and arginine (R, basic blue) are FDR<0.05 modestly displaced (~-0.34 and +0.34); tryptophan (W, green) is at log2(OR) ~= -0.6; lysine (K, blue), serine (S, polar), tyrosine (Y, green), and isoleucine (I, green) are also FDR<0.05 with smaller magnitudes.](../../plots/within_condition_timepoint_fisher/d10_vs_d0/individual/control_A_volcano.png)
 
-![Day-10-vs-day-0 control P-site amino-acid volcano: the most-populated panel of the file — 10 FDR<0.05 hits. Glycine (G, neutral orange) at log2(OR) ~= +0.36 sits highest (-log10(FDR) ~= 7.2); methionine (M, hydrophobic green) at log2(OR) ~= -0.68 and glutamine (Q, polar purple) at ~= -0.45 are the strongest depletions; lysine (K, basic blue), isoleucine (I, green), leucine (L, green), and tryptophan (W, green) are FDR<0.05 depleted within the +/-0.5 log2(OR) band; glutamate (E, acidic red), arginine (R, basic blue), aspartate (D, red), and cysteine (C, polar purple) are FDR<0.05 enriched.](../../plots/within_condition_timepoint_fisher/d10_vs_d0/individual/control_P_volcano.png)
+![Day-10-vs-day-0 control P-site amino-acid volcano: the most-populated panel of the file — 11 FDR<0.05 hits. Glycine (G, neutral orange) at log2(OR) ~= +0.36 sits highest (-log10(FDR) ~= 7.2); methionine (M, hydrophobic green) at log2(OR) ~= -0.68 and glutamine (Q, polar purple) at ~= -0.45 are the strongest depletions; lysine (K, basic blue), isoleucine (I, green), leucine (L, green), and tryptophan (W, green) are FDR<0.05 depleted within the +/-0.5 log2(OR) band; glutamate (E, acidic red), arginine (R, basic blue), aspartate (D, red), and cysteine (C, polar purple) are FDR<0.05 enriched.](../../plots/within_condition_timepoint_fisher/d10_vs_d0/individual/control_P_volcano.png)
 
 ![Day-10-vs-day-0 control E-site amino-acid volcano: a near-null panel — 4 FDR<0.05 hits, all within the +/-0.5 log2(OR) band. Tyrosine (Y, hydrophobic green) and methionine (M, green) are depleted (log2(OR) ~= -0.45 and -0.40); tryptophan (W, green) sits at the FDR threshold at log2(OR) ~= -0.55 (rare-aa flagged in Top hits); lysine (K, basic blue) is the lone FDR<0.05 enriched hit at log2(OR) ~= +0.18.](../../plots/within_condition_timepoint_fisher/d10_vs_d0/individual/control_E_volcano.png)

@@ -5,7 +5,7 @@ test_type: Fisher's exact (two-sided), BH-FDR per (condition, site)
 test_type_source: user-confirmed
 n_tests: 120
 n_significant_fdr05: 36
-n_significant_fdr10: 39
+n_significant_fdr10: 40
 min_p_adj: 9.89e-08
 p_floor: null
 pseudoreplicated: true
@@ -96,7 +96,7 @@ Selection rule (family-level, updated 2026-05-22): all rows with `p_adj` < 0.05,
 ## Numbers at a glance
 - `n_tests`: 120 (60 per condition)
 - `n_significant` (adjusted-p < 0.05): 36 (BWM 12, control 24)
-- `n_significant` (adjusted-p < 0.10): 39 (BWM 13, control 26)
+- `n_significant` (adjusted-p < 0.10): 40 (BWM 13, control 27)
 - `min adjusted-p`: 9.89e-08 (tied: control,A,G and control,A,Q)
 - `p_floor`: n/a — Fisher with pooled N in the thousands has no meaningful floor; the dominant statistical-design concern is `large-N-Fisher-anticonservative` (family-wide), not floor.
 - Per (condition, site):

@@ -113,11 +113,10 @@ echo "---- 15. timepoint_fisher_within_condition_d5_vs_d0_aa ----"
 quarto render "results/stall_sites/enrichment/olive_reports/timepoint_fisher_within_condition_d5_vs_d0_aa.qmd"
 
 # ============================================================
-# 16. timepoint_fisher_within_condition_d5_vs_d0_codon  (NOT YET RENDERED)
+# 16. timepoint_fisher_within_condition_d5_vs_d0_codon
 # ============================================================
-# Generate via the next Olive session first, then un-comment:
-# echo "---- 16. timepoint_fisher_within_condition_d5_vs_d0_codon ----"
-# quarto render "results/stall_sites/enrichment/olive_reports/timepoint_fisher_within_condition_d5_vs_d0_codon.qmd"
+echo "---- 16. timepoint_fisher_within_condition_d5_vs_d0_codon ----"
+quarto render "results/stall_sites/enrichment/olive_reports/timepoint_fisher_within_condition_d5_vs_d0_codon.qmd"
 
 # ============================================================
 # 17. within_condition_binomial_aa  (NOT YET RENDERED)

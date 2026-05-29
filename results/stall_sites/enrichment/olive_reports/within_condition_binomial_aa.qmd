@@ -1,0 +1,420 @@
+---
+title: "within_condition_binomial_aa"
+subtitle: "ribostall stall_sites — enrichment stats"
+date: 2026-05-27
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    embed-resources: true
+    fig-cap-location: bottom
+  pdf:
+    toc: true
+    fig-cap-location: bottom
+    include-in-header:
+      text: |
+        \usepackage{needspace}
+tbl-colwidths: [15, 5, 12, 35, 12, 21]
+execute:
+  echo: false
+---
+
+## Composite figure
+
+![BWM 3x3 grid of unweighted amino-acid binomial volcano panels: rows are the three BWM timepoints (top to bottom: Day 0, Day 5, Day 10); columns are ribosome sites in A / P / E order. Each panel plots -log10(FDR) (y) against Log2 Enrichment (x, range ~-1.5 to +1.5); triangles mark FDR<0.05 hits and circles are non-significant. Each glyph is one of the 20 amino acids labelled by its one-letter code and coloured by chemical property: red = acidic, blue = basic, green = hydrophobic, orange = neutral, purple = polar. Horizontal dashed line is FDR = 0.05; vertical dashed lines are at log2 = +/-0.5. The BWM trajectory repeats the same enrichment/depletion structure (E:K and P:D enriched, A depleted at all three sites) across all three days with no direction flips.](../../plots/within_condition/composite/unweighted/BWM_volcano_grid.png)
+
+![control 3x3 grid of unweighted amino-acid binomial volcano panels: rows are the three control timepoints (top to bottom: Day 0, Day 5, Day 10); columns are ribosome sites in A / P / E order. Axes, glyph labelling, colour key, and dashed reference lines are identical to the BWM grid above. The control_day_0 E-site Lys cell (the file-min `p_adj`) is the most extreme point in any panel, at the top-right of the E-site Day 0 panel; otherwise control shows the same A-depleted / K-D-N-Y-enriched structure as BWM.](../../plots/within_condition/composite/unweighted/control_volcano_grid.png)
+
+Each glyph is one amino acid tested against its per-group, per-site background frequency (`bg_freq`); a panel is one (group, site) BH-FDR family of 20 amino acids. Positive Log2 Enrichment means the amino acid is over-represented at stall sites relative to its background frequency in that group's transcriptome window; negative means under-represented. The test is **within-group**: BWM and control are not compared directly here — that contrast lives in the per-timepoint Fisher sister file. The composite is split into two per-condition 3x3 grids (BWM above, control below) because the combined 6x3 grid overflows a single PDF page. Panels are arranged in A / P / E ribosome-site order across columns.
+
+---
+
+## Overview
+
+- **CSV:** `within_condition_binomial_aa.csv`
+- **Family (from `_INDEX.md`):** `within_condition_binomial`
+- **Sister CSV(s):**
+  - `within_condition_binomial_codon.csv`
+- **Test:** One-sample binomial test (k=`stall_count` out of n=`total_n` vs H0: p=`bg_freq`, two-sided); BH-FDR within each (group, site) family of ~20 amino acids
+- **Design:** Per (group, site, aa) one-sample binomial: observed `stall_count` is tested against the binomial null `Binomial(total_n, bg_freq)` where `bg_freq` is the amino-acid frequency in that group's transcriptome window. 6 groups (BWM and control x d0/d5/d10) x 3 sites (A/P/E) x 20 amino acids = 360 tests; replicates are pooled before the test (pseudoreplicated); BH-FDR is applied independently within each of 18 (group, site) families of 20 amino acids. The test is **within-group**: each group is tested against its own background independently and never against another group.
+
+### Family-level caveats
+
+- **pseudorep** — 2 replicates within a group are summed before the binomial test; per-replicate variation is invisible to the statistic, so p-values are anti-conservative.
+- **iid-violation-binomial** — the binomial null assumes `total_n` iid Bernoulli draws with probability `bg_freq`; stall sites are not iid (the same transcript contributes overlapping A/P/E windows, transcripts vary in coverage, stall calling induces structure). Headline-grade tiny p-values (down to 1e-132 in this file) reflect this violation more than per-feature biological signal. `log2_enrichment` and `stall_count` are the primary effect columns, not p magnitude.
+- **bg-pseudocount-1e-6** — when a feature is missing from the per-group background, `bg_freq` is floored at 1e-6 (upstream pipeline behaviour); for genuinely absent features this produces extreme `log2_enrichment` when k>0. Mostly an amino-acid-level corner case (does not affect any Top-hits row here, where all `bg_freq` > 0.008).
+- **bh-per-(group,site)** — BH-FDR is per (group, site) family of ~20 amino-acid tests. `p_adj` means "corrected within this group at this site," not across the whole CSV.
+
+---
+
+## Headline
+
+Within-group binomial against `bg_freq`, 6 groups (BWM and control x d0/d5/d10) x 3 sites (A/P/E) x 20 amino acids = 360 tests; BH-FDR per (group, site) family of 20. 239/360 hits at FDR<0.05 (264/360 at FDR<0.10). File min `p_adj` = 3.43e-132 at control_day_0 E:K (`log2_enrichment` = +0.625, `stall_count` = 3362, `total_n` = 27732). The dominant structure of this file is **cross-group concordance**: the largest-magnitude cells move in the same direction across all 6 groups, and cells with cross-group direction flips of comparable magnitude do not appear in the data — see the "Cross-group concordance" sub-tables below. p_adj magnitudes down to 1e-132 are co-amplified by `iid-violation-binomial` (within-transcript stall correlation breaking the binomial independence assumption) and by common-amino-acid `bg_freq` tightness (an amino acid with `bg_freq` ~= 0.10 produces extreme p at modest log2 once n exceeds ~20000); magnitude-plus-reproducibility is the anchor for reading.
+
+## Top hits
+
+The effect column is `log2_enrichment` = log2(observed `stall_freq` / `bg_freq`); positive means the amino acid is over-represented at stall sites in that group, negative means under-represented. `p_value` is the raw two-sided binomial p; `p_adj` is BH-corrected within each (group, site) family of 20 amino acids. Direction is fixed by the binomial layout within one group: `log2_enrichment` > 0 = enriched relative to `bg_freq`, `log2_enrichment` < 0 = depleted relative to `bg_freq`. Sub-tables below are split per-direction: first the **cross-group concordance** pair (cells where all 6 groups agree in sign with `stall_count` >= 200 in every group; this is the file's strongest reproducibility readout and the report's headline sub-tabulation), then 12 per-(group, direction) sub-tables (BWM_day_0 / BWM_day_5 / BWM_day_10 / control_day_0 / control_day_5 / control_day_10 x Enriched / Depleted) showing each group's 5 largest enrichments and 5 largest depletions. Rows within each sub-table are sorted by `|log2_enrichment|` descending with `p_adj` ascending as the tie-breaker (the file's `p-magnitude-anchored-ranking` caveat is the reason: rank by effect-size + reproducibility, not by p magnitude, because `iid-violation-binomial` and common-amino-acid `bg_freq` tightness inflate p magnitudes for cells with modest effect at large n). The per-group sub-tables show 5 cells per direction per group (the per-group top-5-per-direction source layout); the family does not adopt a strict-`p_adj`-cutoff family rule because 239/360 cells clear FDR<0.05 and a no-cap layout would render dozens of rows per group. Each row's amino-acid one-letter code is expanded to `<letter> (<full name>)` form on every appearance.
+
+```{=latex}
+\needspace{18\baselineskip}
+```
+
+### Cross-group concordance — Enriched (all 6 groups same sign, k >= 200 per group)
+
+| amino acid | site | mean `log2_enrichment` | range across 6 groups | min `stall_count` (group) | flag |
+| --- | --- | --- | --- | --- | --- |
+| D (aspartate) | P | +0.635 | [+0.545, +0.756] | 482 (BWM_d0) | iid-amp |
+| K (lysine) | E | +0.628 | [+0.524, +0.758] | 917 (BWM_d10) | iid-amp, bg-tight |
+| Y (tyrosine) | A | +0.512 | [+0.224, +0.792] | 251 (BWM_d10) | iid-amp |
+| N (asparagine) | P | +0.459 | [+0.402, +0.527] | 331 (BWM_d0) | iid-amp |
+| N (asparagine) | E | +0.431 | [+0.377, +0.494] | 335 (BWM_d0) | iid-amp |
+| D (aspartate) | A | +0.428 | [+0.266, +0.550] | 383 (BWM_d0) | iid-amp |
+| E (glutamate) | A | +0.416 | [+0.317, +0.540] | 554 (BWM_d0) | iid-amp |
+| E (glutamate) | E | +0.357 | [+0.265, +0.461] | 516 (BWM_d0) | iid-amp |
+
+```{=latex}
+\needspace{16\baselineskip}
+```
+
+### Cross-group concordance — Depleted (all 6 groups same sign, k >= 200 per group)
+
+| amino acid | site | mean `log2_enrichment` | range across 6 groups | min `stall_count` (group) | flag |
+| --- | --- | --- | --- | --- | --- |
+| A (alanine) | E | -0.822 | [-1.002, -0.743] | 286 (BWM_d0) | iid-amp, bg-tight |
+| A (alanine) | A | -0.748 | [-0.939, -0.642] | 289 (BWM_d10) | iid-amp, bg-tight |
+| A (alanine) | P | -0.736 | [-0.810, -0.624] | 294 (BWM_d0) | iid-amp, bg-tight |
+| Q (glutamine) | P | -0.458 | [-0.652, -0.326] | 204 (control_d10) | iid-amp |
+| S (serine) | P | -0.341 | [-0.469, -0.276] | 232 (BWM_d0) |  |
+| S (serine) | E | -0.313 | [-0.578, -0.176] | 215 (BWM_d0) |  |
+| T (threonine) | E | -0.295 | [-0.479, -0.135] | 248 (BWM_d0) |  |
+
+Cells with cross-group direction flips at `|log2_enrichment|` comparable to the rows above: **none in the data**. The largest direction-mixed cells in this CSV are P:K (BWM_d0 +0.174 / control_d0 +0.163 / BWM_d10 -0.100 / control_d10 -0.246, with control_d5 and BWM_d5 ns), E:Q (BWM_d0 -0.134 alone against five small-positive cells), and A:G (mixed near-zero across both conditions) — all below `|log2_enrichment|` ~= 0.30 in their largest-magnitude cell and with at least one non-significant group.
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### BWM_day_0 — Enriched (BWM_day_0 > bg_freq)
+
+| amino acid | site | effect (`log2_enrichment`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| Y (tyrosine) | A | +0.792 | 1.17e-18 | 1.17e-17 | iid-amp |
+| W (tryptophan) | A | +0.767 | 2.88e-06 | 9.59e-06 | rare-aa |
+| K (lysine) | E | +0.725 | 4.35e-54 | 8.70e-53 | iid-amp, bg-tight |
+| D (aspartate) | P | +0.598 | 1.54e-18 | 1.54e-17 | iid-amp |
+| N (asparagine) | E | +0.457 | 1.49e-08 | 7.46e-08 |  |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### BWM_day_0 — Depleted (BWM_day_0 < bg_freq)
+
+| amino acid | site | effect (`log2_enrichment`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| C (cysteine) | E | -1.131 | 2.42e-07 | 9.70e-07 | rare-aa |
+| A (alanine) | E | -0.850 | 3.23e-30 | 3.23e-29 | iid-amp, bg-tight |
+| A (alanine) | P | -0.810 | 3.81e-28 | 7.63e-27 | iid-amp, bg-tight |
+| A (alanine) | A | -0.688 | 7.72e-22 | 1.54e-20 | iid-amp, bg-tight |
+| S (serine) | E | -0.578 | 1.48e-10 | 9.85e-10 |  |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### BWM_day_5 — Enriched (BWM_day_5 > bg_freq)
+
+| amino acid | site | effect (`log2_enrichment`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| D (aspartate) | P | +0.571 | 5.44e-33 | 5.44e-32 | iid-amp |
+| K (lysine) | E | +0.554 | 3.84e-49 | 7.69e-48 | iid-amp, bg-tight |
+| D (aspartate) | A | +0.550 | 2.14e-30 | 2.14e-29 | iid-amp |
+| N (asparagine) | P | +0.482 | 4.08e-18 | 2.72e-17 | iid-amp |
+| N (asparagine) | E | +0.413 | 2.61e-13 | 1.30e-12 | iid-amp |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### BWM_day_5 — Depleted (BWM_day_5 < bg_freq)
+
+| amino acid | site | effect (`log2_enrichment`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| C (cysteine) | E | -0.929 | 7.48e-11 | 2.99e-10 | rare-aa, iid-amp |
+| A (alanine) | P | -0.803 | 1.21e-50 | 2.42e-49 | iid-amp, bg-tight |
+| A (alanine) | A | -0.795 | 7.15e-50 | 1.43e-48 | iid-amp, bg-tight |
+| A (alanine) | E | -0.770 | 2.25e-47 | 2.25e-46 | iid-amp, bg-tight |
+| W (tryptophan) | P | -0.464 | 3.41e-03 | 7.59e-03 | rare-aa |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### BWM_day_10 — Enriched (BWM_day_10 > bg_freq)
+
+| amino acid | site | effect (`log2_enrichment`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| D (aspartate) | P | +0.756 | 1.33e-33 | 2.65e-32 | iid-amp |
+| E (glutamate) | A | +0.540 | 5.23e-22 | 5.23e-21 | iid-amp |
+| D (aspartate) | A | +0.540 | 2.86e-16 | 1.90e-15 | iid-amp |
+| K (lysine) | E | +0.524 | 5.43e-28 | 1.09e-26 | iid-amp, bg-tight |
+| G (glycine) | P | +0.444 | 1.18e-14 | 7.90e-14 | iid-amp |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### BWM_day_10 — Depleted (BWM_day_10 < bg_freq)
+
+| amino acid | site | effect (`log2_enrichment`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| A (alanine) | A | -0.939 | 1.63e-37 | 3.26e-36 | iid-amp, bg-tight |
+| W (tryptophan) | P | -0.781 | 5.36e-04 | 1.19e-03 | rare-aa |
+| A (alanine) | P | -0.747 | 1.85e-26 | 1.85e-25 | iid-amp, bg-tight |
+| A (alanine) | E | -0.743 | 3.73e-26 | 3.73e-25 | iid-amp, bg-tight |
+| T (threonine) | A | -0.511 | 1.95e-10 | 7.80e-10 |  |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### control_day_0 — Enriched (control_day_0 > bg_freq)
+
+| amino acid | site | effect (`log2_enrichment`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| Y (tyrosine) | A | +0.717 | 8.83e-65 | 8.83e-64 | iid-amp |
+| K (lysine) | E | +0.625 | 1.72e-133 | 3.43e-132 | iid-amp, bg-tight |
+| W (tryptophan) | A | +0.600 | 1.99e-14 | 7.96e-14 | iid-amp |
+| D (aspartate) | P | +0.545 | 6.20e-71 | 6.20e-70 | iid-amp |
+| N (asparagine) | P | +0.439 | 1.52e-32 | 1.01e-31 | iid-amp |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### control_day_0 — Depleted (control_day_0 < bg_freq)
+
+| amino acid | site | effect (`log2_enrichment`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| C (cysteine) | E | -0.964 | 2.49e-25 | 1.25e-24 | iid-amp |
+| A (alanine) | E | -0.807 | 2.87e-124 | 2.87e-123 | iid-amp, bg-tight |
+| A (alanine) | P | -0.759 | 1.25e-112 | 2.50e-111 | iid-amp, bg-tight |
+| A (alanine) | A | -0.642 | 1.99e-85 | 3.98e-84 | iid-amp, bg-tight |
+| W (tryptophan) | P | -0.416 | 3.83e-05 | 6.96e-05 | rare-aa |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### control_day_5 — Enriched (control_day_5 > bg_freq)
+
+| amino acid | site | effect (`log2_enrichment`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| K (lysine) | E | +0.758 | 2.41e-91 | 4.82e-90 | iid-amp, bg-tight |
+| D (aspartate) | P | +0.604 | 1.34e-34 | 2.69e-33 | iid-amp |
+| E (glutamate) | A | +0.463 | 9.39e-27 | 9.39e-26 | iid-amp |
+| N (asparagine) | P | +0.462 | 5.65e-16 | 3.77e-15 | iid-amp |
+| E (glutamate) | E | +0.461 | 2.05e-26 | 1.37e-25 | iid-amp |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### control_day_5 — Depleted (control_day_5 < bg_freq)
+
+| amino acid | site | effect (`log2_enrichment`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| A (alanine) | E | -1.002 | 2.12e-64 | 2.12e-63 | iid-amp, bg-tight |
+| C (cysteine) | E | -0.882 | 1.59e-10 | 5.31e-10 | rare-aa, iid-amp |
+| A (alanine) | A | -0.771 | 8.46e-43 | 1.69e-41 | iid-amp, bg-tight |
+| W (tryptophan) | P | -0.717 | 4.65e-05 | 9.30e-05 | rare-aa |
+| A (alanine) | P | -0.624 | 1.79e-30 | 1.79e-29 | iid-amp, bg-tight |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### control_day_10 — Enriched (control_day_10 > bg_freq)
+
+| amino acid | site | effect (`log2_enrichment`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| D (aspartate) | P | +0.735 | 3.26e-44 | 6.53e-43 | iid-amp |
+| Y (tyrosine) | A | +0.597 | 4.92e-14 | 2.46e-13 | iid-amp |
+| K (lysine) | E | +0.581 | 6.52e-43 | 1.30e-41 | iid-amp, bg-tight |
+| N (asparagine) | P | +0.527 | 5.66e-16 | 3.77e-15 | iid-amp |
+| N (asparagine) | E | +0.494 | 5.09e-14 | 2.54e-13 | iid-amp |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### control_day_10 — Depleted (control_day_10 < bg_freq)
+
+| amino acid | site | effect (`log2_enrichment`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| W (tryptophan) | P | -0.957 | 8.14e-06 | 1.63e-05 | rare-aa |
+| C (cysteine) | E | -0.813 | 1.41e-06 | 5.63e-06 | rare-aa |
+| A (alanine) | E | -0.760 | 1.09e-36 | 1.09e-35 | iid-amp, bg-tight |
+| A (alanine) | P | -0.675 | 2.06e-30 | 2.06e-29 | iid-amp, bg-tight |
+| A (alanine) | A | -0.654 | 6.81e-29 | 1.36e-27 | iid-amp, bg-tight |
+
+### Flag glossary
+
+- `iid-amp` — applied to every Top-hits row with `p_adj` < 1e-10. The `iid-violation-binomial` caveat (binomial null assumes iid Bernoulli draws but stall events on the same transcript are correlated) compresses p-values for cells with non-trivial `log2_enrichment` to extreme magnitudes regardless of biological strength; the flag marks these rows as "p magnitude inflated, not a magnitude claim."
+- `bg-tight` — applied to rows where `bg_freq` > 0.05 (common amino acids). At high n, a tight binomial null on a high-frequency amino acid produces extreme p at modest log2 — flagged for the same "p magnitude inflated" reason as `iid-amp`. The two flags co-occur on common-amino-acid rows with extreme p.
+- `rare-aa` — `stall_count` is below the file's stability threshold of k<100 across the relevant groups (in this file C at E site, W at A/P sites, and M at P/E sites are the rare-aa hits). Direction is reliable; magnitude is not. Trp at P site is a single-codon amino acid (TGG), so the rare flag persists at codon resolution — no synonym-resolution rescue is possible.
+
+## Numbers at a glance
+
+- `n_tests`: 360 (6 groups x 3 sites x 20 amino acids)
+- `n_significant` (adjusted-p < 0.05): 239
+- `n_significant` (adjusted-p < 0.10): 264
+- `min adjusted-p`: 3.43e-132 (control_day_0, E site, K; log2=+0.625, k=3362/27732) — under `iid-violation-binomial` and `bg-tight`, this row's flag column carries both flags; this is **not** a magnitude claim.
+- `p_floor`: n/a — no exact-test floor for the binomial at these n.
+- Per (group, site) BH families (each is 20 amino-acid tests):
+  - BWM_day_0: A 13/20, P 13/20, E 13/20 hits at p_adj<0.05; min p_adj per site 1.54e-20 (A:A), 7.63e-27 (P:A), 8.70e-53 (E:K).
+  - BWM_day_5: A 13/20, P 13/20, E 13/20; min 1.43e-48 (A:A), 2.42e-49 (P:A), 7.69e-48 (E:K).
+  - BWM_day_10: A 14/20, P 12/20, E 8/20; min 3.26e-36 (A:A), 2.65e-32 (P:D), 1.09e-26 (E:K).
+  - control_day_0: A 14/20, P 16/20, E 14/20; min 3.98e-84 (A:A), 2.50e-111 (P:A), 3.43e-132 (E:K).
+  - control_day_5: A 13/20, P 13/20, E 16/20; min 1.69e-41 (A:A), 2.69e-33 (P:D), 4.82e-90 (E:K).
+  - control_day_10: A 13/20, P 17/20, E 14/20; min 1.36e-27 (A:A), 6.53e-43 (P:D), 1.09e-35 (E:K).
+
+## Biological interpretation
+
+**The dominant signal of this file is cross-group concordance, not perturbation (concrete).** The largest-magnitude cells (mean `|log2_enrichment|` > 0.4) all move in the same direction across BWM and control at d0, d5, and d10. Eight cells are enriched and seven depleted with `stall_count` >= 200 in every group; cells where direction flips across the 6 groups at comparable magnitude do not appear in the data. The file therefore reads as a structural map of which amino acids are over- and under-represented at each ribosome site relative to their transcriptome-window frequency, stable across perturbation and time. The biology this report can extract from this CSV is "what does the stalling-prone residue map look like" — perturbation contrasts live in the per-timepoint Fisher sister file.
+
+**E-site lysine and P-site aspartate are the two strongest reproducible enrichments (concrete).** Lys at the E site has mean `log2_enrichment` +0.63 (range +0.52 to +0.76 across the 6 groups, `stall_count` 917-3362) and Asp at the P site has mean +0.64 (range +0.55 to +0.76, `stall_count` 482-2344). E-site lysine is a textbook ribosome-pause anchor: as the ribosome translocates, the positively charged lysine side-chain continues to interact electrostatically with the negatively charged exit tunnel, slowing the elongation cycle. P-site aspartate is consistent with peptide-bond chemistry that pauses on acidic residues, and the comparable enrichment of glutamate at sites A, E, and P (means +0.42, +0.36, +0.42, all FDR<0.05 in every group) reinforces the acidic-residue pause-promoting reading. The stability across BWM/control x d0/d5/d10 is what makes these concordance signals rather than perturbation signals.
+
+**Uniform alanine depletion across all three sites is the structural counterpart to the enrichment story (concrete).** Alanine at site E (mean -0.82), site A (mean -0.75), and site P (mean -0.74) is depleted in every group with `stall_count` >= 286 in every group. Alanine has the smallest non-glycine side-chain among the proteinogenic amino acids and is mechanistically the most pause-resistant residue: it interacts weakly with the exit tunnel and decodes via abundant tRNA-Ala isoacceptors. The uniform under-representation at stall sites mirrors the K/D/E enrichment story by inversion — stalling concentrates on residues with pause-promoting side-chain properties (positively charged, acidic, aromatic) and avoids the residue least likely to pause.
+
+**Rare-amino-acid cells reach large `|log2_enrichment|` but are flagged for ranking discipline (exploratory).** Cys at the E site (`stall_count` 34-191 across groups, `|log2_enrichment|` up to 1.13 in BWM_day_0) and Trp at the P site (`stall_count` 36-263, `|log2_enrichment|` up to 0.96 in control_day_10) sit in the per-group Top-hits sub-tables with magnitudes comparable to the concordance cells, but the per-CSV `rare-aa-low-count` caveat flags them: their log2 estimates are noisier than common-amino-acid cells (where `stall_count` typically runs 300-3000), and their position in the per-group tables reflects per-group accident as much as biology. Direction is the usable signal for these rows; magnitude is not. Trp at P site is a single-codon amino acid (TGG), so the rare flag persists at codon resolution in the sister CSV — no synonym-resolution rescue is possible.
+
+**The headline-grade p magnitudes (down to 1e-132) are iid-violation amplification, not biological strength (concrete).** The file-minimum `p_adj` cell is control_day_0 E:K at 3.43e-132 — a p-value that is not interpretable on the usual "smaller p = stronger biology" axis. The `iid-violation-binomial` caveat names the structural reason: the binomial null assumes 27732 iid Bernoulli draws (one per stall-site position) with p=`bg_freq`, but stall events on the same transcript are not independent (one stall site biases neighbouring positions; per-transcript coverage varies). Combined with the common-amino-acid `bg_freq` tightness (Lys `bg_freq` ~= 0.08, so the binomial null is sharp), modest enrichments at very large n compress to vanishing p-values. Read this file by `log2_enrichment` magnitude and cross-group reproducibility, in that order; treat any `p_adj` < 1e-10 as flagged by `iid-amp` (and `bg-tight` for high-`bg_freq` cells) regardless of the magnitude.
+
+**What to carry forward.** *Concrete*: the 15-cell cross-group concordance set (8 enriched + 7 depleted) as a structural map of stall-site amino-acid composition that is stable across perturbation and time; E:K and P:D as the strongest enriched cells; uniform alanine depletion at A/P/E as the structural-baseline counterpart; acidic residues (D, E) over-represented at A and P sites alongside the headline cells. *Exploratory*: rare-amino-acid cells (E:C, P:W) — direction reliable, magnitude not, worth checking the codon sister CSV for synonym distribution (Trp is single-codon, so the rare flag persists at codon resolution). *Noise*: any per-cell p-magnitude reading above the iid-amplification floor — quote magnitude + reproducibility, not p. Cross-checks worth running in sister files: does the per-timepoint Fisher show BWM-vs-control divergence on top of any of these concordance cells (perturbation overlay on the structural map); does the within-condition binomial codon sister split any of the amino-acid-level concordance into a single-synonym story (refining the biological reading from "amino-acid property" to "specific tRNA/codon").
+
+## Methods
+
+The test is a one-sample binomial (`stall_count` ~ Binomial(`total_n`, `bg_freq`), two-sided), with BH-FDR computed within each (group, site) family of 20 amino-acid tests (each of the 18 sub-families is corrected independently, not against the full 360). Effect column is `log2_enrichment` = log2(`stall_freq` / `bg_freq`); a count-weighted variant `weighted_log2_enrichment` is also present in the CSV but is not used for ranking here (the unweighted log2 is what the binomial p reflects). The test answers "is amino acid X observed at stall sites at a different frequency than its `bg_freq` in the same group's transcriptome window?", **not** "is amino acid X enriched at BWM stall sites relative to control" (that is the per-timepoint Fisher) and **not** "does the within-condition replicate-level frequency change between timepoints" (that is between-timepoint Wilcoxon). Counts (`stall_count`) and totals (`total_n`) are summed across replicates before the test, hence the family-level pseudoreplication caveat. Top hits per group are 5 enriched + 5 depleted per (group, direction); no strict-`p_adj`-cutoff family rule is applied because 239/360 cells clear FDR<0.05 and a no-cap layout would render dozens of rows per group. The cross-group concordance sub-tables show every cell where the sign agrees across all 6 groups with `stall_count` >= 200 in every group — the report's headline sub-tabulation, kept as the lead Top-hits view because the file's dominant structure is reproducibility rather than per-group novelty.
+
+## What the caveats mean for reading this file
+
+- **pseudorep.** The binomial test pools replicates into one `stall_count` and one `total_n` per (group, site, aa) cell; per-replicate variation is invisible to the statistic, so p-values are anti-conservative — treat the smallest p-magnitudes as inflated, not as additional certainty.
+- **iid-violation-binomial.** The binomial null assumes `total_n` iid Bernoulli draws, but stall events on the same transcript are correlated and transcripts vary in coverage; this is the dominant reason p-values compress to 1e-22 and beyond. Rank by `log2_enrichment` + `stall_count` + cross-group reproducibility, not by p magnitude.
+- **bg-pseudocount-1e-6.** The upstream pipeline floors `bg_freq` at 1e-6 to avoid log2 division-by-zero; does not affect any Top-hits row (all have `bg_freq` > 0.008). Only relevant for genuinely absent features, which produce extreme `log2_enrichment` when k>0.
+- **bh-per-(group, site).** BH-FDR is per (group, site) family of 20; site-level FDR control is per-20-aa, not pooled across the 60 amino acids per group. Two rows with the same raw p in different (group, site) families can land at different `p_adj`.
+- **rare-aa-low-count.** Cells with `stall_count` below ~100 in some groups (lowest: BWM_d10 P:W k=36; BWM_d0 E:C k=34) have noisier log2 estimates and carry the `rare-aa` flag in Top hits. Several rare-aa cells (E:C, P:W) reach magnitude `|log2_enrichment|` ~= 0.7-1.1 — read direction; do not rank alongside high-count cells.
+- **small-bh-family-discreteness.** Each (group, site) BH family is only 20 tests, but with the `iid-violation-binomial`-driven extreme p magnitudes, discreteness rarely binds (per-family FDR<0.05 hit fractions run 8/20 to 17/20). Flag carried for parity with the sister codon CSV, where larger 61-codon BH families behave differently.
+- **p-magnitude-anchored-ranking.** `p_adj` down to 3.4e-132 is best read as a joint readout of (`log2_enrichment` magnitude) x (`total_n`) x (`iid-violation-binomial` amplification factor), not as biological strength. The Top hits flag column applies `iid-amp` to every `p_adj` < 1e-10 row regardless of direction (no selective dampening), and adds `bg-tight` for rows with `bg_freq` > 0.05 (which makes the binomial null especially tight at high n). Reading priority: `log2_enrichment` magnitude + `stall_count` + cross-group reproducibility, in that order.
+
+### Considered and ruled out
+
+*(none — no caveats were considered-but-not-applicable for this file.)*
+
+---
+
+## Plots — composite (additional grids)
+
+Additional composite grids beyond the headline figures above. The headline BWM and control 3x3 grids are the canonical unweighted view; the per-day grids below re-slice the same data by timepoint (BWM and control paired). The weighted grids (bottom half of this section) plot `weighted_log2_enrichment` (count-weighted by stall frequency) on the x-axis instead of the unweighted `log2_enrichment`; the axis range is much tighter (~+/-0.10 vs ~+/-1.5), but the FDR significance status (triangle vs circle) of each amino acid is the same in both versions because both share the binomial p-value.
+
+![Day 0 2x3 grid (rows: BWM / control; columns: A / P / E) — unweighted `log2_enrichment` (x) against -log10(FDR) (y). Same colour key as the headline. Day-0 paired view: BWM and control at the same timepoint side-by-side. Largest y-axis extents in the file (control_day_0 E:K reaches -log10(FDR) ~= 132 in this panel — visibly off the linear scale of the other panels).](../../plots/within_condition/composite/unweighted/day_0_volcano_grid.png)
+
+![Day 5 2x3 grid (rows: BWM / control; columns: A / P / E) — unweighted `log2_enrichment` (x) against -log10(FDR) (y). Same colour key as the headline. Day-5 paired view; A-site Ala is the dominant depleted hit in every panel (mean -0.78), E-site Lys and P-site Asp the dominant enriched cells.](../../plots/within_condition/composite/unweighted/day_5_volcano_grid.png)
+
+![Day 10 2x3 grid (rows: BWM / control; columns: A / P / E) — unweighted `log2_enrichment` (x) against -log10(FDR) (y). Same colour key as the headline. Day-10 paired view; BWM-day-10 shows visibly fewer FDR<0.05 hits at the E-site than the other (group, site) cells (8/20 vs 13-17/20 elsewhere), consistent with the per-group hit-fraction summary in Numbers at a glance.](../../plots/within_condition/composite/unweighted/day_10_volcano_grid.png)
+
+![6x3 grid of weighted amino-acid binomial volcano panels: rows are the 6 (condition, day) groups (BWM and control x Day 0 / Day 5 / Day 10); columns are ribosome sites in A / P / E order. Same glyph labelling and colour key as the unweighted headline grids, but with the x-axis showing `weighted_log2_enrichment` (count-weighted by stall frequency) at range ~+/-0.10. Same FDR significance status as the unweighted version (triangles for FDR<0.05, circles for ns) because both versions share the binomial p-value; only x-coordinates differ.](../../plots/within_condition/composite/weighted/all_groups_volcano_grid.png)
+
+![BWM 3x3 weighted grid — `weighted_log2_enrichment` (x, range ~+/-0.10) against -log10(FDR) (y). Same colour key as the headline.](../../plots/within_condition/composite/weighted/BWM_volcano_grid.png)
+
+![control 3x3 weighted grid — `weighted_log2_enrichment` (x, range ~+/-0.10) against -log10(FDR) (y). Same colour key as the headline.](../../plots/within_condition/composite/weighted/control_volcano_grid.png)
+
+![Day 0 2x3 weighted grid — `weighted_log2_enrichment` (x, range ~+/-0.15) against -log10(FDR) (y). Same colour key as the headline.](../../plots/within_condition/composite/weighted/day_0_volcano_grid.png)
+
+![Day 5 2x3 weighted grid — `weighted_log2_enrichment` (x, range ~+/-0.10) against -log10(FDR) (y). Same colour key as the headline.](../../plots/within_condition/composite/weighted/day_5_volcano_grid.png)
+
+![Day 10 2x3 weighted grid — `weighted_log2_enrichment` (x, range ~+/-0.10) against -log10(FDR) (y). Same colour key as the headline.](../../plots/within_condition/composite/weighted/day_10_volcano_grid.png)
+
+---
+
+## Plots — individual
+
+Each panel below is one (group, site) BH-FDR family of 20 amino acids, plotted as a volcano: `log2_enrichment` (unweighted versions, x-range ~+/-1.5) or `weighted_log2_enrichment` (weighted versions, x-range ~+/-0.10) on the x-axis, -log10(FDR) on the y-axis. Triangles mark FDR<0.05; circles are non-significant. Amino acids are labelled by one-letter code and coloured by chemical property (red = acidic, blue = basic, green = hydrophobic, orange = neutral, purple = polar). Horizontal dashed line marks FDR = 0.05; vertical dashed lines mark log2 = +/-0.5 (unweighted only).
+
+### Unweighted individuals
+
+![BWM Day 0 A-site unweighted volcano. A (Ala, hydrophobic green) at log2 ~= -0.69, -log10(FDR) ~= 20 sits as the largest depleted hit (top-left). Y (Tyr, hydrophobic green) at log2 ~= +0.79, -log10(FDR) ~= 17 is the largest enriched hit. N (Asn, polar purple) at log2 ~= -0.84, -log10(FDR) ~= 13 and E (Glu, acidic red) at log2 ~= +0.40, -log10(FDR) ~= 10 are next-largest. T (Thr, polar) and W (Trp, hydrophobic) are also FDR<0.05.](../../plots/within_condition/individual/unweighted/BWM_day_0_A_volcano.png)
+
+![BWM Day 0 P-site unweighted volcano. A (Ala, hydrophobic green) at log2 ~= -0.81, -log10(FDR) ~= 26 sits as the most extreme depleted hit (top-left, panel-maximum y). D (Asp, acidic red) at log2 ~= +0.60, -log10(FDR) ~= 17 is the largest enriched hit. N (Asn, polar purple), S (Ser, polar), and G (Gly, neutral orange) are next; K (Lys, basic blue) and T (Thr, polar) cross FDR<0.05 at modest magnitudes.](../../plots/within_condition/individual/unweighted/BWM_day_0_P_volcano.png)
+
+![BWM Day 0 E-site unweighted volcano. K (Lys, basic blue) at log2 ~= +0.73, -log10(FDR) ~= 53 sits as the panel-maximum enriched hit. A (Ala, hydrophobic green) at log2 ~= -0.85, -log10(FDR) ~= 29 is the largest depleted hit. C (Cys, hydrophobic green) at log2 ~= -1.13, -log10(FDR) ~= 6 is rare-aa-flagged. S (Ser, polar), N (Asn, polar), and E (Glu, acidic red) also clear FDR<0.05.](../../plots/within_condition/individual/unweighted/BWM_day_0_E_volcano.png)
+
+![BWM Day 5 A-site unweighted volcano. A (Ala, hydrophobic green) at log2 ~= -0.80, -log10(FDR) ~= 48 sits as the largest depleted hit. D (Asp, acidic red) at log2 ~= +0.55, -log10(FDR) ~= 29 and E (Glu, acidic red) at log2 ~= +0.40, -log10(FDR) ~= 7 are the largest enriched hits. K (Lys, basic blue) and T (Thr, polar) also FDR<0.05.](../../plots/within_condition/individual/unweighted/BWM_day_5_A_volcano.png)
+
+![BWM Day 5 P-site unweighted volcano. A (Ala, hydrophobic green) at log2 ~= -0.80, -log10(FDR) ~= 49 sits as the panel-maximum depleted hit. D (Asp, acidic red) at log2 ~= +0.57, -log10(FDR) ~= 32 and N (Asn, polar purple) at log2 ~= +0.48, -log10(FDR) ~= 17 are the largest enriched hits. W (Trp, hydrophobic green) at log2 ~= -0.46, -log10(FDR) ~= 2 is rare-aa-flagged.](../../plots/within_condition/individual/unweighted/BWM_day_5_P_volcano.png)
+
+![BWM Day 5 E-site unweighted volcano. K (Lys, basic blue) at log2 ~= +0.55, -log10(FDR) ~= 47 and A (Ala, hydrophobic green) at log2 ~= -0.77, -log10(FDR) ~= 46 sit as the panel's enriched and depleted maxima. N (Asn, polar purple), D (Asp, acidic red), and E (Glu, acidic red) are next-largest on the enriched side; C (Cys, hydrophobic green, rare-aa) is the largest non-A depleted hit.](../../plots/within_condition/individual/unweighted/BWM_day_5_E_volcano.png)
+
+![BWM Day 10 A-site unweighted volcano. A (Ala, hydrophobic green) at log2 ~= -0.94, -log10(FDR) ~= 35 sits as the largest depleted hit. E (Glu, acidic red) at log2 ~= +0.54, -log10(FDR) ~= 21 and D (Asp, acidic red) at log2 ~= +0.54, -log10(FDR) ~= 15 are the largest enriched hits; T (Thr, polar) and G (Gly, neutral orange) also FDR<0.05.](../../plots/within_condition/individual/unweighted/BWM_day_10_A_volcano.png)
+
+![BWM Day 10 P-site unweighted volcano. A (Ala, hydrophobic green) at log2 ~= -0.75, -log10(FDR) ~= 25 sits as the largest depleted hit; D (Asp, acidic red) at log2 ~= +0.76, -log10(FDR) ~= 32 is the largest enriched hit (panel-max). G (Gly, neutral orange) at log2 ~= +0.44, -log10(FDR) ~= 14, N (Asn, polar purple), and W (Trp, hydrophobic green, rare-aa-flagged) round out FDR<0.05.](../../plots/within_condition/individual/unweighted/BWM_day_10_P_volcano.png)
+
+![BWM Day 10 E-site unweighted volcano. K (Lys, basic blue) at log2 ~= +0.52, -log10(FDR) ~= 26 sits as the largest enriched hit. A (Ala, hydrophobic green) at log2 ~= -0.74, -log10(FDR) ~= 25 is the largest depleted hit. E (Glu, acidic red), N (Asn, polar purple), D (Asp, acidic red), and T (Thr, polar) round out the FDR<0.05 hits. Fewest E-site BWM hits in the file (8/20).](../../plots/within_condition/individual/unweighted/BWM_day_10_E_volcano.png)
+
+![control Day 0 A-site unweighted volcano. Y (Tyr, hydrophobic green) at log2 ~= +0.72, -log10(FDR) ~= 64 sits as the panel-maximum enriched hit. A (Ala, hydrophobic green) at log2 ~= -0.64, -log10(FDR) ~= 84 is the largest depleted hit (and one of the file's largest control_day_0 depletions). W (Trp, hydrophobic green) at log2 ~= +0.60 is enriched, E (Glu, acidic red), and D (Asp, acidic red) also FDR<0.05.](../../plots/within_condition/individual/unweighted/control_day_0_A_volcano.png)
+
+![control Day 0 P-site unweighted volcano. A (Ala, hydrophobic green) at log2 ~= -0.76, -log10(FDR) ~= 111 is the largest depleted hit and the panel-maximum y. D (Asp, acidic red) at log2 ~= +0.55, -log10(FDR) ~= 70 and N (Asn, polar purple) at log2 ~= +0.44, -log10(FDR) ~= 32 are the largest enriched hits. Q (Gln, polar purple, depleted) and W (Trp, hydrophobic green, depleted, rare-aa) also FDR<0.05.](../../plots/within_condition/individual/unweighted/control_day_0_P_volcano.png)
+
+![control Day 0 E-site unweighted volcano. K (Lys, basic blue) at log2 ~= +0.63, -log10(FDR) ~= 132 sits as the file-minimum `p_adj` cell — visibly the most extreme point in the entire dataset. A (Ala, hydrophobic green) at log2 ~= -0.81, -log10(FDR) ~= 123 is the largest depleted hit. C (Cys, hydrophobic green, rare-aa), N (Asn, polar purple), and E (Glu, acidic red) also FDR<0.05.](../../plots/within_condition/individual/unweighted/control_day_0_E_volcano.png)
+
+![control Day 5 A-site unweighted volcano. E (Glu, acidic red) at log2 ~= +0.46, -log10(FDR) ~= 26 is the largest enriched hit. A (Ala, hydrophobic green) at log2 ~= -0.77, -log10(FDR) ~= 41 is the largest depleted hit. Y (Tyr, hydrophobic green), L (Leu, hydrophobic green), T (Thr, polar), and N (Asn, polar purple) also FDR<0.05.](../../plots/within_condition/individual/unweighted/control_day_5_A_volcano.png)
+
+![control Day 5 P-site unweighted volcano. A (Ala, hydrophobic green) at log2 ~= -0.62, -log10(FDR) ~= 30 sits as the largest depleted hit. D (Asp, acidic red) at log2 ~= +0.60, -log10(FDR) ~= 33 and N (Asn, polar purple) at log2 ~= +0.46, -log10(FDR) ~= 15 are the largest enriched hits. W (Trp, hydrophobic green) and Q (Gln, polar) also FDR<0.05.](../../plots/within_condition/individual/unweighted/control_day_5_P_volcano.png)
+
+![control Day 5 E-site unweighted volcano. K (Lys, basic blue) at log2 ~= +0.76, -log10(FDR) ~= 90 is the panel-maximum enriched hit. A (Ala, hydrophobic green) at log2 ~= -1.00, -log10(FDR) ~= 63 is the largest depleted hit (largest control_day_5 depletion magnitude). E (Glu, acidic red), C (Cys, hydrophobic green, rare-aa), T (Thr, polar) also FDR<0.05.](../../plots/within_condition/individual/unweighted/control_day_5_E_volcano.png)
+
+![control Day 10 A-site unweighted volcano. Y (Tyr, hydrophobic green) at log2 ~= +0.60, -log10(FDR) ~= 13 is the largest enriched hit. A (Ala, hydrophobic green) at log2 ~= -0.65, -log10(FDR) ~= 27 is the largest depleted hit. E (Glu, acidic red), D (Asp, acidic red), L (Leu, hydrophobic green) also FDR<0.05.](../../plots/within_condition/individual/unweighted/control_day_10_A_volcano.png)
+
+![control Day 10 P-site unweighted volcano. A (Ala, hydrophobic green) at log2 ~= -0.68, -log10(FDR) ~= 30 sits as the largest depleted hit. D (Asp, acidic red) at log2 ~= +0.74, -log10(FDR) ~= 43 and N (Asn, polar purple) at log2 ~= +0.53, -log10(FDR) ~= 15 are the largest enriched hits. W (Trp, hydrophobic green, rare-aa), G (Gly, neutral orange), Q (Gln, polar) also FDR<0.05; densest P-site panel in the file (17/20 hits).](../../plots/within_condition/individual/unweighted/control_day_10_P_volcano.png)
+
+![control Day 10 E-site unweighted volcano. K (Lys, basic blue) at log2 ~= +0.58, -log10(FDR) ~= 42 is the panel-maximum enriched hit. A (Ala, hydrophobic green) at log2 ~= -0.76, -log10(FDR) ~= 36 is the largest depleted hit. N (Asn, polar purple) at log2 ~= +0.49 enriched, E (Glu, acidic red) enriched; C (Cys, hydrophobic green, rare-aa) and W (Trp, hydrophobic green, rare-aa) also FDR<0.05.](../../plots/within_condition/individual/unweighted/control_day_10_E_volcano.png)
+
+### Weighted individuals
+
+Weighted individual panels plot `weighted_log2_enrichment` on the x-axis (range ~+/-0.10) instead of `log2_enrichment`. The FDR significance status of each amino acid is the same as in the unweighted version (binomial p-value is the same); only the x-coordinate differs. Captions below give panel-maximum positions in the weighted-axis scale.
+
+![BWM Day 0 A-site weighted volcano. A (Ala) at weighted log2 ~= -0.04 sits as the largest depleted hit; Y (Tyr) at ~= +0.04 is the largest enriched hit. Same significance pattern as the unweighted version.](../../plots/within_condition/individual/weighted/BWM_day_0_A_volcano.png)
+
+![BWM Day 0 P-site weighted volcano. A (Ala) at weighted log2 ~= -0.06 sits as the largest depleted hit; D (Asp) at ~= +0.03 is the largest enriched hit. Same significance pattern as the unweighted version.](../../plots/within_condition/individual/weighted/BWM_day_0_P_volcano.png)
+
+![BWM Day 0 E-site weighted volcano. K (Lys) at weighted log2 ~= +0.07 sits as the panel-maximum enriched hit; A (Ala) at ~= -0.07 is the largest depleted hit. Same significance pattern as the unweighted version.](../../plots/within_condition/individual/weighted/BWM_day_0_E_volcano.png)
+
+![BWM Day 5 A-site weighted volcano. A (Ala) at weighted log2 ~= -0.05 is the largest depleted hit; D (Asp) and E (Glu) at ~= +0.03 are the largest enriched hits. Same significance pattern as the unweighted version.](../../plots/within_condition/individual/weighted/BWM_day_5_A_volcano.png)
+
+![BWM Day 5 P-site weighted volcano. A (Ala) at weighted log2 ~= -0.05 is the largest depleted hit; D (Asp) at ~= +0.03 is the largest enriched hit. Same significance pattern as the unweighted version.](../../plots/within_condition/individual/weighted/BWM_day_5_P_volcano.png)
+
+![BWM Day 5 E-site weighted volcano. K (Lys) at weighted log2 ~= +0.05 is the largest enriched hit; A (Ala) at ~= -0.06 is the largest depleted hit. Same significance pattern as the unweighted version.](../../plots/within_condition/individual/weighted/BWM_day_5_E_volcano.png)
+
+![BWM Day 10 A-site weighted volcano. A (Ala) at weighted log2 ~= -0.06 is the largest depleted hit; E (Glu) and D (Asp) at ~= +0.03 are the largest enriched hits. Same significance pattern as the unweighted version.](../../plots/within_condition/individual/weighted/BWM_day_10_A_volcano.png)
+
+![BWM Day 10 P-site weighted volcano. D (Asp) at weighted log2 ~= +0.04 is the largest enriched hit; A (Ala) at ~= -0.05 is the largest depleted hit. Same significance pattern as the unweighted version.](../../plots/within_condition/individual/weighted/BWM_day_10_P_volcano.png)
+
+![BWM Day 10 E-site weighted volcano. K (Lys) at weighted log2 ~= +0.05 is the largest enriched hit; A (Ala) at ~= -0.06 is the largest depleted hit. Sparsest E-site panel in the weighted family (matches the 8/20 unweighted count).](../../plots/within_condition/individual/weighted/BWM_day_10_E_volcano.png)
+
+![control Day 0 A-site weighted volcano. Y (Tyr) at weighted log2 ~= +0.02 is the largest enriched hit; A (Ala) at ~= -0.06 is the largest depleted hit. Same significance pattern as the unweighted version.](../../plots/within_condition/individual/weighted/control_day_0_A_volcano.png)
+
+![control Day 0 P-site weighted volcano. A (Ala) at weighted log2 ~= -0.07 is the largest depleted hit; D (Asp) at ~= +0.03 and N (Asn) at ~= +0.02 are the largest enriched hits. Same significance pattern as the unweighted version.](../../plots/within_condition/individual/weighted/control_day_0_P_volcano.png)
+
+![control Day 0 E-site weighted volcano. K (Lys) at weighted log2 ~= +0.05 sits at the file-min `p_adj` position (-log10(FDR) ~= 132); A (Ala) at ~= -0.07 is the largest depleted hit. Same significance pattern as the unweighted version.](../../plots/within_condition/individual/weighted/control_day_0_E_volcano.png)
+
+![control Day 5 A-site weighted volcano. E (Glu) at weighted log2 ~= +0.03 is the largest enriched hit; A (Ala) at ~= -0.07 is the largest depleted hit. Same significance pattern as the unweighted version.](../../plots/within_condition/individual/weighted/control_day_5_A_volcano.png)
+
+![control Day 5 P-site weighted volcano. D (Asp) at weighted log2 ~= +0.03 is the largest enriched hit; A (Ala) at ~= -0.05 is the largest depleted hit. Same significance pattern as the unweighted version.](../../plots/within_condition/individual/weighted/control_day_5_P_volcano.png)
+
+![control Day 5 E-site weighted volcano. K (Lys) at weighted log2 ~= +0.07 is the largest enriched hit; A (Ala) at ~= -0.07 is the largest depleted hit. Same significance pattern as the unweighted version.](../../plots/within_condition/individual/weighted/control_day_5_E_volcano.png)
+
+![control Day 10 A-site weighted volcano. Y (Tyr) at weighted log2 ~= +0.02 is the largest enriched hit; A (Ala) at ~= -0.06 is the largest depleted hit. Same significance pattern as the unweighted version.](../../plots/within_condition/individual/weighted/control_day_10_A_volcano.png)
+
+![control Day 10 P-site weighted volcano. D (Asp) at weighted log2 ~= +0.04 is the largest enriched hit; A (Ala) at ~= -0.06 is the largest depleted hit. Densest P-site weighted panel in the file (matches 17/20 unweighted count).](../../plots/within_condition/individual/weighted/control_day_10_P_volcano.png)
+
+![control Day 10 E-site weighted volcano. K (Lys) at weighted log2 ~= +0.05 is the largest enriched hit; A (Ala) at ~= -0.07 is the largest depleted hit. Same significance pattern as the unweighted version.](../../plots/within_condition/individual/weighted/control_day_10_E_volcano.png)

@@ -1,0 +1,568 @@
+---
+title: "within_condition_binomial_codon"
+subtitle: "ribostall stall_sites — enrichment stats"
+date: 2026-05-27
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    embed-resources: true
+    fig-cap-location: bottom
+  pdf:
+    toc: true
+    fig-cap-location: bottom
+    include-in-header:
+      text: |
+        \usepackage{needspace}
+tbl-colwidths: [8, 5, 5, 17, 14, 14, 37]
+execute:
+  echo: false
+---
+
+## Composite figure
+
+![BWM 3x3 grid of unweighted codon binomial volcano panels: rows are the three BWM timepoints (top to bottom: Day 0, Day 5, Day 10); columns are ribosome sites in A / P / E order. Each panel plots -log10(FDR) (y) against Log2 Enrichment (x, range ~-10 to +10 — wider than the amino-acid version to accommodate rare-codon extreme values). Triangles mark FDR<0.05 hits; circles are non-significant. Each glyph is one of 61 sense codons labelled by its three-letter code and coloured by the amino-acid property of its translation (red = acidic, blue = basic, green = hydrophobic, orange = neutral, purple = polar). Horizontal dashed line is FDR = 0.05; vertical dashed lines are at log2 = +/-0.5. The same GAT-enriched / GCC-depleted structure repeats across all three BWM days with no direction flips at the high-count cells.](../../plots/within_condition/codon/composite/unweighted/BWM_volcano_grid.png)
+
+![control 3x3 grid of unweighted codon binomial volcano panels: rows are the three control timepoints (top to bottom: Day 0, Day 5, Day 10); columns are ribosome sites in A / P / E order. Axes, glyph labelling, colour key, and dashed reference lines are identical to the BWM grid above. control_day_0 P:GAT (the file-min `p_adj` cell at 3.53e-97) is the most extreme y-axis point in any panel, at the top of the P-site Day 0 panel.](../../plots/within_condition/codon/composite/unweighted/control_volcano_grid.png)
+
+Each glyph is one sense codon tested against its per-group, per-site background frequency (`bg_freq`); a panel is one (group, site) BH-FDR family of 61 codons. Positive Log2 Enrichment means the codon is over-represented at stall sites relative to its background frequency in that group's transcriptome window; negative means under-represented. The test is **within-group**: BWM and control are not compared directly here — that contrast lives in the per-timepoint Fisher sister file. The composite is split into two per-condition 3x3 grids (BWM above, control below) because the combined 6x3 grid overflows a single PDF page. Panels are arranged in A / P / E ribosome-site order across columns; the wide x-axis is needed because rare codons (CGG, ACG, TCG, GGG and similar) can sit at `|log2_enrichment|` >= 2-5 at low counts but rarely cross FDR<0.05 because their `stall_count` is too low to support extreme p-values.
+
+---
+
+## Overview
+
+- **CSV:** `within_condition_binomial_codon.csv`
+- **Family (from `_INDEX.md`):** `within_condition_binomial`
+- **Sister CSV(s):**
+  - `within_condition_binomial_aa.csv`
+- **Test:** One-sample binomial test (k=`stall_count` out of n=`total_n` vs H0: p=`bg_freq`, two-sided); BH-FDR within each (group, site) family of 61 sense codons
+- **Design:** Per (group, site, codon) one-sample binomial: observed `stall_count` is tested against the binomial null `Binomial(total_n, bg_freq)` where `bg_freq` is the codon frequency in that group's transcriptome window. 6 groups (BWM and control x d0/d5/d10) x 3 sites (A/P/E) x 61 sense codons = 1098 tests; replicates are pooled before the test (pseudoreplicated); BH-FDR is applied independently within each of 18 (group, site) families of 61 codons. The test is **within-group**: each group is tested against its own background independently and never against another group.
+
+### Family-level caveats
+
+- **pseudorep** — 2 replicates within a group are summed before the binomial test; per-replicate variation is invisible to the statistic, so p-values are anti-conservative.
+- **iid-violation-binomial** — the binomial null assumes `total_n` iid Bernoulli draws with probability `bg_freq`; stall sites are not iid (the same transcript contributes overlapping A/P/E windows, transcripts vary in coverage, stall calling induces structure). Headline-grade tiny p-values (down to 1e-97 in this file) reflect this violation more than per-feature biological signal. `log2_enrichment` and `stall_count` are the primary effect columns, not p magnitude.
+- **bg-pseudocount-1e-6** — when a codon is missing from the per-group background, `bg_freq` is floored at 1e-6 (upstream pipeline behaviour); for genuinely absent codons this produces extreme `log2_enrichment` when k>0. Mostly a rare-codon corner case (does not affect any Top-hits row here, where all `bg_freq` > 0.001).
+- **bh-per-(group,site)** — BH-FDR is per (group, site) family of 61 codons. `p_adj` means "corrected within this group at this site," not across the whole CSV.
+
+---
+
+## Headline
+
+Within-group binomial against `bg_freq`, 6 groups (BWM and control x d0/d5/d10) x 3 sites (A/P/E) x 61 sense codons = 1098 tests; BH-FDR per (group, site) family of 61. 491/1098 hits at FDR<0.05 (44.7%; 552/1098 at FDR<0.10). File min `p_adj` = 3.53e-97 at control_day_0 P:GAT (`log2_enrichment` = +0.828, `stall_count` = 1558, `total_n` = 27732); this same cell sits in the cross-group concordance set with mean `log2_enrichment` = +0.98 across the 6 groups. The dominant structure of this file is **cross-group concordance**: 35 (codon, site) cells agree in sign across all 6 groups at `stall_count` >= 50 in every group (17 enriched + 18 depleted per the concordance sub-tables below); only 7 cells show any direction flip across groups and all of those have `|log2_enrichment|` <= 0.45 at their largest-magnitude cell. The 10 largest-magnitude shared-direction cells (by mean `log2_enrichment` across the 6 groups) are: P:TCC (Ser) -1.04, P:GCC (Ala) -1.02, P:GAT (Asp) +0.98, E:GCC (Ala) -0.94, A:GCC (Ala) -0.90, P:AAT (Asn) +0.88, E:GCT (Ala) -0.86, A:GCT (Ala) -0.82, E:AAA (Lys) +0.78, P:GGT (Gly) +0.74. The broad lower-tail span of `p_adj` from 3.53e-97 to ~1.0 is shape-driven by `iid-violation-binomial` amplification at high `stall_count` and is not a faithful priority signal across cells — magnitude + cross-group reproducibility is the anchor.
+
+## Top hits
+
+The effect column is `log2_enrichment` = log2(observed `stall_freq` / `bg_freq`); positive means the codon is over-represented at stall sites in that group, negative means under-represented. `p_value` is the raw two-sided binomial p; `p_adj` is BH-corrected within each (group, site) family of 61 codons. Direction is fixed by the binomial layout within one group: `log2_enrichment` > 0 = enriched relative to `bg_freq`, `log2_enrichment` < 0 = depleted relative to `bg_freq`. Sub-tables below are split per-direction: first the **cross-group concordance** pair (35 cells where all 6 groups agree in sign with `stall_count` >= 50 in every group; this is the file's strongest reproducibility readout and the headline sub-tabulation), then 12 per-(group, direction) sub-tables (6 groups x Enriched / Depleted), each showing the top 15 rows by `|log2_enrichment|` descending with `p_adj` ascending as the tiebreaker (the file's `p-magnitude-anchored-ranking` caveat is the reason: rank by effect-size + reproducibility, not by p magnitude, because `iid-violation-binomial` and common-codon `bg_freq` tightness inflate p magnitudes for cells with modest effect at large n). Each per-(group, direction) sub-table is composed of the per-(group, site) top-5 hits (5 enriched + 5 depleted per site, restricted to `stall_count` >= 50; rare-codon cells with k<50 are excluded from the per-group view but still counted in the FDR<0.05 totals). The `aa` column gives the single-letter amino-acid translation of each codon (no parenthetical expansion); the codon cell itself stays as the bare three-letter codon.
+
+```{=latex}
+\needspace{20\baselineskip}
+```
+
+### Cross-group concordance — Enriched (all 6 groups same sign, k >= 50 per group)
+
+| codon | aa | site | mean `log2_enrichment` | range across 6 groups | min `stall_count` | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| GAT | D | P | +0.984 | [+0.83, +1.13] | 272 | iid-amp |
+| AAT | N | P | +0.875 | [+0.73, +1.04] | 74 | iid-amp, rare-codon |
+| AAA | K | E | +0.784 | [+0.57, +0.99] | 105 | iid-amp |
+| GGT | G | P | +0.743 | [+0.48, +1.02] | 81 | rare-codon |
+| GAT | D | A | +0.624 | [+0.31, +0.86] | 184 | iid-amp |
+| AAG | K | E | +0.600 | [+0.52, +0.75] | 812 | iid-amp, bg-tight |
+| CAT | H | P | +0.573 | [+0.46, +0.80] | 52 | iid-amp, rare-codon |
+| TTG | L | A | +0.547 | [+0.38, +0.73] | 96 | iid-amp, rare-codon |
+| TAC | Y | A | +0.500 | [+0.31, +0.65] | 261 | iid-amp |
+| AGA | R | E | +0.442 | [+0.27, +0.62] | 170 | iid-amp |
+| GAA | E | A | +0.422 | [+0.34, +0.59] | 156 | iid-amp |
+| AAC | N | E | +0.418 | [+0.35, +0.49] | 285 | iid-amp |
+| GAG | E | A | +0.411 | [+0.20, +0.58] | 481 | iid-amp |
+| GAG | E | E | +0.374 | [+0.27, +0.56] | 430 | iid-amp |
+| GAA | E | E | +0.329 | [+0.27, +0.42] | 156 |  |
+| AAC | N | P | +0.319 | [+0.25, +0.42] | 226 |  |
+| TTC | F | P | +0.208 | [+0.16, +0.30] | 175 |  |
+
+```{=latex}
+\needspace{22\baselineskip}
+```
+
+### Cross-group concordance — Depleted (all 6 groups same sign, k >= 50 per group)
+
+| codon | aa | site | mean `log2_enrichment` | range across 6 groups | min `stall_count` | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| TCC | S | P | -1.039 | [-1.28, -0.89] | 59 | iid-amp, rare-codon |
+| GCC | A | P | -1.016 | [-1.16, -0.85] | 113 | iid-amp |
+| GCC | A | E | -0.939 | [-1.19, -0.80] | 134 | iid-amp |
+| GCC | A | A | -0.899 | [-1.09, -0.70] | 126 | iid-amp |
+| GCT | A | E | -0.858 | [-0.98, -0.72] | 118 | iid-amp |
+| GCT | A | A | -0.817 | [-0.89, -0.73] | 122 | iid-amp |
+| CTC | L | P | -0.727 | [-0.89, -0.63] | 128 | iid-amp |
+| ACC | T | A | -0.710 | [-0.97, -0.45] | 107 | iid-amp |
+| CAG | Q | P | -0.686 | [-0.80, -0.51] | 50 | iid-amp, rare-codon |
+| CTC | L | A | -0.624 | [-0.81, -0.43] | 139 | iid-amp |
+| GCT | A | P | -0.612 | [-0.72, -0.47] | 137 | iid-amp |
+| ACC | T | P | -0.536 | [-0.66, -0.31] | 132 | iid-amp |
+| TCC | S | A | -0.528 | [-0.69, -0.36] | 154 | rare-codon |
+| CGC | R | P | -0.505 | [-0.69, -0.27] | 92 | iid-amp, rare-codon |
+| CGC | R | E | -0.498 | [-0.69, -0.35] | 99 | iid-amp, rare-codon |
+| TCT | S | A | -0.428 | [-0.59, -0.20] | 50 | rare-codon |
+| CGT | R | P | -0.419 | [-0.46, -0.36] | 100 |  |
+| GTC | V | A | -0.287 | [-0.39, -0.18] | 222 |  |
+
+Cells with cross-group direction flips at `|log2_enrichment|` comparable to the rows above: **none in the data**. The 7 direction-flip cells in this file (A:GGA Gly, P:GGA Gly, P:ATG Met, P:AAG Lys, E:ATC Ile, A:ATC Ile, P:ATC Ile) all have `|log2_enrichment|` <= 0.45 at their largest-magnitude cell and at least one non-significant group in the 6-group set; the largest direction-flip cell (A:GGA, +0.45 / -0.14) is small relative to any concordance row above. This empirical asymmetry — concordance cells reach `|log2_enrichment|` ~1, direction-flip cells cap at ~0.45 — is itself an observation for cross-test reconciliation.
+
+```{=latex}
+\needspace{20\baselineskip}
+```
+
+### BWM_day_0 — Enriched (BWM_day_0 > bg_freq)
+
+| codon | aa | site | effect (`log2_enrichment`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| AAT | N | P | +1.043 | 2.04e-08 | 1.56e-07 | rare-codon |
+| AAA | K | E | +0.990 | 2.08e-11 | 3.18e-10 |  |
+| GAT | D | P | +0.875 | 2.62e-20 | 7.98e-19 | iid-amp |
+| GGT | G | P | +0.835 | 1.52e-06 | 1.03e-05 | rare-codon |
+| TAC | Y | A | +0.824 | 1.01e-17 | 6.14e-16 | iid-amp |
+| TGG | W | A | +0.767 | 2.88e-06 | 2.51e-05 | rare-codon |
+| CAT | H | A | +0.741 | 1.71e-04 | 8.01e-04 | rare-codon |
+| TCG | S | A | +0.694 | 1.10e-03 | 4.18e-03 | rare-codon |
+| AAG | K | E | +0.693 | 1.42e-43 | 8.65e-42 | iid-amp, bg-tight |
+| TTG | L | A | +0.629 | 2.79e-05 | 1.89e-04 |  |
+| AGA | R | E | +0.616 | 1.24e-07 | 1.26e-06 |  |
+| ATT | I | P | +0.552 | 1.57e-04 | 7.98e-04 |  |
+| CAT | H | P | +0.511 | 1.56e-02 | 3.84e-02 | rare-codon |
+| AAC | N | E | +0.454 | 2.46e-07 | 2.15e-06 |  |
+| GAA | E | E | +0.350 | 2.97e-03 | 1.21e-02 |  |
+
+```{=latex}
+\needspace{20\baselineskip}
+```
+
+### BWM_day_0 — Depleted (BWM_day_0 < bg_freq)
+
+| codon | aa | site | effect (`log2_enrichment`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| TCC | S | P | -1.281 | 1.23e-15 | 2.51e-14 | iid-amp, rare-codon |
+| GCC | A | P | -1.164 | 1.30e-23 | 7.95e-22 | iid-amp |
+| AAC | N | A | -1.057 | 4.29e-17 | 1.31e-15 | iid-amp |
+| ACC | T | A | -0.967 | 4.22e-15 | 8.59e-14 | iid-amp |
+| TCC | S | E | -0.955 | 1.50e-10 | 1.83e-09 | rare-codon |
+| GCT | A | E | -0.939 | 1.26e-15 | 2.56e-14 | iid-amp |
+| GCC | A | E | -0.918 | 8.84e-17 | 2.70e-15 | iid-amp |
+| GCT | A | A | -0.891 | 1.91e-14 | 2.91e-13 | iid-amp |
+| CTC | L | P | -0.821 | 7.20e-13 | 1.10e-11 | iid-amp |
+| CAG | Q | P | -0.781 | 3.43e-05 | 2.09e-04 | rare-codon |
+| GCC | A | A | -0.755 | 1.12e-12 | 1.37e-11 | iid-amp |
+| GTC | V | P | -0.730 | 1.07e-11 | 1.31e-10 |  |
+| TCT | S | A | -0.574 | 3.47e-03 | 1.16e-02 | rare-codon |
+| TAC | Y | E | -0.517 | 1.22e-04 | 6.76e-04 |  |
+| ACC | T | E | -0.471 | 2.03e-05 | 1.37e-04 |  |
+
+```{=latex}
+\needspace{20\baselineskip}
+```
+
+### BWM_day_5 — Enriched (BWM_day_5 > bg_freq)
+
+| codon | aa | site | effect (`log2_enrichment`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| GAT | D | P | +0.958 | 2.88e-50 | 1.75e-48 | iid-amp |
+| AAT | N | P | +0.944 | 2.61e-18 | 3.98e-17 | iid-amp |
+| TTT | F | P | +0.932 | 4.25e-08 | 2.16e-07 | rare-codon |
+| GAT | D | A | +0.859 | 7.96e-39 | 4.86e-37 | iid-amp |
+| TAT | Y | P | +0.848 | 2.00e-08 | 1.11e-07 |  |
+| TAT | Y | A | +0.848 | 2.00e-08 | 1.74e-07 |  |
+| CAT | H | P | +0.804 | 5.76e-09 | 3.51e-08 |  |
+| AAA | K | E | +0.781 | 2.42e-14 | 3.69e-13 | iid-amp |
+| TTG | L | A | +0.558 | 1.61e-07 | 1.09e-06 |  |
+| CAT | H | A | +0.535 | 2.82e-04 | 1.15e-03 |  |
+| AAG | K | E | +0.516 | 2.81e-36 | 1.72e-34 | iid-amp, bg-tight |
+| TTT | F | A | +0.489 | 9.17e-03 | 2.15e-02 | rare-codon |
+| AAT | N | E | +0.475 | 7.99e-05 | 4.06e-04 |  |
+| GAA | E | E | +0.419 | 2.57e-08 | 1.96e-07 |  |
+| AAC | N | E | +0.396 | 8.07e-10 | 8.20e-09 |  |
+
+```{=latex}
+\needspace{20\baselineskip}
+```
+
+### BWM_day_5 — Depleted (BWM_day_5 < bg_freq)
+
+| codon | aa | site | effect (`log2_enrichment`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| GCC | A | P | -1.102 | 1.02e-36 | 3.12e-35 | iid-amp |
+| GCC | A | A | -1.047 | 4.92e-34 | 1.50e-32 | iid-amp |
+| TCC | S | P | -1.019 | 3.03e-19 | 6.16e-18 | iid-amp |
+| TGC | C | E | -0.980 | 2.92e-09 | 2.54e-08 | rare-codon |
+| GCC | A | E | -0.942 | 4.16e-29 | 1.27e-27 | iid-amp |
+| GCT | A | A | -0.793 | 1.86e-22 | 3.78e-21 | iid-amp |
+| ACC | T | A | -0.771 | 1.01e-18 | 1.54e-17 | iid-amp |
+| GCT | A | E | -0.721 | 2.01e-19 | 4.09e-18 | iid-amp |
+| ACC | T | P | -0.647 | 2.45e-14 | 2.49e-13 | iid-amp |
+| CTC | L | P | -0.642 | 3.00e-15 | 3.66e-14 | iid-amp |
+| CAG | Q | P | -0.642 | 1.89e-07 | 8.40e-07 |  |
+| ACC | T | E | -0.630 | 9.96e-14 | 1.22e-12 | iid-amp |
+| TCC | S | A | -0.550 | 9.05e-08 | 6.90e-07 |  |
+| CGC | R | E | -0.485 | 1.06e-05 | 5.85e-05 |  |
+| CTC | L | A | -0.482 | 9.00e-10 | 1.10e-08 |  |
+
+```{=latex}
+\needspace{20\baselineskip}
+```
+
+### BWM_day_10 — Enriched (BWM_day_10 > bg_freq)
+
+| codon | aa | site | effect (`log2_enrichment`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| GAT | D | P | +1.128 | 9.34e-41 | 5.70e-39 | iid-amp |
+| GGT | G | P | +1.024 | 1.13e-09 | 9.83e-09 | rare-codon |
+| AAT | N | P | +0.866 | 1.58e-08 | 9.64e-08 |  |
+| GAT | D | A | +0.776 | 3.81e-17 | 7.75e-16 | iid-amp |
+| AAA | K | P | +0.677 | 2.78e-06 | 1.54e-05 |  |
+| ATT | I | A | +0.673 | 3.92e-07 | 2.99e-06 |  |
+| GAG | E | A | +0.584 | 1.23e-17 | 3.75e-16 | iid-amp |
+| AAA | K | E | +0.571 | 1.22e-04 | 8.28e-04 |  |
+| AGC | S | P | +0.521 | 6.20e-03 | 1.58e-02 | rare-codon |
+| AAG | K | E | +0.519 | 3.10e-24 | 1.89e-22 | iid-amp, bg-tight |
+| AAT | N | E | +0.478 | 4.49e-03 | 1.96e-02 | rare-codon |
+| CAT | H | A | +0.455 | 1.76e-02 | 3.99e-02 | rare-codon |
+| GGA | G | A | +0.447 | 9.49e-13 | 8.27e-12 | iid-amp, bg-tight |
+| GAG | E | E | +0.422 | 2.60e-09 | 3.96e-08 |  |
+| AAC | N | E | +0.352 | 2.13e-05 | 1.85e-04 |  |
+
+```{=latex}
+\needspace{20\baselineskip}
+```
+
+### BWM_day_10 — Depleted (BWM_day_10 < bg_freq)
+
+| codon | aa | site | effect (`log2_enrichment`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| GCC | A | A | -1.090 | 1.09e-22 | 6.67e-21 | iid-amp |
+| TCC | S | P | -1.034 | 3.52e-13 | 7.17e-12 | iid-amp, rare-codon |
+| GCC | A | P | -0.917 | 1.04e-17 | 3.19e-16 | iid-amp |
+| GCC | A | E | -0.887 | 7.01e-17 | 2.14e-15 | iid-amp |
+| GCT | A | A | -0.842 | 1.63e-14 | 2.49e-13 | iid-amp |
+| CTC | L | A | -0.808 | 2.21e-13 | 2.70e-12 | iid-amp |
+| ACC | T | A | -0.807 | 2.92e-13 | 2.97e-12 | iid-amp |
+| GCT | A | E | -0.781 | 5.21e-13 | 1.06e-11 | iid-amp |
+| GCT | A | P | -0.722 | 1.34e-11 | 2.05e-10 |  |
+| CTC | L | P | -0.632 | 2.63e-09 | 2.00e-08 |  |
+| ACC | T | P | -0.621 | 5.09e-09 | 3.45e-08 |  |
+| TCT | S | A | -0.594 | 7.61e-04 | 3.32e-03 | rare-codon |
+| ACC | T | E | -0.593 | 1.98e-08 | 2.41e-07 |  |
+| TCC | S | E | -0.575 | 7.66e-06 | 7.79e-05 |  |
+| TAC | Y | E | -0.482 | 6.14e-05 | 4.68e-04 |  |
+
+```{=latex}
+\needspace{20\baselineskip}
+```
+
+### control_day_0 — Enriched (control_day_0 > bg_freq)
+
+| codon | aa | site | effect (`log2_enrichment`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| ATA | I | A | +1.217 | 8.78e-08 | 3.57e-07 | rare-codon |
+| TTA | L | A | +1.090 | 3.11e-07 | 1.19e-06 | rare-codon |
+| TAT | Y | A | +0.932 | 8.64e-33 | 1.05e-31 | iid-amp |
+| TAT | Y | P | +0.896 | 6.25e-30 | 5.45e-29 | iid-amp |
+| AAT | N | P | +0.837 | 6.54e-43 | 1.33e-41 | iid-amp |
+| GAT | D | P | +0.828 | 5.79e-99 | 3.53e-97 | iid-amp |
+| AAA | K | E | +0.807 | 1.56e-52 | 2.38e-51 | iid-amp |
+| TTG | L | A | +0.731 | 1.88e-33 | 2.86e-32 | iid-amp |
+| CAT | H | P | +0.671 | 8.83e-16 | 4.89e-15 | iid-amp |
+| TAC | Y | A | +0.629 | 1.94e-35 | 3.94e-34 | iid-amp |
+| AAG | K | E | +0.567 | 2.46e-81 | 1.50e-79 | iid-amp, bg-tight |
+| AGA | R | E | +0.555 | 4.75e-18 | 4.14e-17 | iid-amp |
+| AAA | K | P | +0.521 | 4.21e-20 | 2.85e-19 | iid-amp |
+| AAC | N | E | +0.411 | 1.13e-19 | 1.15e-18 | iid-amp |
+| AAT | N | E | +0.397 | 4.47e-09 | 1.82e-08 |  |
+
+```{=latex}
+\needspace{20\baselineskip}
+```
+
+### control_day_0 — Depleted (control_day_0 < bg_freq)
+
+| codon | aa | site | effect (`log2_enrichment`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| GCC | A | P | -1.062 | 4.59e-73 | 1.40e-71 | iid-amp |
+| TGC | C | E | -1.059 | 3.98e-21 | 4.85e-20 | iid-amp |
+| TCC | S | P | -1.044 | 3.64e-34 | 4.44e-33 | iid-amp |
+| GCT | A | E | -0.937 | 2.98e-68 | 9.08e-67 | iid-amp |
+| GCC | A | E | -0.902 | 6.42e-57 | 1.30e-55 | iid-amp |
+| GCT | A | A | -0.879 | 1.06e-61 | 6.48e-60 | iid-amp |
+| GCC | A | A | -0.849 | 8.21e-52 | 2.50e-50 | iid-amp |
+| TGT | C | E | -0.750 | 8.89e-06 | 2.86e-05 | rare-codon |
+| CTC | L | P | -0.702 | 1.70e-31 | 1.73e-30 | iid-amp |
+| GCT | A | P | -0.697 | 1.17e-42 | 1.79e-41 | iid-amp |
+| CGC | R | P | -0.693 | 4.82e-15 | 2.26e-14 | iid-amp |
+| CGC | R | E | -0.693 | 4.82e-15 | 3.26e-14 | iid-amp |
+| AAC | N | A | -0.478 | 1.36e-17 | 1.03e-16 | iid-amp |
+| AGC | S | A | -0.469 | 1.19e-04 | 2.79e-04 |  |
+| ACC | T | A | -0.452 | 1.40e-13 | 7.13e-13 | iid-amp |
+
+```{=latex}
+\needspace{20\baselineskip}
+```
+
+### control_day_5 — Enriched (control_day_5 > bg_freq)
+
+| codon | aa | site | effect (`log2_enrichment`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| GAT | D | P | +1.001 | 6.92e-52 | 4.22e-50 | iid-amp |
+| AAA | K | E | +0.788 | 1.38e-13 | 1.40e-12 | iid-amp |
+| TTT | F | P | +0.780 | 1.35e-05 | 4.86e-05 | rare-codon |
+| TAT | Y | A | +0.761 | 1.73e-06 | 9.61e-06 | rare-codon |
+| AAG | K | E | +0.753 | 3.37e-77 | 2.06e-75 | iid-amp, bg-tight |
+| GGT | G | P | +0.731 | 1.58e-08 | 9.65e-08 |  |
+| AAT | N | P | +0.726 | 1.67e-10 | 1.70e-09 |  |
+| GAT | D | A | +0.706 | 2.39e-23 | 7.29e-22 | iid-amp |
+| TAT | Y | P | +0.617 | 1.69e-04 | 4.67e-04 | rare-codon |
+| GAG | E | E | +0.560 | 8.54e-26 | 1.30e-24 | iid-amp |
+| AAT | N | E | +0.536 | 6.30e-06 | 2.40e-05 |  |
+| CAT | H | A | +0.522 | 5.86e-04 | 1.99e-03 |  |
+| AAT | N | A | +0.509 | 1.91e-05 | 8.97e-05 |  |
+| AGA | R | E | +0.500 | 1.56e-07 | 7.95e-07 |  |
+| GAA | E | A | +0.492 | 3.92e-11 | 2.99e-10 |  |
+
+```{=latex}
+\needspace{20\baselineskip}
+```
+
+### control_day_5 — Depleted (control_day_5 < bg_freq)
+
+| codon | aa | site | effect (`log2_enrichment`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| GCC | A | E | -1.186 | 2.98e-36 | 9.09e-35 | iid-amp |
+| TGC | C | E | -0.999 | 9.09e-10 | 6.16e-09 | rare-codon |
+| GCT | A | E | -0.977 | 1.55e-28 | 3.14e-27 | iid-amp |
+| GCC | A | A | -0.952 | 2.18e-26 | 1.33e-24 | iid-amp |
+| TCC | S | P | -0.887 | 2.93e-15 | 5.02e-14 | iid-amp |
+| GCC | A | P | -0.848 | 3.39e-22 | 1.03e-20 | iid-amp |
+| CAG | Q | P | -0.801 | 2.98e-09 | 2.08e-08 | rare-codon |
+| CTC | L | A | -0.784 | 4.07e-19 | 8.27e-18 | iid-amp |
+| ACC | T | E | -0.737 | 9.66e-17 | 1.18e-15 | iid-amp |
+| GCT | A | A | -0.727 | 3.25e-18 | 4.96e-17 | iid-amp |
+| TGG | W | P | -0.717 | 4.65e-05 | 1.42e-04 | rare-codon |
+| ACC | T | A | -0.685 | 6.29e-15 | 6.39e-14 | iid-amp |
+| CTC | L | P | -0.676 | 3.29e-15 | 5.02e-14 | iid-amp |
+| TCC | S | A | -0.664 | 5.77e-10 | 3.91e-09 |  |
+| TAC | Y | E | -0.599 | 7.03e-10 | 5.36e-09 |  |
+
+```{=latex}
+\needspace{20\baselineskip}
+```
+
+### control_day_10 — Enriched (control_day_10 > bg_freq)
+
+| codon | aa | site | effect (`log2_enrichment`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| TAT | Y | P | +1.122 | 4.87e-10 | 3.30e-09 | rare-codon |
+| GAT | D | P | +1.114 | 1.75e-54 | 1.07e-52 | iid-amp |
+| TAT | Y | A | +0.887 | 3.04e-06 | 1.69e-05 | rare-codon |
+| AAT | N | P | +0.833 | 6.90e-10 | 4.21e-09 |  |
+| AAA | K | E | +0.766 | 1.76e-10 | 2.15e-09 |  |
+| GGT | G | P | +0.720 | 1.05e-06 | 4.59e-06 |  |
+| GAT | D | A | +0.666 | 8.47e-17 | 2.45e-15 | iid-amp |
+| TTG | L | A | +0.578 | 3.58e-06 | 1.82e-05 |  |
+| AAG | K | E | +0.553 | 1.50e-33 | 9.17e-32 | iid-amp, bg-tight |
+| TAC | Y | A | +0.538 | 8.33e-10 | 6.35e-09 |  |
+| CAT | H | P | +0.518 | 1.32e-03 | 3.21e-03 | rare-codon |
+| AAT | N | E | +0.498 | 6.40e-04 | 2.60e-03 |  |
+| AAC | N | E | +0.492 | 2.88e-11 | 4.39e-10 |  |
+| ATT | I | A | +0.435 | 2.26e-04 | 8.12e-04 |  |
+| GAA | E | E | +0.427 | 1.49e-06 | 1.14e-05 |  |
+
+```{=latex}
+\needspace{20\baselineskip}
+```
+
+### control_day_10 — Depleted (control_day_10 < bg_freq)
+
+| codon | aa | site | effect (`log2_enrichment`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| GCC | A | P | -1.003 | 3.13e-26 | 9.55e-25 | iid-amp |
+| TCC | S | P | -0.970 | 2.94e-13 | 2.99e-12 | iid-amp, rare-codon |
+| CTC | L | P | -0.890 | 1.10e-19 | 2.23e-18 | iid-amp |
+| CTC | L | A | -0.808 | 5.07e-17 | 2.45e-15 | iid-amp |
+| GCC | A | E | -0.798 | 1.23e-18 | 3.75e-17 | iid-amp |
+| GCT | A | E | -0.792 | 2.26e-17 | 4.59e-16 | iid-amp |
+| GCT | A | A | -0.770 | 1.21e-16 | 2.45e-15 | iid-amp |
+| GTC | V | P | -0.743 | 8.25e-16 | 1.26e-14 | iid-amp |
+| CAG | Q | P | -0.730 | 1.20e-06 | 4.86e-06 | rare-codon |
+| GCC | A | A | -0.702 | 2.58e-15 | 3.93e-14 | iid-amp |
+| CGT | R | E | -0.661 | 2.79e-09 | 2.43e-08 |  |
+| AAC | N | A | -0.630 | 9.63e-11 | 8.39e-10 |  |
+| CGC | R | E | -0.625 | 3.78e-06 | 2.56e-05 | rare-codon |
+| CAC | H | A | -0.620 | 1.43e-05 | 5.83e-05 | rare-codon |
+| TCT | S | E | -0.557 | 2.16e-04 | 9.42e-04 | rare-codon |
+
+### Flag glossary
+
+- `iid-amp` — applied to every Top-hits row with `p_adj` < 1e-10. The `iid-violation-binomial` caveat (binomial null assumes iid Bernoulli draws but stall events on the same transcript are correlated) compresses p-values for cells with non-trivial `log2_enrichment` to extreme magnitudes regardless of biological strength; the flag marks these rows as "p magnitude inflated, not a magnitude claim." 110 of 1098 rows (10.0%) carry `iid-amp`.
+- `bg-tight` — applied to rows where `bg_freq` > 0.05 (common codons; AAG and GGA are the cells in Top hits that cross this threshold). At high n, a tight binomial null on a high-frequency codon produces extreme p at modest log2 — flagged for the same "p magnitude inflated" reason as `iid-amp`. The two flags co-occur on AAG-at-E rows across all 6 groups.
+- `rare-codon` — flags cells where `stall_count` is below the stability threshold (k<50 for the strictest cut; many of the per-group Top-hits cells have k between 50 and 100 in the relevant group and are flagged on the same low-count basis). Direction is reliable; magnitude is not. TGG (Trp, single-codon) is the canonical rare-codon row that cannot be rescued by synonym aggregation. The cross-group concordance sub-tables restrict to k >= 50 in **every** of the 6 groups; rare-codon flags there mark cells where the minimum k across the 6 groups sits between 50 and ~100.
+
+## Numbers at a glance
+
+- `n_tests`: 1098 (6 groups x 3 sites x 61 sense codons)
+- `n_significant` (adjusted-p < 0.05): 491 (44.7%)
+- `n_significant` (adjusted-p < 0.10): 552 (50.3%)
+- `min adjusted-p`: 3.53e-97 (control_day_0, P site, GAT; `log2_enrichment` = +0.828, k=1558/27732) — also a cross-group concordance cell (mean `log2_enrichment` +0.98 across the 6 groups). Under `iid-violation-binomial` this row's p magnitude is co-amplified; this is **not** a magnitude claim.
+- `p_floor`: n/a — no exact-test floor for the binomial at these n.
+- Cells concordant in all 6 groups (k >= 50, p_adj<0.05, single sign): 35 (18 depleted, 17 enriched per the concordance sub-tables above)
+- Cells with sign flip across groups (k >= 50, p_adj<0.05 in >= 2 groups): 7, all with max `|log2_enrichment|` <= 0.45
+- Rows with `p_adj` < 1e-10: 110 of 1098 (10.0%); each carries `iid-amp` in its flag column
+- Per (group, site) BH families (each is 61 codon tests; A/P/E columns):
+
+| group | A site | P site | E site |
+| --- | --- | --- | --- |
+| BWM_day_0 | 27 (min p_adj 6.14e-16) | 28 (7.95e-22) | 16 (8.65e-42) |
+| BWM_day_5 | 27 (4.86e-37) | 30 (1.75e-48) | 23 (1.72e-34) |
+| BWM_day_10 | 28 (6.67e-21) | 26 (5.70e-39) | 16 (1.89e-22) |
+| control_day_0 | 42 (6.48e-60) | 38 (3.53e-97) | 30 (1.50e-79) |
+| control_day_5 | 31 (1.33e-24) | 28 (4.22e-50) | 26 (2.06e-75) |
+| control_day_10 | 25 (2.45e-15) | 31 (1.07e-52) | 19 (9.17e-32) |
+
+## Biological interpretation
+
+**The dominant signal of this file is cross-group concordance at codon resolution, not perturbation (concrete).** 35 (codon, site) cells agree in sign across all 6 groups (17 enriched + 18 depleted) at `stall_count` >= 50 in every group; the 7 direction-flip cells all cap at `|log2_enrichment|` <= 0.45 and at least one of the 6 groups is non-significant. The file therefore reads as a structural map of which codons are over- and under-represented at each ribosome site relative to their transcriptome-window frequency, stable across BWM perturbation and the d0/d5/d10 time axis. As in the sister amino-acid CSV, perturbation contrasts live in the per-timepoint Fisher and within-condition Fisher files — this file's biology is the baseline codon-usage shape at stall sites.
+
+**Alanine codons GCC and GCT dominate the depletion landscape at every site (concrete).** GCC at all three sites (P -1.02, E -0.94, A -0.90 mean) and GCT at all three sites (E -0.86, A -0.82, P -0.61) are six of the eighteen concordance-depleted cells, each with `stall_count` > 100 in every group. The amino-acid sister file shows alanine uniformly depleted at all three sites (means -0.74 to -0.82); the codon resolution reveals that this AA-level signal concentrates on the two highest-frequency Ala codons (GCC and GCT, the GCN family's most-used pair in C. elegans), with the rarer GCA/GCG synonyms not appearing in the concordance set at comparable magnitude. The depletion is the inverse of the K/D/E enrichment story by aa-level mechanism: alanine has a small side-chain and is mechanistically pause-resistant; the codon-level reading adds that the underrepresentation is not a tRNA-isoacceptor effect (which would single out one synonym) but spans the major synonym pair, supporting an amino-acid-property reading rather than codon-specific decoding biology.
+
+**E:AAG and E:AAA together carry the Lys-at-E concordance signal, with AAG over-represented in cross-group magnitude (concrete; codon-resolution refinement of the AA-sister headline cell).** E:AAA mean `log2_enrichment` +0.78, E:AAG mean +0.60 — both concordant across the 6 groups with `stall_count` >= 105 in every group. AAG carries the `bg-tight` flag (codon `bg_freq` ~0.05) because the tight binomial null at high n returns extreme p magnitudes (E:AAG at control_day_0 is the second-smallest `p_adj` in the file at 1.50e-79). The amino-acid sister CSV's headline E:K cell (mean log2 +0.63) sits between these two codon-level magnitudes, consistent with the AA-level reading being a weighted average over the two Lys codons rather than a single-codon story. Mechanistically, E-site lysine is a textbook ribosome-pause anchor (positive side-chain interacting electrostatically with the negative exit tunnel after translocation); the codon-resolution refinement is that AAA and AAG both contribute, with AAA reaching higher per-cell magnitude than AAG despite AAG being the more common Lys codon.
+
+**P:GAT (Asp) is the codon-level headline cell (concrete; file-min `p_adj`).** P:GAT enriched in all 6 groups at mean `log2_enrichment` +0.98 (range +0.83 to +1.13, `stall_count` 272-1558); the file-minimum `p_adj` is at control_day_0 P:GAT (3.53e-97). The amino-acid sister CSV's P:D cell (mean log2 +0.64) is the strongest enriched concordance cell at AA resolution — codon resolution reveals that the AA-level signal is driven primarily by GAT, with GAC (the other Asp synonym) not appearing in the concordance set at comparable magnitude. This is the cleanest single-synonym story in the file: an AA-level signal that resolves at codon level onto one specific synonym. Mechanistically, P-site aspartate is consistent with peptide-bond chemistry that pauses on acidic residues; the AAT-vs-GAT codon split would point toward tRNA-Asp isoacceptor biology if the underlying signal really is codon-specific rather than aa-property-driven.
+
+**Rare-codon cells reach `|log2_enrichment|` >= 1.0 but are flagged for ranking discipline (exploratory).** The largest single-cell magnitudes in the per-group sub-tables are control_day_0 A:ATA (Ile) +1.22 and A:TTA (Leu) +1.09, both rare-codon-flagged (k=51 and k=57 respectively). Their high `|log2_enrichment|` is amplified by the small denominator; if the underlying enrichment were over-counted by even a few stall events, the magnitude would change by ~0.3 log2. The cross-group concordance set restricts to `stall_count` >= 50 in every group precisely to filter out these magnitudes; the rare-codon rows in the per-group sub-tables should be read direction-only, not by magnitude. TGG (Trp, single-codon) cannot be rescued by synonym aggregation in any downstream analysis — the `rare-codon` flag on TGG persists at codon resolution and the amino-acid sister CSV's P:W rare-aa flag is fundamental at this position.
+
+**The headline-grade p magnitudes (down to 1e-97) are iid-violation amplification, not biological strength (concrete).** 110 of 1098 rows (10.0%) carry `p_adj` < 1e-10, including the file-minimum at control_day_0 P:GAT (3.53e-97). The `iid-violation-binomial` caveat names the structural reason: the binomial null assumes 27732 iid Bernoulli draws (one per stall-site position) with p=`bg_freq`, but stall events on the same transcript are not independent (one stall site biases neighbouring positions; per-transcript coverage varies). Combined with common-codon `bg_freq` tightness (Lys-AAG `bg_freq` ~= 0.05, so the binomial null is sharp), modest enrichments at very large n compress to vanishing p-values. Read this file by `log2_enrichment` magnitude and cross-group reproducibility, in that order; treat any `p_adj` < 1e-10 as flagged by `iid-amp` (and `bg-tight` for high-`bg_freq` cells) regardless of how impressive the magnitude looks.
+
+**What to carry forward.** *Concrete*: the 35-cell cross-group concordance set (17 enriched + 18 depleted) as a structural map of stall-site codon composition that is stable across perturbation and time; P:GAT and E:AAG/AAA as the strongest enriched cells; GCC/GCT (Ala synonyms) depleted uniformly at all three sites as the structural-baseline counterpart; the codon-level refinement of the AA-sister Asp-at-P signal onto GAT specifically (single-synonym), and the Lys-at-E signal onto both AAA and AAG (cross-synonym). *Exploratory*: rare-codon cells (control_day_0 A:ATA, A:TTA at `|log2|` > 1; TGG single-codon throughout) — direction reliable, magnitude not, and no synonym-resolution rescue available for TGG. *Noise*: any per-cell p-magnitude reading above the iid-amplification floor — quote magnitude + reproducibility, not p; the 7 direction-flip cells with `|log2|` <= 0.45 sit at the magnitude floor and should not be elevated. Cross-checks worth running in sister files: does the per-timepoint Fisher show BWM-vs-control divergence on top of any of these concordance cells (perturbation overlay on the structural codon-usage map); do P:GAT and E:AAG appear with the same direction in the within-condition Fisher d-vs-d contrasts (perturbation kinetics on top of the stable baseline); does the AA-sister concordance set (E:K, P:D, A:A, etc.) align cleanly with these codon-level cells when re-aggregated.
+
+## Methods
+
+The test is a one-sample binomial (`stall_count` ~ Binomial(`total_n`, `bg_freq`), two-sided), with BH-FDR computed within each (group, site) family of 61 codon tests (each of the 18 sub-families is corrected independently, not against the full 1098). Effect column is `log2_enrichment` = log2(observed `stall_freq` / `bg_freq`); a count-weighted variant `weighted_log2_enrichment` is also present in the CSV but is not used for ranking here (the unweighted log2 is what the binomial p reflects). The test answers "is codon X observed at stall sites at a different frequency than its `bg_freq` in the same group's transcriptome window?", **not** "is codon X's enrichment different between BWM and control" (that is the per-timepoint Fisher) and **not** "is the enrichment shifting across timepoints" (that is the between-timepoint Wilcoxon). Counts (`stall_count`) and totals (`total_n`) are summed across replicates before the test, hence the family-level pseudoreplication caveat. Per-(group, direction) Top hits are composed of the per-(group, site) top-5 enriched and top-5 depleted (`stall_count` >= 50, p_adj<0.05), merged across the 3 sites and re-sorted by `|log2_enrichment|` descending with `p_adj` ascending as the tiebreaker; this yields 15 rows per (group, direction) sub-table. The cross-group concordance sub-tables show every cell where the sign agrees across all 6 groups with `stall_count` >= 50 in every group — the headline sub-tabulation, kept as the lead Top-hits view because the file's dominant structure is reproducibility rather than per-group novelty.
+
+## What the caveats mean for reading this file
+
+- **pseudorep.** The binomial test pools replicates into one `stall_count` and one `total_n` per (group, site, codon) cell; per-replicate variation is invisible to the statistic, so p-values are anti-conservative — treat the smallest p-magnitudes as inflated, not as additional certainty.
+- **iid-violation-binomial.** The binomial null assumes `total_n` iid Bernoulli draws, but stall events on the same transcript are correlated and transcripts vary in coverage; this is the dominant reason p-values compress to 1e-22 and beyond (110 rows in the file at `p_adj` < 1e-10). Rank by `log2_enrichment` + `stall_count` + cross-group reproducibility, not by p magnitude.
+- **bg-pseudocount-1e-6.** The upstream pipeline floors `bg_freq` at 1e-6 to avoid log2 division-by-zero; does not affect any Top-hits row (all have `bg_freq` > 0.001). Only relevant for genuinely absent codons (e.g. rare AGG, CGG cells), which produce extreme `log2_enrichment` when k>0.
+- **bh-per-(group, site).** BH-FDR is per (group, site) family of 61; site-level FDR control is per-61-codon, not pooled across the 183 codons per group. Two rows with the same raw p in different (group, site) families can land at different `p_adj`.
+- **larger-bh-family.** Each per-(group, site) BH family is 61 codons, ~3x larger than the AA sister file's 20-amino-acid family. AA-level signals can distribute across synonyms and fall below the per-(group, site) FDR threshold here; if a clear AA-level hit in the sister CSV does not have a matching codon-level row here, the most likely reading is synonym-splitting rather than absence-of-signal.
+- **rare-codon-low-count-instability.** Rare codons (ATA, TTA, AGG, GGG, CGG, ACG, TCG, and similar) have unstable `log2_enrichment` estimates because binomial variance at small k is dominated by counting noise. Per-(group, site) Top-hits tables here are restricted to `stall_count` >= 50; the cross-group concordance sub-tables further restrict to k >= 50 in **every** of the 6 groups. Two A-site rare-codon rows (control_day_0 A:ATA, A:TTA) appear in the per-(group, site) tables with `rare-codon` flags because k is just above 50 in that group and well below in others.
+- **p-magnitude-anchored-ranking.** `p_adj` down to 3.53e-97 is best read as a joint readout of (`log2_enrichment` magnitude) x (`total_n`) x (`iid-violation-binomial` amplification factor), not as biological strength. The Top hits flag column applies `iid-amp` to every `p_adj` < 1e-10 row regardless of direction (no selective dampening), and adds `bg-tight` for rows with `bg_freq` > 0.05. Reading priority: `log2_enrichment` magnitude + `stall_count` + cross-group reproducibility, in that order.
+
+### Considered and ruled out
+
+*(none — no caveats were considered-but-not-applicable for this file.)*
+
+---
+
+## Plots — composite (additional grids)
+
+Additional composite grids beyond the headline figures above. The headline BWM and control 3x3 grids are the canonical unweighted view; the per-day grids below re-slice the same data by timepoint (BWM and control paired). The weighted grids (bottom half of this section) plot `weighted_log2_enrichment` (count-weighted) on the x-axis instead of the unweighted `log2_enrichment`; the axis range is much tighter (~+/-0.10 vs ~+/-10), but the FDR significance status (triangle vs circle) of each codon is the same in both versions because both share the binomial p-value.
+
+![Day 0 2x3 grid (rows: BWM / control; columns: A / P / E) — unweighted `log2_enrichment` (x) against -log10(FDR) (y). Day-0 paired view: BWM and control at the same timepoint side-by-side. Largest y-axis extents in the file (control_day_0 P:GAT and E:AAG both reach -log10(FDR) ~= 80-100 — visibly off the linear scale of the other panels).](../../plots/within_condition/codon/composite/unweighted/day_0_volcano_grid.png)
+
+![Day 5 2x3 grid (rows: BWM / control; columns: A / P / E) — unweighted `log2_enrichment` (x) against -log10(FDR) (y). Day-5 paired view; P:GCC is the dominant depleted hit in every panel (mean -0.97 across the 4 day-5 panels), P:GAT and E:AAG the dominant enriched cells.](../../plots/within_condition/codon/composite/unweighted/day_5_volcano_grid.png)
+
+![Day 10 2x3 grid (rows: BWM / control; columns: A / P / E) — unweighted `log2_enrichment` (x) against -log10(FDR) (y). Day-10 paired view; BWM-day-10 shows visibly fewer FDR<0.05 hits at the E-site than the other (group, site) cells (16/61 vs ~25-31 elsewhere), matching the per-group hit-fraction summary in Numbers at a glance.](../../plots/within_condition/codon/composite/unweighted/day_10_volcano_grid.png)
+
+![6x3 grid of weighted codon binomial volcano panels: rows are the 6 (condition, day) groups (BWM and control x Day 0 / Day 5 / Day 10); columns are ribosome sites in A / P / E order. Same glyph labelling and colour key as the unweighted headline grids, but with the x-axis showing `weighted_log2_enrichment` (count-weighted) at range ~+/-0.10. Same FDR significance status as the unweighted version (triangles for FDR<0.05, circles for ns) because both versions share the binomial p-value; only x-coordinates differ.](../../plots/within_condition/codon/composite/weighted/all_groups_volcano_grid.png)
+
+![BWM 3x3 weighted grid — `weighted_log2_enrichment` (x, range ~+/-0.10) against -log10(FDR) (y).](../../plots/within_condition/codon/composite/weighted/BWM_volcano_grid.png)
+
+![control 3x3 weighted grid — `weighted_log2_enrichment` (x, range ~+/-0.10) against -log10(FDR) (y).](../../plots/within_condition/codon/composite/weighted/control_volcano_grid.png)
+
+![Day 0 2x3 weighted grid — `weighted_log2_enrichment` (x, range ~+/-0.15) against -log10(FDR) (y).](../../plots/within_condition/codon/composite/weighted/day_0_volcano_grid.png)
+
+![Day 5 2x3 weighted grid — `weighted_log2_enrichment` (x, range ~+/-0.10) against -log10(FDR) (y).](../../plots/within_condition/codon/composite/weighted/day_5_volcano_grid.png)
+
+![Day 10 2x3 weighted grid — `weighted_log2_enrichment` (x, range ~+/-0.10) against -log10(FDR) (y).](../../plots/within_condition/codon/composite/weighted/day_10_volcano_grid.png)
+
+---
+
+## Plots — individual
+
+Each panel below is one (group, site) BH-FDR family of 61 codons, plotted as a volcano: `log2_enrichment` (unweighted versions, x-range ~+/-10) or `weighted_log2_enrichment` (weighted versions, x-range ~+/-0.10) on the x-axis, -log10(FDR) on the y-axis. Triangles mark FDR<0.05; circles are non-significant. Codons are labelled by three-letter code and coloured by the amino-acid property of their translation (red = acidic, blue = basic, green = hydrophobic, orange = neutral, purple = polar). Horizontal dashed line marks FDR = 0.05; vertical dashed lines mark log2 = +/-0.5 (unweighted only). The wide unweighted x-axis accommodates rare-codon extreme `|log2_enrichment|` (values up to ~+/-10) which mostly sit below the FDR threshold; the labelled high-y points are the high-count common codons at modest `|log2_enrichment|`.
+
+### Unweighted individuals
+
+![BWM Day 0 A-site codon unweighted volcano. AAC (Asn, polar) at log2 ~= -1.06, -log10(FDR) ~= 15 is the largest depleted hit. TAC (Tyr, hydrophobic) at log2 ~= +0.82, -log10(FDR) ~= 15 is the largest enriched hit. ACC (Thr, polar), GCT (Ala, hydrophobic), GCC (Ala, hydrophobic) are next-largest depleted hits; TGG (Trp, hydrophobic, rare-codon) is a smaller enriched hit at log2 ~= +0.77.](../../plots/within_condition/codon/individual/unweighted/BWM_day_0_A_volcano.png)
+
+![BWM Day 0 P-site codon unweighted volcano. GCC (Ala, hydrophobic) at log2 ~= -1.16, -log10(FDR) ~= 22 is the largest depleted hit (panel-max y). TCC (Ser, hydrophobic, rare-codon) at log2 ~= -1.28, -log10(FDR) ~= 14 is the largest-magnitude depleted hit. GAT (Asp, acidic) at log2 ~= +0.88, -log10(FDR) ~= 19 is the largest enriched hit. CTC (Leu, hydrophobic), GTC (Val, hydrophobic), CAG (Gln, polar, rare-codon) round out depleted; AAT (Asn, polar, rare-codon), GGT (Gly, neutral, rare-codon) are smaller enriched hits.](../../plots/within_condition/codon/individual/unweighted/BWM_day_0_P_volcano.png)
+
+![BWM Day 0 E-site codon unweighted volcano. AAG (Lys, basic) at log2 ~= +0.69, -log10(FDR) ~= 42 is the panel-max enriched hit. GCC (Ala, hydrophobic) at log2 ~= -0.92, -log10(FDR) ~= 15 and GCT (Ala, hydrophobic) at log2 ~= -0.94, -log10(FDR) ~= 14 are the largest depleted hits. TCC (Ser, hydrophobic, rare-codon), AAA (Lys, basic), AGA (Arg, basic), AAC (Asn, polar) also clear FDR<0.05.](../../plots/within_condition/codon/individual/unweighted/BWM_day_0_E_volcano.png)
+
+![BWM Day 5 A-site codon unweighted volcano. GCC (Ala, hydrophobic) at log2 ~= -1.05, -log10(FDR) ~= 32 is the largest depleted hit. GAT (Asp, acidic) at log2 ~= +0.86, -log10(FDR) ~= 37 is the largest enriched hit (panel-max y). GCT (Ala, hydrophobic), ACC (Thr, polar), TCC (Ser, hydrophobic), CTC (Leu, hydrophobic) round out depleted; TAT (Tyr, hydrophobic), TTG (Leu, hydrophobic), CAT (His, basic), TTT (Phe, hydrophobic, rare-codon) round out enriched.](../../plots/within_condition/codon/individual/unweighted/BWM_day_5_A_volcano.png)
+
+![BWM Day 5 P-site codon unweighted volcano. GAT (Asp, acidic) at log2 ~= +0.96, -log10(FDR) ~= 48 sits as the panel-max enriched hit. GCC (Ala, hydrophobic) at log2 ~= -1.10, -log10(FDR) ~= 35 is the largest depleted hit. TCC (Ser, rare-codon), AAT (Asn, polar), TTT (Phe, rare-codon), TAT (Tyr, hydrophobic), CAT (His) round out enriched; ACC (Thr), CTC (Leu), CAG (Gln) round out depleted.](../../plots/within_condition/codon/individual/unweighted/BWM_day_5_P_volcano.png)
+
+![BWM Day 5 E-site codon unweighted volcano. AAG (Lys, basic) at log2 ~= +0.52, -log10(FDR) ~= 34 sits as the panel-max enriched hit. GCC (Ala, hydrophobic) at log2 ~= -0.94, -log10(FDR) ~= 27 is the largest depleted hit. AAA (Lys, basic), AAT (Asn, polar), GAA (Glu, acidic), AAC (Asn, polar) enrich; GCT (Ala), ACC (Thr), TGC (Cys, hydrophobic, rare-codon), CGC (Arg, basic) deplete.](../../plots/within_condition/codon/individual/unweighted/BWM_day_5_E_volcano.png)
+
+![BWM Day 10 A-site codon unweighted volcano. GCC (Ala, hydrophobic) at log2 ~= -1.09, -log10(FDR) ~= 21 is the largest depleted hit. GAT (Asp, acidic) at log2 ~= +0.78, -log10(FDR) ~= 16 is the largest enriched hit. GAG (Glu, acidic), GGA (Gly, neutral, bg-tight), ATT (Ile, hydrophobic), CAT (His, rare-codon) round out enriched; GCT (Ala), CTC (Leu), ACC (Thr) round out depleted.](../../plots/within_condition/codon/individual/unweighted/BWM_day_10_A_volcano.png)
+
+![BWM Day 10 P-site codon unweighted volcano. GAT (Asp, acidic) at log2 ~= +1.13, -log10(FDR) ~= 39 sits as the panel-max enriched hit. GCC (Ala, hydrophobic) at log2 ~= -0.92, -log10(FDR) ~= 16 is the largest depleted hit. GGT (Gly, rare-codon), AAT (Asn, polar), AAA (Lys, basic) enrich; TCC (Ser, rare-codon), GCT (Ala), CTC (Leu), ACC (Thr) deplete.](../../plots/within_condition/codon/individual/unweighted/BWM_day_10_P_volcano.png)
+
+![BWM Day 10 E-site codon unweighted volcano. AAG (Lys, basic) at log2 ~= +0.52, -log10(FDR) ~= 22 is the largest enriched hit. GCC (Ala, hydrophobic) at log2 ~= -0.89, -log10(FDR) ~= 15 is the largest depleted hit. AAA (Lys, basic), AAT (Asn, polar, rare-codon), GAG (Glu, acidic), AAC (Asn, polar) round out enriched; GCT (Ala), ACC (Thr), TCC (Ser), TAC (Tyr, hydrophobic) round out depleted. Sparsest E-site BWM panel (16 FDR<0.05 codons out of 61).](../../plots/within_condition/codon/individual/unweighted/BWM_day_10_E_volcano.png)
+
+![control Day 0 A-site codon unweighted volcano. GCT (Ala, hydrophobic) at log2 ~= -0.88, -log10(FDR) ~= 60 is the largest-y depleted hit. TAT (Tyr, hydrophobic) at log2 ~= +0.93, -log10(FDR) ~= 32 is one of the largest enriched hits. TAC (Tyr, hydrophobic), TTG (Leu), TTA (Leu, rare-codon, +1.09), ATA (Ile, rare-codon, +1.22) round out enriched; GCC (Ala), AAC (Asn), AGC (Ser, polar), ACC (Thr) deplete. Densest A-site panel in the file (42 FDR<0.05 codons).](../../plots/within_condition/codon/individual/unweighted/control_day_0_A_volcano.png)
+
+![control Day 0 P-site codon unweighted volcano. GAT (Asp, acidic) at log2 ~= +0.83, -log10(FDR) ~= 97 sits at the panel maximum y — the file-min `p_adj` cell. GCC (Ala, hydrophobic) at log2 ~= -1.06, -log10(FDR) ~= 72 is the largest depleted hit. TAT (Tyr), AAT (Asn, polar), CAT (His, basic), AAA (Lys, basic) enrich; TCC (Ser, rare-codon), CTC (Leu), GCT (Ala), CGC (Arg, rare-codon) deplete.](../../plots/within_condition/codon/individual/unweighted/control_day_0_P_volcano.png)
+
+![control Day 0 E-site codon unweighted volcano. AAG (Lys, basic) at log2 ~= +0.57, -log10(FDR) ~= 80 sits at the panel maximum y. GCT (Ala, hydrophobic) at log2 ~= -0.94, -log10(FDR) ~= 67 and GCC (Ala) at log2 ~= -0.90, -log10(FDR) ~= 56 are the largest depleted hits. AAA (Lys), AGA (Arg, basic), AAC (Asn, polar), AAT (Asn, polar) enrich; TGC (Cys, rare-codon), TGT (Cys, rare-codon), CGC (Arg, rare-codon) deplete.](../../plots/within_condition/codon/individual/unweighted/control_day_0_E_volcano.png)
+
+![control Day 5 A-site codon unweighted volcano. GAT (Asp, acidic) at log2 ~= +0.71, -log10(FDR) ~= 22 is one of the larger enriched hits; GCC (Ala, hydrophobic) at log2 ~= -0.95, -log10(FDR) ~= 25 is the largest depleted hit. TAT (Tyr, rare-codon, +0.76), CAT (His), AAT (Asn, polar), GAA (Glu, acidic) round out enriched; CTC (Leu), GCT (Ala), ACC (Thr), TCC (Ser) round out depleted.](../../plots/within_condition/codon/individual/unweighted/control_day_5_A_volcano.png)
+
+![control Day 5 P-site codon unweighted volcano. GAT (Asp, acidic) at log2 ~= +1.00, -log10(FDR) ~= 50 sits at the panel maximum y. GCC (Ala, hydrophobic) at log2 ~= -0.85, -log10(FDR) ~= 21 is the largest depleted hit. TTT (Phe, rare-codon, +0.78), GGT (Gly, +0.73), AAT (Asn, polar), TAT (Tyr, rare-codon, +0.62) enrich; TCC (Ser), CAG (Gln, rare-codon), TGG (Trp, rare-codon), CTC (Leu) deplete.](../../plots/within_condition/codon/individual/unweighted/control_day_5_P_volcano.png)
+
+![control Day 5 E-site codon unweighted volcano. AAG (Lys, basic) at log2 ~= +0.75, -log10(FDR) ~= 75 sits at the panel maximum y. GCC (Ala, hydrophobic) at log2 ~= -1.19, -log10(FDR) ~= 35 and GCT (Ala) at log2 ~= -0.98, -log10(FDR) ~= 27 are the largest depleted hits. AAA (Lys), GAG (Glu, acidic), AAT (Asn, polar), AGA (Arg, basic) enrich; TGC (Cys, rare-codon), ACC (Thr), TAC (Tyr) deplete.](../../plots/within_condition/codon/individual/unweighted/control_day_5_E_volcano.png)
+
+![control Day 10 A-site codon unweighted volcano. GAT (Asp, acidic) at log2 ~= +0.67, -log10(FDR) ~= 15 is the largest enriched hit. CTC (Leu, hydrophobic) at log2 ~= -0.81, -log10(FDR) ~= 15 and GCT (Ala) at log2 ~= -0.77, -log10(FDR) ~= 15 are the largest depleted hits. TAT (Tyr, rare-codon, +0.89), TTG (Leu), TAC (Tyr), ATT (Ile) enrich; GCC (Ala), AAC (Asn), CAC (His, rare-codon) deplete.](../../plots/within_condition/codon/individual/unweighted/control_day_10_A_volcano.png)
+
+![control Day 10 P-site codon unweighted volcano. GAT (Asp, acidic) at log2 ~= +1.11, -log10(FDR) ~= 53 sits at the panel maximum y. GCC (Ala, hydrophobic) at log2 ~= -1.00, -log10(FDR) ~= 25 is the largest depleted hit. TAT (Tyr, rare-codon, +1.12), AAT (Asn, polar), GGT (Gly), CAT (His, rare-codon) enrich; TCC (Ser, rare-codon), CTC (Leu), GTC (Val), CAG (Gln, rare-codon) deplete. Densest P-site panel for control_day_10 (31 FDR<0.05 codons).](../../plots/within_condition/codon/individual/unweighted/control_day_10_P_volcano.png)
+
+![control Day 10 E-site codon unweighted volcano. AAG (Lys, basic) at log2 ~= +0.55, -log10(FDR) ~= 32 sits at the panel maximum y. GCC (Ala, hydrophobic) at log2 ~= -0.80, -log10(FDR) ~= 17 and GCT (Ala) at log2 ~= -0.79, -log10(FDR) ~= 16 are the largest depleted hits. AAA (Lys), AAT (Asn, polar), AAC (Asn, polar), GAA (Glu, acidic) enrich; CGT (Arg), CGC (Arg, rare-codon), TCT (Ser, rare-codon) deplete.](../../plots/within_condition/codon/individual/unweighted/control_day_10_E_volcano.png)
+
+### Weighted individuals
+
+Weighted individual panels plot `weighted_log2_enrichment` on the x-axis (range ~+/-0.10) instead of `log2_enrichment`. The FDR significance status of each codon is the same as in the unweighted version (binomial p-value is the same); only the x-coordinate differs. Captions below give panel-maximum positions in the weighted-axis scale.
+
+![BWM Day 0 A-site codon weighted volcano. AAC (Asn) at weighted log2 ~= -0.07 is the largest depleted hit; TAC (Tyr) at ~= +0.04 is the largest enriched hit. Same significance pattern as the unweighted version.](../../plots/within_condition/codon/individual/weighted/BWM_day_0_A_volcano.png)
+
+![BWM Day 0 P-site codon weighted volcano. GCC (Ala) at weighted log2 ~= -0.07 is the largest depleted hit; GAT (Asp) at ~= +0.04 is the largest enriched hit. Same significance pattern as the unweighted version.](../../plots/within_condition/codon/individual/weighted/BWM_day_0_P_volcano.png)
+
+![BWM Day 0 E-site codon weighted volcano. AAG (Lys) at weighted log2 ~= +0.05 is the panel-max enriched hit; GCT (Ala) at ~= -0.06 is the largest depleted hit. Same significance pattern as the unweighted version.](../../plots/within_condition/codon/individual/weighted/BWM_day_0_E_volcano.png)
+
+![BWM Day 5 A-site codon weighted volcano. GCC (Ala) at weighted log2 ~= -0.06 is the largest depleted hit; GAT (Asp) at ~= +0.04 is the largest enriched hit. Same significance pattern as the unweighted version.](../../plots/within_condition/codon/individual/weighted/BWM_day_5_A_volcano.png)
+
+![BWM Day 5 P-site codon weighted volcano. GAT (Asp) at weighted log2 ~= +0.05 is the panel-max enriched hit; GCC (Ala) at ~= -0.07 is the largest depleted hit. Same significance pattern as the unweighted version.](../../plots/within_condition/codon/individual/weighted/BWM_day_5_P_volcano.png)
+
+![BWM Day 5 E-site codon weighted volcano. AAG (Lys) at weighted log2 ~= +0.04 is the panel-max enriched hit; GCC (Ala) at ~= -0.06 is the largest depleted hit. Same significance pattern as the unweighted version.](../../plots/within_condition/codon/individual/weighted/BWM_day_5_E_volcano.png)
+
+![BWM Day 10 A-site codon weighted volcano. GCC (Ala) at weighted log2 ~= -0.07 is the largest depleted hit; GAT (Asp) at ~= +0.04 is the largest enriched hit. Same significance pattern as the unweighted version.](../../plots/within_condition/codon/individual/weighted/BWM_day_10_A_volcano.png)
+
+![BWM Day 10 P-site codon weighted volcano. GAT (Asp) at weighted log2 ~= +0.06 is the panel-max enriched hit; GCC (Ala) at ~= -0.05 is the largest depleted hit. Same significance pattern as the unweighted version.](../../plots/within_condition/codon/individual/weighted/BWM_day_10_P_volcano.png)
+
+![BWM Day 10 E-site codon weighted volcano. AAG (Lys) at weighted log2 ~= +0.04 is the panel-max enriched hit; GCC (Ala) at ~= -0.06 is the largest depleted hit. Sparsest BWM E-site weighted panel (matches 16/61 unweighted count).](../../plots/within_condition/codon/individual/weighted/BWM_day_10_E_volcano.png)
+
+![control Day 0 A-site codon weighted volcano. GCT (Ala) at weighted log2 ~= -0.05 is the largest depleted hit; TAT (Tyr) at ~= +0.02 is one of the largest enriched hits. Same significance pattern as the unweighted version; densest A-site weighted panel in the file (42/61 FDR<0.05).](../../plots/within_condition/codon/individual/weighted/control_day_0_A_volcano.png)
+
+![control Day 0 P-site codon weighted volcano. GAT (Asp) at weighted log2 ~= +0.04 sits at the file-min `p_adj` position (-log10(FDR) ~= 97); GCC (Ala) at ~= -0.07 is the largest depleted hit. Same significance pattern as the unweighted version.](../../plots/within_condition/codon/individual/weighted/control_day_0_P_volcano.png)
+
+![control Day 0 E-site codon weighted volcano. AAG (Lys) at weighted log2 ~= +0.03 sits at the panel-max y (-log10(FDR) ~= 80); GCT (Ala) at ~= -0.06 is the largest depleted hit. Same significance pattern as the unweighted version.](../../plots/within_condition/codon/individual/weighted/control_day_0_E_volcano.png)
+
+![control Day 5 A-site codon weighted volcano. GCC (Ala) at weighted log2 ~= -0.06 is the largest depleted hit; GAT (Asp) at ~= +0.03 is one of the largest enriched hits. Same significance pattern as the unweighted version.](../../plots/within_condition/codon/individual/weighted/control_day_5_A_volcano.png)
+
+![control Day 5 P-site codon weighted volcano. GAT (Asp) at weighted log2 ~= +0.05 sits at the panel-max y; GCC (Ala) at ~= -0.06 is the largest depleted hit. Same significance pattern as the unweighted version.](../../plots/within_condition/codon/individual/weighted/control_day_5_P_volcano.png)
+
+![control Day 5 E-site codon weighted volcano. AAG (Lys) at weighted log2 ~= +0.05 sits at the panel-max y; GCC (Ala) at ~= -0.08 is the largest depleted hit. Same significance pattern as the unweighted version.](../../plots/within_condition/codon/individual/weighted/control_day_5_E_volcano.png)
+
+![control Day 10 A-site codon weighted volcano. CTC (Leu) at weighted log2 ~= -0.05 and GCT (Ala) at ~= -0.05 are the largest depleted hits; GAT (Asp) at ~= +0.03 is the largest enriched hit. Same significance pattern as the unweighted version.](../../plots/within_condition/codon/individual/weighted/control_day_10_A_volcano.png)
+
+![control Day 10 P-site codon weighted volcano. GAT (Asp) at weighted log2 ~= +0.06 sits at the panel-max y; GCC (Ala) at ~= -0.06 is the largest depleted hit. Densest P-site weighted panel for control_day_10 (31/61).](../../plots/within_condition/codon/individual/weighted/control_day_10_P_volcano.png)
+
+![control Day 10 E-site codon weighted volcano. AAG (Lys) at weighted log2 ~= +0.04 sits at the panel-max y; GCC (Ala) at ~= -0.05 is the largest depleted hit. Same significance pattern as the unweighted version.](../../plots/within_condition/codon/individual/weighted/control_day_10_E_volcano.png)

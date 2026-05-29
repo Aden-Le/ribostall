@@ -1,9 +1,10 @@
 """
 Assemble the `C_elegan_upload/` drag-and-drop hand-off package.
 
-For each of the first 10 reports in
+For each of the first 16 reports in
 `results/stall_sites/enrichment/olive_reports/_MANUAL_REVIEW.md` (stall_sites
-Wilcoxon reports plus the per-timepoint Fisher reports), create
+Wilcoxon reports, the per-timepoint Fisher reports, and the within-condition
+timepoint Fisher reports), create
 `C_elegan_upload/stall_sites/<stem>/` and copy in:
 
   * the report PDF      (olive_reports/<stem>.pdf)
@@ -33,7 +34,7 @@ OLIVE_REPORTS = REPO_ROOT / "results" / "stall_sites" / "enrichment" / "olive_re
 ANALYSIS_STATS = REPO_ROOT / "results" / "stall_sites" / "enrichment" / "analysis_stats"
 UPLOAD_ROOT = REPO_ROOT / "C_elegan_upload"
 
-# First 10 reports, in the order they appear in
+# First 16 reports, in the order they appear in
 # results/stall_sites/enrichment/olive_reports/_MANUAL_REVIEW.md.
 REPORT_STEMS = [
     "between_condition_wilcoxon_aa",
@@ -46,6 +47,12 @@ REPORT_STEMS = [
     "between_timepoint_wilcoxon_d5_vs_d0_codon",
     "per_timepoint_fisher_aa",
     "per_timepoint_fisher_codon",
+    "timepoint_fisher_within_condition_d10_vs_d0_aa",
+    "timepoint_fisher_within_condition_d10_vs_d0_codon",
+    "timepoint_fisher_within_condition_d10_vs_d5_aa",
+    "timepoint_fisher_within_condition_d10_vs_d5_codon",
+    "timepoint_fisher_within_condition_d5_vs_d0_aa",
+    "timepoint_fisher_within_condition_d5_vs_d0_codon",
 ]
 
 # Markdown image: ![alt](path). Alt text here contains parentheses but never a

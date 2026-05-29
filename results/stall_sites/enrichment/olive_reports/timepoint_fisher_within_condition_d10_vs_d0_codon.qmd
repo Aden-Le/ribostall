@@ -1,7 +1,7 @@
 ---
 title: "timepoint_fisher_within_condition_d10_vs_d0_codon"
 subtitle: "ribostall stall_sites — enrichment stats"
-date: 2026-05-23
+date: 2026-05-28
 format:
   html:
     toc: true
@@ -14,7 +14,7 @@ format:
     include-in-header:
       text: |
         \usepackage{needspace}
-tbl-colwidths: [8, 5, 5, 17, 14, 14, 37]
+tbl-colwidths: [5, 8, 5, 15, 15, 16, 20]
 execute:
   echo: false
 ---
@@ -51,151 +51,129 @@ Each glyph is a single sense codon at one (condition, site) BH-FDR family of 61;
 
 ## Headline
 
-Strong codon-level signal at d10 vs d0 within-condition Fisher: 91/366 hits at FDR<0.05 (13/183 BWM, 78/183 control). Control's 78 codon hits dominate (6x the BWM count) and the smallest p_adj = 1.40e-12 sits at control,A,GGA (`log2_OR`=+0.520 — dominant statistical-design concern: the family-level large-N-Fisher-anticonservative caveat applies). The aa-level direction divergences sharpen onto specific synonymous codons: site-A AAT carries the A:N divergence (BWM `log2_OR`=+0.960 enriched, control `log2_OR`=-0.616 depleted — opposite directions); site-E AAG carries the E:K divergence (BWM `log2_OR`=-0.324 depleted, control `log2_OR`=+0.406 enriched); site-P GGA alone carries the P:G divergence (BWM `log2_OR`=+0.008 ns vs control `log2_OR`=+0.493 enriched). Codon resolution also exposes synonymous codon-usage shifts where aa-level signal concentrates on a subset of synonyms: BWM A:Y depletion is purely TAC (TAT flat); BWM P:E enrichment is purely GAG (GAA flat); BWM P:K depletion is purely AAG; BWM E:Q enrichment is purely CAA; BWM A:L depletion concentrates on CTC (CTG `p_adj`=0.058 ns under the strict `< 0.05` cutoff); control A:G enrichment is GGA-only with GGT actually significantly *depleted* (mixed-direction codon-usage shift); control A:R enrichment is split across CGC/CGT while CGA is depleted; control P:E enrichment is GAG-only with GAA significantly *depleted*.
+Strong codon-level signal at d10 vs d0 within-condition Fisher: 91/366 hits at FDR<0.05 (13/183 BWM, 78/183 control). Control's 78 codon hits dominate (6x the BWM count) and the smallest p_adj = 1.40e-12 sits at control,A,GGA (`log2_OR`=+0.520 — dominant statistical-design concern: the family-level large-N-Fisher-anticonservative caveat applies). The aa-level direction divergences sharpen onto specific synonymous codons: site-A AAT carries the A:N divergence (BWM `log2_OR`=+0.960 enriched, control `log2_OR`=-0.616 depleted — opposite directions); site-E AAG carries the E:K divergence (BWM `log2_OR`=-0.324 depleted, control `log2_OR`=+0.406 enriched); site-P GGA alone carries the P:G divergence (BWM `log2_OR`=+0.008 ns vs control `log2_OR`=+0.492 enriched). Codon resolution also exposes synonymous codon-usage shifts where aa-level signal concentrates on a subset of synonyms: BWM A:Y depletion is purely TAC (TAT flat); BWM P:E enrichment is purely GAG (GAA flat); BWM P:K depletion is purely AAG; BWM E:Q enrichment is purely CAA; BWM A:L depletion concentrates on CTC (CTG `p_adj`=0.058 ns under the strict `< 0.05` cutoff); control A:G enrichment is GGA-only with GGT actually significantly *depleted* (mixed-direction codon-usage shift); control A:R enrichment is split across CGC/CGT while CGA is depleted; control P:E enrichment is GAG-only with GAA significantly *depleted*.
 
 ## Top hits
 
-The effect column is `log2_OR` (log2 of the Fisher odds ratio; positive = day-10-enriched, negative = day-10-depleted within one condition). `p_value` is the raw Fisher's exact two-sided p; `p_adj` is BH-corrected within each (condition, site) family of 61 codons. Direction is fixed by the day-10-vs-day-0 contingency layout within one condition: `log2_OR` > 0 = day-10-enriched relative to day-0 in that condition, `log2_OR` < 0 = day-10-depleted. Sub-tables below are split per-direction within each condition (4 sub-tables total, BWM/control x Enriched/Depleted). The `site` column carries the ribosome site; rows are grouped by site in canonical A / P / E order, then sorted by `p_adj` ascending with `|log2_OR|` descending as the tie-breaker. All rows with `p_adj` < 0.05 are shown; no row cap and no raw-p fallback (family-level rule for `timepoint_fisher_within_condition`). The `aa` column is the single-letter amino acid translation of each codon.
+The effect column is `log2_OR` (log2 of the Fisher odds ratio for the day-10-vs-day-0 contrast within one condition; positive = day-10-enriched relative to day-0, negative = day-10-depleted). Each row pairs the BWM and control `log2_OR` for one site x codon cell. The `effect change` column is the BWM `log2_OR` minus the control `log2_OR`: it measures how differently the two conditions shifted from day 0 to day 10. A value near zero means both conditions moved together (shared timecourse drift); a large-magnitude value means the two conditions' day-10-vs-day-0 trajectories diverge -- positive when BWM rose relative to control, negative when control rose relative to BWM. The three sections split every cell significant at FDR<0.05 in at least one condition by which condition(s) reach significance: both, BWM only, control only. Within each section rows are grouped by `site` in canonical A / P / E order, then sorted by `effect change` descending. Cells significant in neither condition are omitted. The `aa` column is the single-letter amino acid translation of each codon.
 
 ```{=latex}
-\needspace{16\baselineskip}
+\needspace{14\baselineskip}
 ```
 
-### BWM — Enriched (day_10 > day_0)
+### Significant in both conditions
 
-| codon | aa | site | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| site | codon | aa | BWM (`log2_OR`) | control (`log2_OR`) | effect change | flag |
 | --- | --- | --- | --- | --- | --- | --- |
-| AAC | N | A | 0.768 | 1.38e-05 | 8.44e-04 |  |
-| TGT | C | A | 1.915 | 7.26e-04 | 0.0148 | rare-codon-low-count |
-| AAT | N | A | 0.960 | 1.01e-03 | 0.0154 | rare-codon-low-count |
-| GAT | D | A | 0.442 | 1.51e-03 | 0.0154 |  |
-| GAG | E | P | 0.410 | 2.44e-04 | 0.00744 |  |
-| TGT | C | P | 1.485 | 1.73e-03 | 0.0351 | rare-codon-low-count |
-| GTC | V | P | 0.466 | 2.42e-03 | 0.0369 |  |
-| CAA | Q | E | 0.663 | 1.13e-04 | 0.00344 |  |
+| A | AAT | N | +0.960 | -0.616 | +1.576 | low-count (BWM) |
+| A | GTG | V | -0.974 | -0.632 | -0.342 | low-count (BWM) |
+| P | GAG | E | +0.410 | +0.477 | -0.067 |  |
+| E | AAG | K | -0.324 | +0.406 | -0.730 |  |
 
 ```{=latex}
-\needspace{12\baselineskip}
+\needspace{14\baselineskip}
 ```
 
-### BWM — Depleted (day_10 < day_0)
+### Significant in BWM only
 
-| codon | aa | site | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| site | codon | aa | BWM (`log2_OR`) | control (`log2_OR`) | effect change | flag |
 | --- | --- | --- | --- | --- | --- | --- |
-| TAC | Y | A | -0.536 | 8.85e-05 | 0.00270 |  |
-| GTG | V | A | -0.974 | 1.33e-03 | 0.0154 |  |
-| CTC | L | A | -0.474 | 4.56e-03 | 0.0397 |  |
-| AAG | K | P | -0.527 | 1.22e-08 | 7.47e-07 |  |
-| AAG | K | E | -0.324 | 1.91e-05 | 0.00117 |  |
+| A | TGT | C | +1.915 | -0.476 | +2.391 | low-count (BWM, C) |
+| A | AAC | N | +0.768 | +0.023 | +0.745 |  |
+| A | GAT | D | +0.442 | -0.036 | +0.479 |  |
+| A | CTC | L | -0.474 | -0.005 | -0.469 |  |
+| A | TAC | Y | -0.536 | +0.044 | -0.580 |  |
+| P | TGT | C | +1.485 | -0.069 | +1.554 | low-count (BWM, C) |
+| P | GTC | V | +0.466 | +0.087 | +0.379 |  |
+| P | AAG | K | -0.527 | -0.031 | -0.496 |  |
+| E | CAA | Q | +0.663 | -0.213 | +0.875 |  |
 
 ```{=latex}
-\needspace{24\baselineskip}
+\needspace{14\baselineskip}
 ```
 
-### control — Enriched (day_10 > day_0)
+### Significant in control only
 
-| codon | aa | site | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| site | codon | aa | BWM (`log2_OR`) | control (`log2_OR`) | effect change | flag |
 | --- | --- | --- | --- | --- | --- | --- |
-| GGA | G | A | 0.520 | 2.30e-14 | 1.40e-12 |  |
-| CGC | R | A | 0.859 | 8.95e-10 | 1.82e-08 |  |
-| ATC | I | A | 0.516 | 2.28e-08 | 3.47e-07 |  |
-| AAG | K | A | 0.353 | 1.05e-07 | 1.07e-06 |  |
-| GCC | A | A | 0.399 | 8.35e-04 | 0.00320 |  |
-| GAC | D | A | 0.299 | 2.50e-03 | 0.00820 |  |
-| GTC | V | A | 0.302 | 5.60e-03 | 0.0158 |  |
-| ACC | T | A | 0.334 | 7.90e-03 | 0.0185 |  |
-| CGT | R | A | 0.302 | 7.50e-03 | 0.0185 |  |
-| TTC | F | A | 0.260 | 9.50e-03 | 0.0216 |  |
-| GGA | G | P | 0.493 | 2.71e-13 | 1.65e-11 |  |
-| GAG | E | P | 0.477 | 8.36e-10 | 1.70e-08 |  |
-| AAC | N | P | 0.412 | 5.37e-06 | 4.09e-05 |  |
-| GAC | D | P | 0.388 | 8.57e-05 | 4.75e-04 |  |
-| CGC | R | P | 0.645 | 1.90e-04 | 9.65e-04 |  |
-| ACC | T | P | 0.381 | 1.20e-03 | 0.00520 |  |
-| TGC | C | P | 0.583 | 2.30e-03 | 0.00920 |  |
-| AAG | K | E | 0.406 | 2.13e-12 | 1.30e-10 |  |
-| CTC | L | E | 0.715 | 5.39e-11 | 1.64e-09 |  |
-| TCC | S | E | 0.716 | 1.58e-06 | 1.93e-05 |  |
-| GTC | V | E | 0.427 | 6.01e-06 | 6.12e-05 |  |
-| ATC | I | E | 0.293 | 8.70e-04 | 0.00380 |  |
-| AAC | N | E | 0.267 | 2.10e-03 | 0.00720 |  |
-| GGA | G | E | 0.229 | 2.10e-03 | 0.00720 |  |
-| ACC | T | E | 0.337 | 3.10e-03 | 0.00990 |  |
-| GCC | A | E | 0.355 | 3.90e-03 | 0.0114 |  |
-| CGC | R | E | 0.478 | 7.40e-03 | 0.0187 |  |
-| GAC | D | E | 0.244 | 1.67e-02 | 0.0352 |  |
-
-```{=latex}
-\needspace{24\baselineskip}
-```
-
-### control — Depleted (day_10 < day_0)
-
-| codon | aa | site | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- | --- | --- |
-| CAA | Q | A | -0.888 | 1.79e-11 | 5.46e-10 |  |
-| TAT | Y | A | -0.955 | 8.88e-08 | 1.07e-06 |  |
-| GCA | A | A | -1.065 | 1.67e-07 | 1.45e-06 |  |
-| TTT | F | A | -1.094 | 2.60e-05 | 1.98e-04 | rare-codon-low-count |
-| AAA | K | A | -0.637 | 4.34e-05 | 2.94e-04 |  |
-| AAT | N | A | -0.616 | 1.63e-04 | 9.93e-04 |  |
-| TTG | L | A | -0.474 | 2.36e-04 | 1.30e-03 |  |
-| GAA | E | A | -0.360 | 2.63e-04 | 1.30e-03 |  |
-| GTG | V | A | -0.632 | 3.96e-04 | 1.90e-03 |  |
-| TCA | S | A | -0.829 | 4.37e-04 | 1.90e-03 | rare-codon-low-count |
-| TGG | W | A | -0.604 | 5.41e-04 | 2.20e-03 |  |
-| ACA | T | A | -0.692 | 1.50e-03 | 5.40e-03 |  |
-| TTA | L | A | -1.855 | 1.60e-03 | 5.60e-03 | rare-codon-low-count |
-| ACG | T | A | -0.954 | 4.20e-03 | 0.0128 | rare-codon-low-count |
-| CGA | R | A | -1.067 | 5.80e-03 | 0.0158 | rare-codon-low-count |
-| CTG | L | A | -0.734 | 6.00e-03 | 0.0158 | rare-codon-low-count |
-| GGT | G | A | -0.610 | 7.80e-03 | 0.0185 | rare-codon-low-count |
-| GCG | A | A | -0.958 | 1.01e-02 | 0.0221 | rare-codon-low-count |
-| ATT | I | A | -0.308 | 1.65e-02 | 0.0348 |  |
-| ATT | I | P | -0.895 | 7.08e-12 | 2.16e-10 |  |
-| AAA | K | P | -0.798 | 1.34e-09 | 2.04e-08 |  |
-| AAT | N | P | -0.648 | 8.96e-07 | 1.09e-05 |  |
-| ATG | M | P | -0.681 | 1.08e-06 | 1.10e-05 |  |
-| CAA | Q | P | -0.633 | 4.28e-06 | 3.73e-05 |  |
-| ACA | T | P | -1.022 | 1.84e-05 | 1.24e-04 | rare-codon-low-count |
-| TAT | Y | P | -0.683 | 6.96e-05 | 4.25e-04 |  |
-| GCA | A | P | -0.747 | 7.75e-04 | 3.60e-03 | rare-codon-low-count |
-| TTA | L | P | -3.298 | 3.00e-03 | 0.0113 | rare-codon-low-count |
-| TGG | W | P | -0.699 | 6.10e-03 | 0.0219 | rare-codon-low-count |
-| TTT | F | P | -0.624 | 6.50e-03 | 0.0219 | rare-codon-low-count |
-| GAA | E | P | -0.277 | 1.06e-02 | 0.0342 |  |
-| CTT | L | P | -0.296 | 1.30e-02 | 0.0397 |  |
-| AAA | K | E | -0.736 | 3.85e-10 | 7.83e-09 |  |
-| TAT | Y | E | -1.379 | 2.60e-08 | 3.96e-07 | rare-codon-low-count |
-| GTG | V | E | -1.067 | 9.27e-06 | 8.08e-05 | rare-codon-low-count |
-| ATT | I | E | -0.587 | 1.87e-05 | 1.43e-04 |  |
-| TCA | S | E | -0.890 | 5.42e-05 | 3.68e-04 | rare-codon-low-count |
-| GCA | A | E | -0.939 | 9.54e-05 | 5.82e-04 | rare-codon-low-count |
-| GAT | D | E | -0.387 | 1.18e-04 | 6.53e-04 |  |
-| AAT | N | E | -0.539 | 3.41e-04 | 1.70e-03 |  |
-| GTT | V | E | -0.423 | 4.54e-04 | 2.10e-03 |  |
-| CAT | H | E | -0.718 | 1.60e-03 | 6.70e-03 | rare-codon-low-count |
-| ATG | M | E | -0.395 | 1.90e-03 | 7.20e-03 |  |
-| ACG | T | E | -1.236 | 3.30e-03 | 0.0101 | rare-codon-low-count |
-| CCG | P | E | -1.012 | 4.60e-03 | 0.0127 | rare-codon-low-count |
-| ACA | T | E | -0.654 | 5.30e-03 | 0.0140 | rare-codon-low-count |
-| TGG | W | E | -0.552 | 8.50e-03 | 0.0207 |  |
-| TTG | L | E | -0.436 | 9.60e-03 | 0.0226 |  |
-| TTT | F | E | -0.737 | 1.27e-02 | 0.0288 | rare-codon-low-count |
-| GCG | A | E | -1.063 | 1.37e-02 | 0.0298 | rare-codon-low-count |
-
-### Additional notable control hits (synonymous-resolution view)
-
-These observations document codon-vs-synonym structure rather than single largest-magnitude rows; they sit beneath the Top hits sub-tables because they cross several (condition, site) sub-families.
-
-- **control,A,G enrichment splits between synonyms**: GGA `log2_OR`=+0.520 (file minimum) vs GGT `log2_OR`=-0.610 depleted. The aa-level "A:G enriched" headline obscures a clean codon-usage shift toward GGA at the expense of GGT.
-- **control,A,R enrichment is synonym-heterogeneous**: CGC `log2_OR`=+0.859 and CGT `log2_OR`=+0.302 enriched; CGA `log2_OR`=-1.067 depleted; AGA / AGG / CGG flat. Net positive but mixed within the codon set.
-- **control,P,E enrichment splits between synonyms**: GAG `log2_OR`=+0.477 (strongly enriched) vs GAA `log2_OR`=-0.277 (*depleted*). The aa-level P:E-enriched headline hides a clean GAG-vs-GAA opposite-direction split.
-- **control,P top depletion landscape**: ATT `log2_OR`=-0.895, AAA `log2_OR`=-0.798, AAT `log2_OR`=-0.648, ATG `log2_OR`=-0.681, CAA `log2_OR`=-0.633, ACA `log2_OR`=-1.022 — broad small-residue / common-codon depletion at site P unique to control.
+| A | TTT | F | +0.671 | -1.094 | +1.765 | low-count (BWM, C) |
+| A | TTA | L | -0.453 | -1.855 | +1.402 | low-count (BWM, C) |
+| A | TCA | S | +0.398 | -0.829 | +1.227 | low-count (BWM, C) |
+| A | ACG | T | +0.174 | -0.954 | +1.128 | low-count (BWM, C) |
+| A | TAT | Y | +0.067 | -0.955 | +1.022 | low-count (BWM) |
+| A | ACA | T | +0.111 | -0.692 | +0.803 | low-count (BWM) |
+| A | CAA | Q | -0.096 | -0.888 | +0.792 |  |
+| A | ATT | I | +0.424 | -0.308 | +0.732 |  |
+| A | AAA | K | +0.022 | -0.637 | +0.660 |  |
+| A | CGA | R | -0.453 | -1.067 | +0.614 | low-count (BWM, C) |
+| A | GAA | E | +0.079 | -0.360 | +0.439 |  |
+| A | GGT | G | -0.277 | -0.610 | +0.333 | low-count (BWM, C) |
+| A | TGG | W | -0.385 | -0.604 | +0.220 |  |
+| A | TTG | L | -0.310 | -0.474 | +0.164 |  |
+| A | TTC | F | +0.344 | +0.259 | +0.084 |  |
+| A | GCA | A | -1.050 | -1.065 | +0.015 | low-count (BWM) |
+| A | CGT | R | +0.309 | +0.302 | +0.007 |  |
+| A | ACC | T | +0.181 | +0.334 | -0.153 |  |
+| A | ATC | I | +0.245 | +0.516 | -0.270 |  |
+| A | GAC | D | -0.006 | +0.299 | -0.305 |  |
+| A | GTC | V | -0.015 | +0.302 | -0.317 |  |
+| A | GGA | G | +0.083 | +0.520 | -0.437 |  |
+| A | AAG | K | -0.131 | +0.353 | -0.485 |  |
+| A | CTG | L | -1.308 | -0.734 | -0.574 | low-count (BWM, C) |
+| A | CGC | R | +0.169 | +0.859 | -0.691 |  |
+| A | GCC | A | -0.450 | +0.399 | -0.849 |  |
+| A | GCG | A | -1.928 | -0.958 | -0.970 | low-count (BWM, C) |
+| P | ACA | T | +0.868 | -1.021 | +1.889 | low-count (BWM, C) |
+| P | AAA | K | +0.314 | -0.798 | +1.112 |  |
+| P | AAT | N | +0.334 | -0.648 | +0.982 |  |
+| P | ATT | I | -0.087 | -0.895 | +0.809 |  |
+| P | TTT | F | +0.133 | -0.623 | +0.757 | low-count (BWM, C) |
+| P | CAA | Q | +0.097 | -0.633 | +0.730 |  |
+| P | TAT | Y | +0.022 | -0.683 | +0.705 | low-count (BWM) |
+| P | GAA | E | +0.341 | -0.277 | +0.618 |  |
+| P | TGG | W | -0.269 | -0.699 | +0.430 | low-count (BWM, C) |
+| P | GCA | A | -0.338 | -0.747 | +0.409 | low-count (BWM, C) |
+| P | ATG | M | -0.328 | -0.681 | +0.352 |  |
+| P | CTT | L | -0.087 | -0.296 | +0.209 |  |
+| P | ACC | T | +0.062 | +0.381 | -0.319 |  |
+| P | AAC | N | +0.020 | +0.412 | -0.391 |  |
+| P | GAC | D | -0.060 | +0.387 | -0.448 |  |
+| P | GGA | G | +0.008 | +0.492 | -0.484 |  |
+| P | TGC | C | +0.061 | +0.583 | -0.522 |  |
+| P | CGC | R | -0.117 | +0.645 | -0.762 |  |
+| P | TTA | L | n/a | -3.298 | n/a | low-count (BWM, C) |
+| E | ACG | T | +1.720 | -1.235 | +2.955 | low-count (BWM, C) |
+| E | TCA | S | +0.910 | -0.890 | +1.800 | low-count (BWM, C) |
+| E | ACA | T | +0.943 | -0.655 | +1.598 | low-count (BWM, C) |
+| E | TAT | Y | +0.122 | -1.379 | +1.501 | low-count (BWM, C) |
+| E | GCA | A | +0.397 | -0.939 | +1.336 | low-count (BWM, C) |
+| E | GTG | V | +0.214 | -1.067 | +1.281 | low-count (BWM, C) |
+| E | AAT | N | +0.512 | -0.539 | +1.051 |  |
+| E | TTT | F | +0.297 | -0.737 | +1.034 | low-count (BWM, C) |
+| E | TGG | W | +0.278 | -0.552 | +0.830 |  |
+| E | CAT | H | +0.105 | -0.718 | +0.823 | low-count (BWM, C) |
+| E | CCG | P | -0.190 | -1.012 | +0.823 | low-count (BWM, C) |
+| E | ATT | I | +0.110 | -0.587 | +0.697 |  |
+| E | TTG | L | +0.223 | -0.436 | +0.658 |  |
+| E | AAA | K | -0.351 | -0.736 | +0.385 |  |
+| E | GAT | D | -0.011 | -0.387 | +0.375 |  |
+| E | ATG | M | -0.103 | -0.395 | +0.291 |  |
+| E | GCG | A | -0.775 | -1.063 | +0.288 | low-count (BWM, C) |
+| E | GTT | V | -0.164 | -0.423 | +0.258 |  |
+| E | GGA | G | +0.036 | +0.229 | -0.193 |  |
+| E | AAC | N | -0.047 | +0.267 | -0.314 |  |
+| E | TCC | S | +0.388 | +0.716 | -0.328 |  |
+| E | GAC | D | -0.087 | +0.244 | -0.331 |  |
+| E | CGC | R | +0.132 | +0.478 | -0.346 |  |
+| E | GTC | V | +0.011 | +0.427 | -0.416 |  |
+| E | GCC | A | -0.077 | +0.355 | -0.432 |  |
+| E | ACC | T | -0.108 | +0.337 | -0.445 |  |
+| E | ATC | I | -0.316 | +0.293 | -0.609 |  |
+| E | CTC | L | +0.044 | +0.715 | -0.671 |  |
 
 ### Flag glossary
 
-- `rare-codon-low-count` — at least one timepoint cell for this (condition, site, codon) row has `day_X_count` below the test's stability threshold (< 50 at codon resolution, symmetric across BWM and control). `log2_OR` estimates and CIs are unstable at small k; large `|log2_OR|` values for flagged rows may reflect sampling noise rather than biology. Examples flagged here: BWM,A,TGT (day_0=7); BWM,P,TGT (day_0=11); BWM,A,AAT (day_0=34); control,P,TTA (day_10=1); control,P,ACA (day_10=37); control,E,TAT (day_10=31). **Threshold symmetry rationale:** codon resolution uses a symmetric 50/50 cutoff (vs the asymmetric 100/200 split in the aa companion) because the AA-vs-codon dilution narrows the relative cell-size spread — each codon row's count is already a fraction of the corresponding amino-acid row, so the BWM-vs-control total-count asymmetry (~6k vs ~28k pooled) shows up at codon resolution as a more uniform per-cell scale where a single absolute cutoff is appropriate. Fisher OR variance is dominated by the smallest cell ($\approx 1/a + 1/b + 1/c + 1/d$), so absolute count — not proportion — is the relevant axis.
+- `low-count` — at least one timepoint cell for the named condition arm has `day_X_count` below the test's stability threshold (< 50 at codon resolution, symmetric across BWM and control); the parenthetical suffix names which arm(s) tripped it, where `BWM` = BWM and `C` = control (so `(BWM, C)` means both arms are low, `(BWM)` only BWM, `(C)` only control). `log2_OR` estimates and CIs are unstable at small k; large `|log2_OR|` values for flagged rows may reflect sampling noise rather than biology. **Threshold symmetry rationale:** codon resolution uses a symmetric 50/50 cutoff (vs the asymmetric 100/200 split in the aa companion) because the AA-vs-codon dilution narrows the relative cell-size spread — each codon row's count is already a fraction of the corresponding amino-acid row, so the BWM-vs-control total-count asymmetry (~6k vs ~28k pooled) shows up at codon resolution as a more uniform per-cell scale where a single absolute cutoff is appropriate. Fisher OR variance is dominated by the smallest cell ($\approx 1/a + 1/b + 1/c + 1/d$), so absolute count — not proportion — is the relevant axis.
 
 ## Numbers at a glance
 - `n_tests`: 366 (183 per condition; 61 codons x 3 sites x 2 conditions)
@@ -213,17 +191,17 @@ These observations document codon-vs-synonym structure rather than single larges
 
 ## Biological interpretation
 
-**The aa-level A:N divergence at d10 vs d0 sharpens at codon resolution into opposite-direction codon preference, not merely opposite-magnitude (concrete).** BWM enriches both AAC (`log2_OR`=+0.768) and AAT (`log2_OR`=+0.960) at site A — both Asn-encoding codons trend the same direction. Control specifically *depletes* AAT (`log2_OR`=-0.616, per the headline and caveat block) while leaving AAC essentially flat. The within-condition d10-vs-d0 trajectory at site A is therefore not just opposite in *magnitude* between BWM and control, but opposite in *codon preference* — BWM is gaining both Asn codons while control is losing one of them. This is a codon-usage signature embedded inside the aa-level direction divergence; whether it reflects a tRNA pool shift (i.e. preferential charging of Asn-tRNA isoacceptors changes between BWM and control across the timecourse) or a transcriptome-composition shift (different Asn-containing transcripts under load) is not resolvable from this file.
+**The aa-level A:N divergence at d10 vs d0 sharpens at codon resolution into opposite-direction codon preference, not merely opposite-magnitude (concrete).** BWM enriches both AAC (`log2_OR`=+0.768, in the *significant in BWM only* section) and AAT (`log2_OR`=+0.960, in the *significant in both conditions* section) at site A — both Asn-encoding codons trend the same direction. Control specifically *depletes* AAT (`log2_OR`=-0.616, the paired control value in that same *both* row, which carries the section's largest `effect change` at +1.576) while leaving AAC essentially flat (`log2_OR`=+0.023). The within-condition d10-vs-d0 trajectory at site A is therefore not just opposite in *magnitude* between BWM and control, but opposite in *codon preference* — BWM is gaining both Asn codons while control is losing one of them. This is a codon-usage signature embedded inside the aa-level direction divergence; whether it reflects a tRNA pool shift (i.e. preferential charging of Asn-tRNA isoacceptors changes between BWM and control across the timecourse) or a transcriptome-composition shift (different Asn-containing transcripts under load) is not resolvable from this file.
 
-**BWM,P,AAG depletion is the file's strongest BWM-specific signal and is codon-resolved away from AAA (concrete).** BWM,P,AAG sits at `log2_OR`=-0.527 — the smallest p in the BWM column. Control,P,AAG is essentially flat (`log2_OR`=-0.031 ns, per the `control-vs-BWM-divergent-direction` caveat). The aa-level companion buried this in P:K depletion (where contributions from both AAA and AAG could mix); at codon resolution, the BWM-specific P-site Lys depletion is purely AAG-driven. Mechanistically, AAG-vs-AAA codon choice is determined by tRNA-Lys isoacceptor abundance and decoding efficiency, and a BWM-specific drop in AAG-at-P over the timecourse is consistent with the perturbed line undergoing a P-site Lys-decoding shift that the control line is not subject to. Worth carrying into the d5_vs_d0 codon contrast (is the BWM,P,AAG depletion already in place by d5, or does it emerge by d10?) and into the within-condition binomial baseline (is BWM,P,AAG already under-represented relative to the transcriptome background at d0?).
+**BWM,P,AAG depletion is the file's strongest BWM-specific signal and is codon-resolved away from AAA (concrete).** BWM,P,AAG sits at `log2_OR`=-0.527 and carries the smallest `p_adj` in the BWM arm (7.47e-07, per Numbers at a glance). Its paired control value is essentially flat (control,P,AAG `log2_OR`=-0.031, shown in the *significant in BWM only* row with `effect change`=-0.496). The aa-level companion buried this in P:K depletion (where contributions from both AAA and AAG could mix); at codon resolution, the BWM-specific P-site Lys depletion is purely AAG-driven. Mechanistically, AAG-vs-AAA codon choice is determined by tRNA-Lys isoacceptor abundance and decoding efficiency, and a BWM-specific drop in AAG-at-P over the timecourse is consistent with the perturbed line undergoing a P-site Lys-decoding shift that the control line is not subject to. Worth carrying into the d5_vs_d0 codon contrast (is the BWM,P,AAG depletion already in place by d5, or does it emerge by d10?) and into the within-condition binomial baseline (is BWM,P,AAG already under-represented relative to the transcriptome background at d0?).
 
-**The P-site GAG enrichment is the file's largest shared-direction codon-level cell (concrete).** BWM,P,GAG at `log2_OR`=+0.410 and control,P,GAG at `log2_OR`=+0.477 (both from the Top hits sub-tables) both enrich Glu-GAG at the P site from day 0 to day 10. The control side moves at the same direction and slightly larger magnitude but with much smaller p, again reflecting the large-N anti-conservatism caveat rather than meaningfully larger effect. Crucially, control,P,GAA is *depleted* (`log2_OR`=-0.277, also from the Top hits sub-table and re-stated in the "Additional notable control hits" sub-section) — so the aa-level "P:E enriched in both conditions" reading at the codon resolution is a clean codon-usage shift toward GAG at the expense of GAA in the control arm, and a smaller GAG-only enrichment in the BWM arm without the GAA depletion. Glu codon-choice signatures of this kind are biologically plausible (Glu-tRNA isoacceptor pools can shift in response to growth or stress); the most parsimonious read is that across the 10-day window both conditions accumulate ribosomes paused with Glu-tRNA at P, with control showing a sharper synonym preference than BWM.
+**The P-site GAG enrichment is the file's largest shared-direction codon-level cell (concrete).** BWM,P,GAG at `log2_OR`=+0.410 and control,P,GAG at `log2_OR`=+0.477 both enrich Glu-GAG at the P site from day 0 to day 10; the pair sits in the *significant in both conditions* section with a near-zero `effect change` (-0.067), the signature of a shared trajectory rather than a divergence. The control side moves at the same direction and slightly larger magnitude but with much smaller p, again reflecting the large-N anti-conservatism caveat rather than meaningfully larger effect. Crucially, control,P,GAA is *depleted* (`log2_OR`=-0.277, in the *significant in control only* section) — so the aa-level "P:E enriched in both conditions" reading at the codon resolution is a clean codon-usage shift toward GAG at the expense of GAA in the control arm, and a smaller GAG-only enrichment in the BWM arm without the GAA depletion. Glu codon-choice signatures of this kind are biologically plausible (Glu-tRNA isoacceptor pools can shift in response to growth or stress); the most parsimonious read is that across the 10-day window both conditions accumulate ribosomes paused with Glu-tRNA at P, with control showing a sharper synonym preference than BWM.
 
-**Control's site-A and site-P depletion landscape concentrates on common AT-rich codons and on Leu-TTA (concrete; partly noise via rare-codon caveats).** Control,A and control,P together account for 49 FDR<0.05 hits (per Numbers at a glance), with the top depletions running through TTA (Leu, `log2_OR`=-3.298 at control,P, `rare-codon-low-count` flagged), AAA (Lys, common codon), ATT/AAT/CAA (all in the control,P Top hits sub-table; also collected in the "Additional notable control hits" sub-section). Common AT-rich codons being co-depleted in control across the timecourse is consistent with a broad shift in transcriptome composition or in stall-event sampling at the unperturbed line, not with a specific decoding-machinery mechanism. The Leu-TTA cells (`rare-codon-low-count` flagged at very small day_10 counts — day_10=1 at control,P; day_10=5 at control,A) carry extreme `|log2_OR|` magnitudes but should be read through the rare-codon caveat: the magnitude is statistically real (Fisher exact handled the small count correctly) but biologically unstable across replicates.
+**Control's site-A and site-P depletion landscape concentrates on common AT-rich codons and on Leu-TTA (concrete; partly noise via rare-codon caveats).** Control,A and control,P together account for 49 FDR<0.05 hits (per Numbers at a glance), with the top depletions running through TTA (Leu, `log2_OR`=-3.298 at control,P, `low-count` flagged), AAA (Lys, common codon), ATT/AAT/CAA (all in the *significant in control only* section). Common AT-rich codons being co-depleted in control across the timecourse is consistent with a broad shift in transcriptome composition or in stall-event sampling at the unperturbed line, not with a specific decoding-machinery mechanism. The Leu-TTA cells (`low-count` flagged at very small day_10 counts — day_10=1 at control,P; day_10=5 at control,A) carry extreme `|log2_OR|` magnitudes but should be read through the rare-codon caveat: the magnitude is statistically real (Fisher exact handled the small count correctly) but biologically unstable across replicates.
 
 **The control-vs-BWM hit-count asymmetry (78 vs 13) is the file's loudest design observation but its origin is not resolvable here (exploratory).** Control fires 6x more codon hits than BWM at FDR<0.05, in a balanced 183-vs-183 test count. Three candidate explanations are not separable from this file alone: (a) control has larger pooled k_total than BWM (so the same effect size produces smaller p, per the large-N caveat); (b) the BWM perturbation pins the BWM ribosome population near a steady-state composition while control drifts compositionally across the 10-day window; (c) the within-condition design splits the BWM stall budget into more transcripts (more per-codon variance, fewer per-codon clean signals). The first explanation is partly diagnosable by reading per-condition pooled totals — but this report does not re-read the raw stats CSV, so this resolution should be deferred to the synthesis layer or to the within-condition binomial sister CSV (which reports a per-group total transparently). Until then, treat the 78-vs-13 split as suggestive of "control reshuffles more compositionally than BWM across the timecourse" rather than as evidence of "BWM is null."
 
-**What to carry forward.** *Concrete*: the codon-resolved A:N divergence (BWM enriches AAC and AAT; control depletes AAT only); BWM,P,AAG as the file's headline BWM-specific signal; the shared P-site GAG enrichment with the control-side GAG-vs-GAA synonym split; control's broad GGA-vs-GGT, GAG-vs-GAA, CGC/CGT-vs-CGA synonym shifts at sites A and P. *Exploratory*: the BWM-vs-control hit-count asymmetry (needs per-condition totals to resolve); the BWM,P,GTC enrichment (`log2_OR`=+0.466 — modest magnitude, sits in the BWM Enriched sub-table). *Noise*: rare-codon flagged rows (BWM,A,TGT; BWM,P,TGT; BWM,A,AAT — though AAT here lands in the headline, its rare-codon flag means the magnitude weight is partial — control,A,TTA; control,A,TTT; control,P,TTA; control,E,TAT; control,E,ACG). These rows are statistically real but biologically unstable; quote the direction, not the magnitude.
+**What to carry forward.** *Concrete*: the codon-resolved A:N divergence (BWM enriches AAC and AAT; control depletes AAT only); BWM,P,AAG as the file's headline BWM-specific signal; the shared P-site GAG enrichment with the control-side GAG-vs-GAA synonym split; control's broad GGA-vs-GGT, GAG-vs-GAA, CGC/CGT-vs-CGA synonym shifts at sites A and P (all visible side-by-side in the *significant in control only* section). *Exploratory*: the BWM-vs-control hit-count asymmetry (needs per-condition totals to resolve); the BWM,P,GTC enrichment (`log2_OR`=+0.466 — modest magnitude, sits in the *significant in BWM only* section). *Noise*: `low-count` flagged rows (BWM,A,TGT; BWM,P,TGT; BWM,A,AAT — though AAT here lands in the headline, its `low-count` flag means the magnitude weight is partial — control,A,TTA; control,A,TTT; control,P,TTA; control,E,TAT; control,E,ACG). These rows are statistically real but biologically unstable; quote the direction, not the magnitude.
 
 ## Methods
 Fisher's exact (two-sided) on a 2x2 of (codon_count, total - codon_count) at each timepoint within one condition. The script (`stall_sites_non_consensus_stats.py`) computes BH-FDR within each (condition, site) family of 61 codons at codon resolution (so each of the 6 sub-families is corrected independently, not against the full 366). Two zero-cell rows in BWM produce one infinite OR (E,ATA, day_0=0) and one zero OR (P,TTA, day_10=0); both are reported but excluded from magnitude ranking. The test does **not** answer whether the same codon shifts in BWM and control simultaneously — that question is answered by reading paired condition panels side-by-side (see `control-vs-BWM-divergent-direction` caveat) and is the largest-magnitude reading from this file's cells. Counts (`day_X_count`) and totals (`day_X_total`) are summed across replicates before the test, hence the family-level pseudoreplication caveat.
@@ -236,7 +214,7 @@ Fisher's exact (two-sided) on a 2x2 of (codon_count, total - codon_count) at eac
 - **within-condition-clean.** No condition pooling and no timepoint pooling; the file structurally answers "does day_10 differ from day_0 *within* this condition" cleanly, leaving the BWM-vs-control comparison to be done by reading paired panels side-by-side rather than by the test itself.
 - **rare-codon-low-count.** Top-magnitude rows include cells with `day_X_count` < 50: BWM,A,TGT (day_0=7), BWM,P,TGT (day_0=11), BWM,A,AAT (day_0=34), control,P,TTA (day_10=1, `log2_OR`=-3.298), control,A,TTA (day_10=5, `log2_OR`=-1.855). Rank by direction; flag magnitude as unstable for these rows.
 - **OR-direction-asymmetry.** Two zero-cell rows produce boundary ORs: BWM,E,ATA OR=inf (day_0=0) and BWM,P,TTA OR=0 (day_10=0). Both are ns and excluded from Top hits; the caveat is preserved as a ranking-axis discipline note — `log2_OR` is the reported effect column (already log-transformed), so positive/negative bands are symmetric for finite rows; flag inf/0 cells explicitly.
-- **control-vs-BWM-divergent-direction.** Codon resolution sharpens the aa-level A:N, E:K, P:G divergences onto specific synonyms: site-A AAT (BWM `log2_OR`=+0.960 vs control `log2_OR`=-0.616, opposite directions); site-E AAG (BWM `log2_OR`=-0.324 vs control `log2_OR`=+0.406, opposite directions); site-P AAG (BWM `log2_OR`=-0.527 vs control flat `log2_OR`=-0.031); site-P GGA (BWM `log2_OR`=+0.008 ns vs control `log2_OR`=+0.493). Flagged for cross-test reconciliation.
+- **control-vs-BWM-divergent-direction.** Codon resolution sharpens the aa-level A:N, E:K, P:G divergences onto specific synonyms: site-A AAT (BWM `log2_OR`=+0.960 vs control `log2_OR`=-0.616, opposite directions); site-E AAG (BWM `log2_OR`=-0.324 vs control `log2_OR`=+0.406, opposite directions); site-P AAG (BWM `log2_OR`=-0.527 vs control flat `log2_OR`=-0.031); site-P GGA (BWM `log2_OR`=+0.008 ns vs control `log2_OR`=+0.492). Flagged for cross-test reconciliation.
 - **larger-bh-family.** BH-FDR is per (condition, site) family of 61 codons here vs 20 amino acids in the aa companion. A codon `p_adj`=0.05 is materially harder to clear than an aa `p_adj`=0.05; read codon-vs-aa `p_adj` on comparable axes rather than treating them as fungible.
 
 ---
@@ -247,7 +225,7 @@ Fisher's exact (two-sided) on a 2x2 of (codon_count, total - codon_count) at eac
 
 ![Day-10-vs-day-0 BWM P-site codon volcano: AAG (Lys, basic blue) at log2(OR) ~= -0.53, -log10(FDR) ~= 6.1 sits as the single high-y depleted outlier (file-minimum p for BWM); GAG (Glu, acidic red) at log2(OR) ~= +0.41 is the largest enriched FDR<0.05 hit; GTC (Val, hydrophobic green) and TGT (Cys, polar purple) sit just above the FDR threshold on the enriched side at log2(OR) ~= +0.46 and +1.5. A zero-cell TTA point sits at log2(OR) = -10 at the far-left edge — visible but not significant.](../../plots/within_condition_timepoint_fisher/d10_vs_d0/codon/individual/BWM_P_volcano.png)
 
-![Day-10-vs-day-0 BWM E-site codon volcano: only 2 FDR<0.05 hits — AAG (Lys, basic blue) at log2(OR) ~= -0.32 (depleted, listed in completeness) and CAA (Gln, polar purple) at log2(OR) ~= +0.66 (enriched, in Top hits). All other codons collapse to a tight cluster near the origin; one zero-cell ATA point sits at log2(OR) = +10 at the far-right edge — visible but not significant.](../../plots/within_condition_timepoint_fisher/d10_vs_d0/codon/individual/BWM_E_volcano.png)
+![Day-10-vs-day-0 BWM E-site codon volcano: only 2 FDR<0.05 hits — AAG (Lys, basic blue) at log2(OR) ~= -0.32 (depleted) and CAA (Gln, polar purple) at log2(OR) ~= +0.66 (enriched). All other codons collapse to a tight cluster near the origin; one zero-cell ATA point sits at log2(OR) = +10 at the far-right edge — visible but not significant.](../../plots/within_condition_timepoint_fisher/d10_vs_d0/codon/individual/BWM_E_volcano.png)
 
 ![Day-10-vs-day-0 control A-site codon volcano: the densest panel in the BWM-row companion. GGA (Gly, neutral orange) at log2(OR) ~= +0.51 sits at the top-y (-log10(FDR) ~= 12, the file minimum); CAA (Gln, polar purple) at log2(OR) ~= -0.55 sits second (-log10(FDR) ~= 9). CGC (Arg, basic blue) at ~= +0.86 and ATC (Ile, hydrophobic green) at ~= +0.6 are FDR<0.05 enriched; TAT (Tyr, green), GCA (Ala, green), AAG (Lys, blue), TTT (Phe, green), AAA (Lys, blue), TTA (Leu, green) are FDR<0.05 depleted at log2(OR) ~= -0.4 to -2. ~29 codons cross FDR<0.05 in total.](../../plots/within_condition_timepoint_fisher/d10_vs_d0/codon/individual/control_A_volcano.png)
 

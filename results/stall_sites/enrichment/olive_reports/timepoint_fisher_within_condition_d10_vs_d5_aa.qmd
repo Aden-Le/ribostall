@@ -1,7 +1,7 @@
 ---
 title: "timepoint_fisher_within_condition_d10_vs_d5_aa"
 subtitle: "ribostall stall_sites — enrichment stats"
-date: 2026-05-26
+date: 2026-05-28
 format:
   html:
     toc: true
@@ -14,7 +14,7 @@ format:
     include-in-header:
       text: |
         \usepackage{needspace}
-tbl-colwidths: [22, 8, 17, 15, 15, 23]
+tbl-colwidths: [7, 23, 16, 16, 20, 18]
 execute:
   echo: false
 ---
@@ -55,66 +55,53 @@ Moderate signal at AA-level within-condition Fisher d10 vs d5: 23/120 hits at FD
 
 ## Top hits
 
-The effect column is `log2_OR` (log2 of the Fisher odds ratio; positive = day-10-enriched, negative = day-10-depleted within one condition). `p_value` is the raw Fisher's exact two-sided p; `p_adj` is BH-corrected within each (condition, site) family of 20 AAs. Direction is fixed by the day-10-vs-day-5 contingency layout within one condition: `log2_OR` > 0 = day-10-enriched relative to day-5 in that condition, `log2_OR` < 0 = day-10-depleted. Sub-tables below are split per-direction within each condition (4 sub-tables total, BWM/control x Enriched/Depleted). The `site` column carries the ribosome site; rows are grouped by site in canonical A / P / E order, then sorted by `p_adj` ascending with `|log2_OR|` descending as the tie-breaker. All rows with `p_adj` < 0.05 are shown; no row cap and no raw-p fallback (family-level rule for `timepoint_fisher_within_condition`). Each row's amino-acid one-letter code is expanded to `<letter> (<full name>)` on every appearance.
+The effect column is `log2_OR` (log2 of the Fisher odds ratio for the day-10-vs-day-5 contrast within one condition; positive = day-10-enriched relative to day-5, negative = day-10-depleted). Each row pairs the BWM and control `log2_OR` for one site x amino-acid cell. The `effect change` column is the BWM `log2_OR` minus the control `log2_OR`: it measures how differently the two conditions shifted from day 5 to day 10. A value near zero means both conditions moved together (shared timecourse drift); a large-magnitude value means the two conditions' day-10-vs-day-5 trajectories diverge -- positive when BWM rose relative to control, negative when control rose relative to BWM. The three sections split every cell significant at FDR<0.05 in at least one condition by which condition(s) reach significance: both, BWM only, control only. Within each section rows are grouped by `site` in canonical A / P / E order, then sorted by `effect change` descending. Cells significant in neither condition are omitted. Each amino-acid one-letter code is expanded to `<letter> (<full name>)` on first appearance in each section.
 
 ```{=latex}
-\needspace{13\baselineskip}
+\needspace{14\baselineskip}
 ```
 
-### BWM — Enriched (day_10 > day_5)
+### Significant in both conditions
 
-| amino acid | site | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| site | amino acid | BWM (`log2_OR`) | control (`log2_OR`) | effect change | flag |
 | --- | --- | --- | --- | --- | --- |
-| G (glycine) | A | 0.312 | 9.09e-05 | 9.09e-04 |  |
-| R (arginine) | A | 0.222 | 0.00811 | 0.0496 |  |
-| G (glycine) | P | 0.297 | 1.51e-04 | 0.00303 |  |
-| G (glycine) | E | 0.279 | 0.00123 | 0.0246 |  |
-| R (arginine) | E | 0.275 | 0.00279 | 0.0279 |  |
+| A | Q (glutamine) | -0.309 | -0.534 | +0.225 |  |
+| A | R (arginine) | +0.222 | +0.206 | +0.016 |  |
+| A | G (glycine) | +0.312 | +0.388 | -0.076 |  |
+| P | G | +0.297 | +0.429 | -0.133 |  |
 
 ```{=latex}
-\needspace{11\baselineskip}
+\needspace{14\baselineskip}
 ```
 
-### BWM — Depleted (day_10 < day_5)
+### Significant in BWM only
 
-| amino acid | site | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| site | amino acid | BWM (`log2_OR`) | control (`log2_OR`) | effect change | flag |
 | --- | --- | --- | --- | --- | --- |
-| L (leucine) | A | -0.399 | 9.74e-06 | 1.95e-04 |  |
-| Q (glutamine) | A | -0.309 | 0.00992 | 0.0496 |  |
-| I (isoleucine) | E | -0.267 | 0.00468 | 0.0312 |  |
+| A | L (leucine) | -0.399 | +0.028 | -0.427 |  |
+| E | R (arginine) | +0.275 | -0.208 | +0.483 |  |
+| E | G (glycine) | +0.279 | +0.113 | +0.166 |  |
+| E | I (isoleucine) | -0.268 | +0.115 | -0.383 |  |
 
 ```{=latex}
-\needspace{16\baselineskip}
+\needspace{14\baselineskip}
 ```
 
-### control — Enriched (day_10 > day_5)
+### Significant in control only
 
-| amino acid | site | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| site | amino acid | BWM (`log2_OR`) | control (`log2_OR`) | effect change | flag |
 | --- | --- | --- | --- | --- | --- |
-| G (glycine) | A | 0.388 | 2.34e-07 | 3.96e-06 |  |
-| P (proline) | A | 0.365 | 5.26e-04 | 0.00263 |  |
-| A (alanine) | A | 0.268 | 0.00480 | 0.0166 |  |
-| R (arginine) | A | 0.206 | 0.0132 | 0.0377 |  |
-| G (glycine) | P | 0.430 | 2.90e-09 | 5.80e-08 |  |
-| D (aspartate) | P | 0.199 | 0.00636 | 0.0232 |  |
-| A (alanine) | E | 0.397 | 6.63e-05 | 0.00133 |  |
-| P (proline) | E | 0.414 | 1.59e-04 | 0.00159 |  |
-
-```{=latex}
-\needspace{15\baselineskip}
-```
-
-### control — Depleted (day_10 < day_5)
-
-| amino acid | site | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- | --- |
-| N (asparagine) | A | -0.552 | 3.96e-07 | 3.96e-06 |  |
-| Q (glutamine) | A | -0.534 | 1.00e-05 | 6.70e-05 |  |
-| E (glutamate) | A | -0.199 | 0.00498 | 0.0166 |  |
-| I (isoleucine) | P | -0.382 | 1.29e-05 | 1.29e-04 |  |
-| L (leucine) | P | -0.246 | 0.00422 | 0.0211 |  |
-| V (valine) | P | -0.238 | 0.00328 | 0.0211 |  |
-| Q (glutamine) | P | -0.352 | 0.00695 | 0.0232 |  |
+| A | N (asparagine) | -0.001 | -0.552 | +0.551 |  |
+| A | E (glutamate) | +0.148 | -0.199 | +0.347 |  |
+| A | A (alanine) | -0.179 | +0.267 | -0.446 |  |
+| A | P (proline) | -0.095 | +0.365 | -0.460 |  |
+| P | V (valine) | +0.102 | -0.238 | +0.340 |  |
+| P | I (isoleucine) | -0.070 | -0.382 | +0.312 |  |
+| P | Q (glutamine) | -0.175 | -0.352 | +0.177 |  |
+| P | L (leucine) | -0.154 | -0.246 | +0.093 |  |
+| P | D (aspartate) | +0.066 | +0.199 | -0.132 |  |
+| E | A | -0.000 | +0.397 | -0.398 |  |
+| E | P | -0.077 | +0.414 | -0.491 |  |
 
 ## Numbers at a glance
 - `n_tests`: 120 (60 per condition)
@@ -132,11 +119,11 @@ The effect column is `log2_OR` (log2 of the Fisher odds ratio; positive = day-10
 
 ## Biological interpretation
 
-**Glycine enrichment at the A and P sites is the file's largest-magnitude shared-direction signal across both conditions (concrete).** A:G and P:G move the same way in BWM and control between day 5 and day 10: BWM A:G `log2_OR`=+0.312 and P:G `log2_OR`=+0.297; control A:G `log2_OR`=+0.388 and P:G `log2_OR`=+0.430 (the file minimum). Shared-direction cells in a within-condition contrast are the design's least confounded reading: by construction, the BWM/control axis is *not* what is driving these rows, so the most parsimonious anchor is a time-axis feature of the organism itself across the d5-to-d10 window. Glycine has the most flexible backbone of the 20 amino acids and decodes via four synonymous codons (GGA/GGC/GGG/GGT); the codon-resolution sister CSV is the natural place to ask whether all four synonyms carry the signal (consistent with an amino-acid-level shift) or whether one synonym dominates (consistent with a tRNA-decoding or codon-usage shift). Whether to attach a kinetic mechanism to the A/P-Gly pattern depends on that codon decomposition.
+**Glycine enrichment at the A and P sites is the file's largest-magnitude shared-direction signal across both conditions (concrete).** A:G and P:G move the same way in BWM and control between day 5 and day 10: BWM A:G `log2_OR`=+0.312 and P:G `log2_OR`=+0.297; control A:G `log2_OR`=+0.388 and P:G `log2_OR`=+0.429 (the file minimum). Both cells sit in the *significant in both* section with small `effect change` (A:G -0.076, P:G -0.133), and indeed all four *significant in both* cells (A:Q, A:R, A:G, P:G) are co-directional with small `effect change` -- the signature of a shared trajectory rather than a divergence. Shared-direction cells in a within-condition contrast are the design's least confounded reading: by construction, the BWM/control axis is *not* what is driving these rows, so the most parsimonious anchor is a time-axis feature of the organism itself across the d5-to-d10 window. Glycine has the most flexible backbone of the 20 amino acids and decodes via four synonymous codons (GGA/GGC/GGG/GGT); the codon-resolution sister CSV is the natural place to ask whether all four synonyms carry the signal (consistent with an amino-acid-level shift) or whether one synonym dominates (consistent with a tRNA-decoding or codon-usage shift). Whether to attach a kinetic mechanism to the A/P-Gly pattern depends on that codon decomposition.
 
-**Three site x aa cells flip direction or move on only one side of the BWM-vs-control axis (concrete).** Site-E R is BWM-enriched (`log2_OR`=+0.275) but control-flat (`log2_OR`=-0.21, ns per Headline); site-A A is BWM-flat (`log2_OR`=-0.18, ns per Headline) but control-enriched (`log2_OR`=+0.268); site-P V is BWM-flat (`log2_OR`=+0.10, ns per Headline) but control-depleted (`log2_OR`=-0.238). E:R is the cleanest direction-flip in this contrast — both arms move, but in opposite directions. Arg at the E site sits in the basic-residue exit-tunnel-electrostatic-slowing register; a BWM-specific d5-to-d10 enrichment of E:R, set against a control side that is flat at the same cell, points at a perturbation-specific feature of basic-residue traffic through the exit channel during the second half of the timecourse. The A:A and P:V cells are different in character — control moves while BWM does not — so they read as control-side composition shifts (Ala enriching at A in control between d5 and d10; Val depleting at P in control between d5 and d10) that the BWM line did not undergo.
+**Three site x aa cells flip direction or move on only one side of the BWM-vs-control axis (concrete).** Site-E R is BWM-enriched (`log2_OR`=+0.275) but control-flat (`log2_OR`=-0.21, ns per Headline); site-A A is BWM-flat (`log2_OR`=-0.18, ns per Headline) but control-enriched (`log2_OR`=+0.268); site-P V is BWM-flat (`log2_OR`=+0.10, ns per Headline) but control-depleted (`log2_OR`=-0.238). Ranked by `effect change`, E:R is the largest divergence among these three (+0.483, the top cell of the *significant in BWM only* section); A:A (-0.446) and P:V (+0.340) sit in the *significant in control only* section. E:R is the cleanest direction-flip in this contrast — both arms move, but in opposite directions. Arg at the E site sits in the basic-residue exit-tunnel-electrostatic-slowing register; a BWM-specific d5-to-d10 enrichment of E:R, set against a control side that is flat at the same cell, points at a perturbation-specific feature of basic-residue traffic through the exit channel during the second half of the timecourse. The A:A and P:V cells are different in character — control moves while BWM does not — so they read as control-side composition shifts (Ala enriching at A in control between d5 and d10; Val depleting at P in control between d5 and d10) that the BWM line did not undergo.
 
-**Control reshuffles its site-A and site-P composition more aggressively than BWM between d5 and d10 (concrete).** Control,A carries 7 FDR<0.05 hits (G/N/Q/P/A/E/R, with the strongest cells N depleted `log2_OR`=-0.552 and Q depleted `log2_OR`=-0.534) and control,P carries 6 (G enriched / I, L, V, Q depleted / D enriched, with G the file minimum); BWM,A carries 4 (L depleted / G enriched / Q depleted / R enriched, with L and G the strongest cells and Q/R sitting at the FDR<0.05 wall) and BWM,P carries 1 (G enriched). The control panels are not flat references — they are themselves moving. So any BWM-vs-control contrast read off this file as "BWM-specific" must account for the possibility that the cell is flat in BWM only because BWM held steadier at d5-to-d10, not because of an active BWM perturbation. The largest-magnitude cells where BWM moves and control does not (E:R) carry the cleanest BWM-specific reading; cells where control moves and BWM does not (A:A, P:V) carry the cleanest control-side-drift reading.
+**Control reshuffles its site-A and site-P composition more aggressively than BWM between d5 and d10 (concrete).** Control,A carries 7 FDR<0.05 hits (G/N/Q/P/A/E/R, with the strongest cells N depleted `log2_OR`=-0.552 and Q depleted `log2_OR`=-0.534) and control,P carries 6 (G enriched / I, L, V, Q depleted / D enriched, with G the file minimum); BWM,A carries 4 (L depleted / G enriched / Q depleted / R enriched, with L and G the strongest cells and Q/R sitting at the FDR<0.05 wall) and BWM,P carries 1 (G enriched). The asymmetry is explicit in the Top-hits sections: *significant in control only* holds 11 site x amino-acid cells against just 4 in *significant in BWM only*. The control panels are not flat references — they are themselves moving. So any BWM-vs-control contrast read off this file as "BWM-specific" must account for the possibility that the cell is flat in BWM only because BWM held steadier at d5-to-d10, not because of an active BWM perturbation. The largest-magnitude cells where BWM moves and control does not (E:R) carry the cleanest BWM-specific reading; cells where control moves and BWM does not (A:A, P:V) carry the cleanest control-side-drift reading.
 
 **The d10_vs_d0 E:K direction-flip from the sister contrast does not recur here (concrete).** In the `timepoint_fisher_within_condition_d10_vs_d0_aa.csv` sister contrast, E:K was a direction-divergent cell with opposite-sign FDR<0.05 hits in BWM and control (specific values live in that file, not in this report). In this d10_vs_d5 file the same cell is null in both conditions (BWM `log2_OR`=+0.08 ns / control `log2_OR`=-0.08 ns, per Headline). Two readings of that pattern are consistent with the data, and this file alone cannot resolve them: (a) the d10_vs_d0 E:K flip is anchored at d0 — i.e. the perturbation moved E-site Lys traffic at d0 already, and d5-to-d10 is a plateau in both conditions; (b) the flip is carried by the d0-to-d5 step, with d5-to-d10 holding flat. The `timepoint_fisher_within_condition_d5_vs_d0_aa.csv` sister CSV is the deciding contrast.
 
@@ -156,7 +143,7 @@ Fisher's exact (two-sided) is applied to a 2x2 of (feature_count, total - featur
 - **rare-aa-low-count.** Trp (BWM W: 78 vs 108) and Cys (BWM C: 69 vs 82, control C: 61 vs 89) sit below count = 100. Neither enters Top hits at FDR<0.05 in this contrast, so no Top-hits flags carry the label here, but any downstream reading of the file should not over-read magnitude on those rows — `log2_OR` is unstable at small k. **Threshold asymmetry rationale (family-wide):** BWM_total ~6k vs control_total ~28k (~4.55:1); the family-rule 100/200 split (BWM/control) is heuristic, calibrated to catch rare AAs (W, C, M) in both arms — symmetric (100/100) under-flags control's rare cells (which sit at 150-300), proportional (100/450) over-flags. Fisher OR variance is dominated by the smallest cell ($\approx 1/a + 1/b + 1/c + 1/d$), so absolute count — not proportion — is the relevant axis. Codon resolution stays symmetric at 50/50 because the AA-vs-codon dilution narrows the relative cell-size spread.
 - **OR-direction-asymmetry.** No zero-cell rows in this file, so no infinite/zero ORs; the caveat is preserved as a ranking-axis discipline note — `log2_OR` is the reported effect column (already log-transformed), so positive/negative bands are symmetric by construction; rank directly on it.
 - **control-vs-BWM-divergent-direction.** Three site x aa cells flip direction or move on only one side: **site-E R** (BWM `log2_OR`=+0.275 vs control `log2_OR`=-0.208 ns — cleanest flip in the contrast), **site-A A** (BWM `log2_OR`=-0.179 ns vs control `log2_OR`=+0.268), **site-P V** (BWM `log2_OR`=+0.102 ns vs control `log2_OR`=-0.238). The d10_vs_d0 E:K flip does NOT recur here (BWM `log2_OR`=+0.080 ns / control `log2_OR`=-0.080 ns); cross-contrast cells provided for downstream reconciliation.
-- **shared-time-trajectory-A/P-Gly.** Both BWM and control enrich Gly at sites A and P from d5-to-d10 (BWM A:G `log2_OR`=+0.312 / P:G `log2_OR`=+0.297; control A:G `log2_OR`=+0.388 / P:G `log2_OR`=+0.430, control,P,G is the file minimum). Coherent shared-time signal across both conditions — not perturbation-specific. Treat as a control-aligned time-axis feature, not a BWM-specific finding.
+- **shared-time-trajectory-A/P-Gly.** Both BWM and control enrich Gly at sites A and P from d5-to-d10 (BWM A:G `log2_OR`=+0.312 / P:G `log2_OR`=+0.297; control A:G `log2_OR`=+0.388 / P:G `log2_OR`=+0.429, control,P,G is the file minimum). Coherent shared-time signal across both conditions — not perturbation-specific. Treat as a control-aligned time-axis feature, not a BWM-specific finding.
 
 ---
 

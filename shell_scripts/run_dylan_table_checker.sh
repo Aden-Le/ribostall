@@ -2,10 +2,14 @@
 #----------------------------------------------------
 # Run the per-family table scripts on each analysis_stats CSV.
 #
-# Blocks 1-10 + 17-18 run `dylan_table_checker.py` (audit/checker). Blocks
-# 11-16 (the within_condition / tfwc family) run
-# `within_condition_sig_split.py`, which GENERATES the three-section paired
-# Top-hits tables (both / BWM-only / control-only) -- see the tfwc note below.
+# Blocks 1-10 run `dylan_table_checker.py` (audit/checker). Blocks 11-16 (the
+# within_condition / tfwc family) run `within_condition_sig_split.py`, which
+# GENERATES the three-section paired Top-hits tables (both / BWM-only /
+# control-only) -- see the tfwc note below. Blocks 17-18 (the
+# within_condition_binomial family) run `cross_group_concordance_tables.py`,
+# which GENERATES the three cross-group Top-10 tables (concordant enrichment /
+# concordant depletion / discordant) pasted into the matching .qmd
+# `## Top hits` section -- see the binomial note below.
 #
 # WORKFLOW
 #   - Full run    : `bash shell_scripts/run_dylan_table_checker.sh`
@@ -63,6 +67,23 @@
 # defaults; codon blocks pass `--rare-bwm-threshold 50 --rare-control-threshold 50`
 # to match the codon count convention. Loosen the FDR cutoff per block with
 # `--sig-threshold 0.10`.
+#
+# 17/18 blocks GENERATE the three cross-group Top-10 tables for the
+# within_condition_binomial family via
+# `scripts/cross_group_concordance_tables.py`. Each run prints three markdown
+# tables -- "Concordant enrichment", "Concordant depletion", "Discordant" --
+# one row per (site, feature) cell, pooling the six per-group
+# `log2_enrichment` values (BWM and control x d0/d5/d10). A cell is concordant
+# when all 6 groups share one sign, discordant otherwise. Each table is the
+# top 10 by `#sig` (groups with p_adj<0.05, of 6) desc, then `Max Change`
+# (max-min log2_enrichment across the 6 groups) desc; the kept rows are
+# displayed sorted by site A/P/E, then `#sig` desc, then `Max Change` desc.
+# The `log2_enrichment` cell lists the six values on two `\newline`-separated
+# lines; the `flag` column aggregates iid-amp / bg-tight / rare-aa|rare-codon
+# across the 6 groups. Paste each block into the matching Olive .qmd
+# `## Top hits` section (replacing the old cross-group concordance pair). Tune
+# with `--top-n`, `--sig-threshold`, `--bg-tight-threshold`,
+# `--rare-k-threshold`.
 #----------------------------------------------------
 
 # When running the whole script via bash, cd to repo root so the relative
@@ -179,13 +200,13 @@ echo "---- 16. timepoint_fisher_within_condition_d5_vs_d0_codon ----"
 python3 scripts/within_condition_sig_split.py "results/stall_sites/enrichment/analysis_stats/timepoint_fisher_within_condition_d5_vs_d0_codon.csv" --rare-bwm-threshold 50 --rare-control-threshold 50
 
 # ============================================================
-# 17. within_condition_binomial_aa  (family: binom_aa  -- rule TBD)
+# 17. within_condition_binomial_aa  (family: binom_aa)
 # ============================================================
 echo "---- 17. within_condition_binomial_aa ----"
-python3 scripts/dylan_table_checker.py "results/stall_sites/enrichment/analysis_stats/within_condition_binomial_aa.csv" --family binom_aa
+python3 scripts/cross_group_concordance_tables.py "results/stall_sites/enrichment/analysis_stats/within_condition_binomial_aa.csv" --top-n 15
 
 # ============================================================
 # 18. within_condition_binomial_codon  (family: binom_codon)
 # ============================================================
 echo "---- 18. within_condition_binomial_codon ----"
-python3 scripts/dylan_table_checker.py "results/stall_sites/enrichment/analysis_stats/within_condition_binomial_codon.csv" --family binom_codon
+python3 scripts/cross_group_concordance_tables.py "results/stall_sites/enrichment/analysis_stats/within_condition_binomial_codon.csv" --top-n 15

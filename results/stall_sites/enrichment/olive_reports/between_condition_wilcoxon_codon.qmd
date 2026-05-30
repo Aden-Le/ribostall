@@ -21,7 +21,7 @@ execute:
 
 ## Composite figure
 
-![Three-panel bar plot (A-site, P-site, E-site, left-to-right) showing per-codon log2 fold-change of BWM-vs-control median per-replicate frequency across the 61 sense codons. Bars sorted by log2_FC high-to-low within each panel; blue = enriched (log2FC >= 0), red = depleted (log2FC < 0). Y-axis range ~-1.2 to +0.7. Codon-level dynamic range is far wider than the AA-level companion.](../../plots/between_condition/codon/composite/APE_codon_BWM_vs_Control_barplot_composite.png)
+![Three-panel bar plot (A-site, P-site, E-site, left-to-right) showing per-codon log2 fold-change of BWM-vs-control median per-replicate frequency across the 61 sense codons. Bars sorted by log2_FC high-to-low within each panel; blue = enriched (log2FC >= 0), red = depleted (log2FC < 0). Y-axis range ~-1.2 to +0.7.](../../plots/between_condition/codon/composite/APE_codon_BWM_vs_Control_barplot_composite.png)
 
 Each panel ranks the 61 sense codons by signed log2_FC (BWM median / control median) at one ribosome site. The signed-rank tails are heavier than at AA resolution because many rare codons have median frequencies < 0.005, producing large but unstable |log2_FC|; treat the rightmost few red bars in each panel as `low-count` candidates rather than headline depletions.
 

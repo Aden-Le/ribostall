@@ -11,9 +11,7 @@
 #
 # Numbering matches `_MANUAL_REVIEW.md` / `_OLIVE_PLAN.md` in
 # `results/stall_sites/enrichment/olive_reports/`.
-# Blocks 16-18 are commented out because their .qmd files have not been
-# generated yet; un-comment the `quarto render` line once the next Olive
-# session produces them.
+# All 18 blocks are active; their .qmd files have been generated.
 #----------------------------------------------------
 
 # When running the whole script via bash, cd to repo root so the relative
@@ -119,15 +117,13 @@ echo "---- 16. timepoint_fisher_within_condition_d5_vs_d0_codon ----"
 quarto render "results/stall_sites/enrichment/olive_reports/timepoint_fisher_within_condition_d5_vs_d0_codon.qmd"
 
 # ============================================================
-# 17. within_condition_binomial_aa  (NOT YET RENDERED)
+# 17. within_condition_binomial_aa
 # ============================================================
-# Generate via the next Olive session first, then un-comment:
-# echo "---- 17. within_condition_binomial_aa ----"
-# quarto render "results/stall_sites/enrichment/olive_reports/within_condition_binomial_aa.qmd"
+echo "---- 17. within_condition_binomial_aa ----"
+quarto render "results/stall_sites/enrichment/olive_reports/within_condition_binomial_aa.qmd"
 
 # ============================================================
-# 18. within_condition_binomial_codon  (NOT YET RENDERED)
+# 18. within_condition_binomial_codon
 # ============================================================
-# Generate via the next Olive session first, then un-comment:
-# echo "---- 18. within_condition_binomial_codon ----"
-# quarto render "results/stall_sites/enrichment/olive_reports/within_condition_binomial_codon.qmd"
+echo "---- 18. within_condition_binomial_codon ----"
+quarto render "results/stall_sites/enrichment/olive_reports/within_condition_binomial_codon.qmd"

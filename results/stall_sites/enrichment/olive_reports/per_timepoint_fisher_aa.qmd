@@ -21,7 +21,7 @@ execute:
 
 ## Composite figure
 
-![3x3 grid of BWM-vs-control amino-acid volcano panels: rows are timepoints (day 0 / day 5 / day 10) and columns are ribosome sites (A / P / E). Each panel plots -log10(FDR) against log2(odds ratio); triangles mark FDR<0.05 hits and circles are non-significant. Glyphs are coloured by amino-acid property (acidic = red, basic = blue, hydrophobic = green, neutral = orange, polar = purple). Day-0 panels are richly populated and span the widest log2(OR) range; day-5 and day-10 panels collapse toward the origin.](../../plots/per_timepoint_fisher/composite/aa_fisher_composite.png){fig-pos="H" width=92%}
+![3x3 grid of BWM-vs-control amino-acid volcano panels: rows are timepoints (day 0 / day 5 / day 10) and columns are ribosome sites (A / P / E). Each panel plots -log10(FDR) against log2(odds ratio); triangles mark FDR<0.05 hits and circles are non-significant. Glyphs are coloured by amino-acid property (acidic = red, basic = blue, hydrophobic = green, neutral = orange, polar = purple).](../../plots/per_timepoint_fisher/composite/aa_fisher_composite.png){fig-pos="H" width=92%}
 
 Each glyph is a single amino acid at one (timepoint, site) BH-FDR family of 20; horizontal dashed line is FDR = 0.05 and vertical dashed lines mark +/-0.5 log2(OR). Positive log2(OR) means BWM-enriched relative to control; negative means BWM-depleted.
 

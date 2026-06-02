@@ -21,7 +21,7 @@ execute:
 
 ## Composite figure
 
-![3x3 grid of BWM-vs-control codon volcano panels: rows are timepoints (day 0 / day 5 / day 10) and columns are ribosome sites (A / P / E). Each panel plots -log10(FDR) against log2(odds ratio); triangles mark FDR<0.05 hits and circles are non-significant. Glyphs are coloured by amino-acid property of the encoded residue (acidic = red, basic = blue, hydrophobic = green, neutral = orange, polar = purple). Day-0 panels are dense with FDR<0.05 hits while day-5 and day-10 panels collapse to the origin with at most a handful of hits.](../../plots/per_timepoint_fisher/codon/composite/codon_fisher_composite.png){fig-pos="H" width=92%}
+![3x3 grid of BWM-vs-control codon volcano panels: rows are timepoints (day 0 / day 5 / day 10) and columns are ribosome sites (A / P / E). Each panel plots -log10(FDR) against log2(odds ratio); triangles mark FDR<0.05 hits and circles are non-significant. Glyphs are coloured by amino-acid property of the encoded residue (acidic = red, basic = blue, hydrophobic = green, neutral = orange, polar = purple).](../../plots/per_timepoint_fisher/codon/composite/codon_fisher_composite.png){fig-pos="H" width=92%}
 
 Each glyph is a single codon at one (timepoint, site) BH-FDR family of 61 sense codons; horizontal dashed line is FDR = 0.05 and vertical dashed lines mark +/-0.5 log2(OR). Positive log2(OR) means BWM-enriched relative to control; negative means BWM-depleted. The x-axis extends to +/-10 to accommodate rare-codon depletions whose magnitudes are dominated by the small-k floor (see `rare-codon-low-count`).
 

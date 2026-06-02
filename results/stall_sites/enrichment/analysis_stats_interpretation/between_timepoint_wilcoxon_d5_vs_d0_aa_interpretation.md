@@ -9,17 +9,20 @@ n_significant_fdr10: 0
 min_p_adj: 0.5714285714285714
 p_floor: 0.02857142857142857
 pseudoreplicated: null
+synced_from_olive_qmd: 2026-06-01
 caveats:
   - {label: "mw-floor-blocking", proposed_by: family, status: confirmed, why: "Inherited from family `between_timepoint_wilcoxon` (see _INDEX.md)."}
   - {label: "condition-pooled-confound", proposed_by: family, status: confirmed, why: "Inherited from family `between_timepoint_wilcoxon` (see _INDEX.md)."}
   - {label: "n=4-low-power", proposed_by: family, status: confirmed, why: "Inherited from family `between_timepoint_wilcoxon` (see _INDEX.md)."}
   - {label: "p-floor-aware-headline", proposed_by: family, status: confirmed, why: "Inherited from family `between_timepoint_wilcoxon` (see _INDEX.md)."}
-  - {label: "weighted_log2_enrichment-absent", proposed_by: dylan, status: confirmed, why: "Effect column is `log2_FC` of medians only."}
+  - {label: "weighted_log2_enrichment-absent", proposed_by: dylan, status: confirmed, why: "Effect column is `log2_FC` of medians only; no count-weighted variant."}
   - {label: "small-bh-family-discreteness", proposed_by: dylan, status: confirmed, why: "BH adjusts only 20 raw-p per site. Single floor row at P-C with one near-floor companion P-H gives BH wall = 0.5714, exactly observed."}
-headline: "Firm null at FDR<0.05 (0/60) for AA-level d5-vs-d0 MW with reps pooled across BWM and control per timepoint; one floor row at P-site C (+0.249, p_adj=0.571) and one near-floor at P-site H (-0.144, p_adj=0.571). Site E is completely flat (min p_adj=1.0). Min raw p = 0.0286 (n=4 vs n=4 floor); 'no FDR hits' is structural per the locked floor caveat."
+  - {label: "asymptotic-with-ties", proposed_by: dylan, status: ruled_out, why: "Empirically verified via scripts/_for_claude_mw_branch_audit.py --design between_timepoint --timepoints day5 day0 --level aa: 0/60 (site, AA) tests have rank ties in the pooled 8-element sample; scipy mannwhitneyu(method='auto') picked the exact branch for all 60 (recomputed p matches the pipeline CSV to ~8e-17); forcing method='asymptotic' shifts raw p by at most 0.0305 (median 0.0106), flips 0 raw-p<0.05 decisions, and leaves 0 hits at FDR<0.05 (asymptotic per-site min p_adj A/P/E = 0.776/0.606/1.000 vs as-shipped exact 0.800/0.571/1.000)."}
+headline: "No statistically significant differences at FDR<0.05 (0/60) for AA-level d5-vs-d0 MW with reps pooled across BWM and control per timepoint; one floor row at P-site C (+0.249, raw p=0.0286, p_adj=0.571) and one near-floor at P-site H (-0.144, raw p=0.0571, p_adj=0.571). Site E is completely flat (min p_adj=1.0); site A min p_adj=0.8. The d5-vs-d0 contrast carries the least signal of the three pairwise contrasts in this family. Min raw p = 0.0286 (n=4 vs n=4 floor); 'no FDR hits' is structural per the locked floor caveat."
 user_directives:
   - "(triage, batched across all 6 family members) Test type confirmation — `MW / Wilcoxon rank-sum two-sided, n=4 vs n=4, BH-FDR per site` → `Confirm`."
   - "(triage, batched across the 3 aa files) CSV-specific caveats → `weighted_log2_enrichment-absent`, `small-bh-family-discreteness` confirmed."
+  - "(readback) Reconciled shared content from the corrected .qmd on 2026-06-01 → adopted the six per-(site, direction) Top-hits sub-tables in A/P/E order with the added raw `p_value` column, de-jargoned the Headline opener, and synced the `asymptotic-with-ties` ruled-out caveat; every number enumerated and verified against the .qmd/CSV, no values changed."
 ---
 
 # Interpretation — between_timepoint_wilcoxon_d5_vs_d0_aa
@@ -31,62 +34,74 @@ user_directives:
 ## User directives
 - (triage, batched) Test type: `MW / Wilcoxon rank-sum two-sided, n=4 vs n=4, BH-FDR per site` → "Confirm".
 - (triage, batched 3 aa files) CSV-specific caveats: `weighted_log2_enrichment-absent`, `small-bh-family-discreteness` confirmed.
+- (readback) Reconciled shared content from the corrected .qmd on 2026-06-01: adopted the six per-(site, direction) Top-hits sub-tables (A/P/E order) with the added raw `p_value` column, de-jargoned the Headline opener, and synced the `asymptotic-with-ties` ruled-out caveat. Every number enumerated and verified against the .qmd/CSV; no values changed.
 
 ## Headline
-Firm null at FDR<0.05 (0/60) for AA-level day_5 vs day_0 MW with BWM and control reps pooled within each timepoint (n=4 per side). One floor row across the file: P-site C (+0.249, raw p=0.0286, p_adj=0.571), with a P-site H near-floor companion (-0.144, raw p=0.0571, p_adj=0.571). Site E is completely flat (min p_adj=1.0); site A min p_adj=0.8. The day_5 vs day_0 contrast carries the *least* signal of the three pairwise contrasts in this family — every site has weaker signal here than in the corresponding d10_vs_d5 or d10_vs_d0 file. Treat as exploratory; the only feature with even a floor-level signal is P-site Cysteine, also flagged at d10_vs_d0_aa.
+No statistically significant differences at FDR<0.05 (0/60) for AA-level day_5 vs day_0 MW with BWM and control reps pooled within each timepoint (n=4 per side). One floor row across the file: P-site C (+0.249, raw p=0.0286, p_adj=0.571), with a P-site H near-floor companion (-0.144, raw p=0.0571, p_adj=0.571). Site E is completely flat (min p_adj=1.0); site A min p_adj=0.8. The day_5 vs day_0 contrast carries the *least* signal of the three pairwise contrasts in this family — every site has weaker signal here than in the corresponding d10_vs_d5 or d10_vs_d0 file. Treat as exploratory; the only feature with even a floor-level signal is P-site Cysteine, also flagged at d10_vs_d0_aa.
 
 ## Top hits
 
-### P site (headline group — only site with a floor row; min p_adj=0.571)
+Effect column is `log2_FC` (day_5/day_0 median ratio); `p_value` is the raw Mann-Whitney p; `p_adj` is BH-corrected per A/P/E site (20-AA family). Each site is split into one sub-table per sign of effect (positive `log2_FC` = day_5-enriched, negative = day_5-depleted); within each, up to 5 rows ranked by raw `p_value` ascending, `|log2_FC|` descending as the tiebreaker.
 
-| direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
+### A site — enriched (day_5 > day_0)
+
+| feature | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
 | --- | --- | --- | --- | --- |
-| enriched | C | +0.249 | 0.571 | floor |
-| enriched | S | +0.152 | 0.883 |  |
-| enriched | E | +0.268 | 0.883 |  |
-| enriched | F | +0.086 | 0.883 |  |
-| enriched | Q | +0.166 | 0.883 |  |
-| depleted | H | -0.144 | 0.571 |  |
-| depleted | K | -0.192 | 0.883 |  |
-| depleted | G | -0.193 | 0.883 |  |
-| depleted | W | -0.252 | 0.883 |  |
-| depleted | M | -0.383 | 0.914 |  |
+| I | +0.188 | 0.1143 | 0.800 |  |
+| N | +0.618 | 0.2000 | 0.800 |  |
+| D | +0.222 | 0.2000 | 0.800 |  |
+| E | +0.069 | 0.3429 | 0.857 |  |
+| Q | +0.056 | 0.3429 | 0.857 |  |
 
-<details>
-<summary>A site (no floor rows; min p_adj = 0.8)</summary>
+### A site — depleted (day_5 < day_0)
 
-| direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
+| feature | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
 | --- | --- | --- | --- | --- |
-| enriched | I | +0.188 | 0.800 |  |
-| enriched | N | +0.618 | 0.800 |  |
-| enriched | D | +0.222 | 0.800 |  |
-| enriched | E | +0.069 | 0.857 |  |
-| enriched | Q | +0.056 | 0.857 |  |
-| depleted | Y | -0.412 | 0.800 |  |
-| depleted | W | -0.671 | 0.800 |  |
-| depleted | L | -0.097 | 0.857 |  |
-| depleted | A | -0.243 | 0.883 |  |
-| depleted | P | -0.074 | 0.883 |  |
+| Y | -0.412 | 0.1143 | 0.800 |  |
+| W | -0.671 | 0.2000 | 0.800 |  |
+| L | -0.097 | 0.3429 | 0.857 |  |
+| A | -0.243 | 0.4857 | 0.883 |  |
+| P | -0.074 | 0.4857 | 0.883 |  |
 
-</details>
+### P site — enriched (day_5 > day_0)
 
-<details>
-<summary>E site (completely flat; min p_adj = 1.0)</summary>
-
-| direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
+| feature | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
 | --- | --- | --- | --- | --- |
-| enriched | Q | +0.482 | 1.0 |  |
-| enriched | S | +0.300 | 1.0 |  |
-| enriched | E | +0.212 | 1.0 |  |
-| enriched | N | +0.040 | 1.0 |  |
-| enriched | C | +0.131 | 1.0 |  |
-| depleted | P | -0.510 | 1.0 |  |
-| depleted | W | -0.143 | 1.0 |  |
-| depleted | M | -0.170 | 1.0 |  |
-| depleted | A | -0.092 | 1.0 |  |
-| depleted | K | -0.201 | 1.0 |  |
+| C | +0.249 | 0.0286 | 0.571 | floor |
+| S | +0.152 | 0.2000 | 0.883 |  |
+| E | +0.268 | 0.3429 | 0.883 |  |
+| F | +0.086 | 0.3429 | 0.883 |  |
+| Q | +0.166 | 0.4857 | 0.883 |  |
 
-</details>
+### P site — depleted (day_5 < day_0)
+
+| feature | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| H | -0.144 | 0.0571 | 0.571 |  |
+| K | -0.192 | 0.2000 | 0.883 |  |
+| G | -0.193 | 0.3429 | 0.883 |  |
+| W | -0.252 | 0.4857 | 0.883 |  |
+| M | -0.383 | 0.6857 | 0.914 |  |
+
+### E site — enriched (day_5 > day_0)
+
+| feature | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| Q | +0.482 | 0.1143 | 1.000 |  |
+| S | +0.300 | 0.2000 | 1.000 |  |
+| E | +0.212 | 0.3429 | 1.000 |  |
+| N | +0.040 | 0.3429 | 1.000 |  |
+| C | +0.131 | 0.4857 | 1.000 |  |
+
+### E site — depleted (day_5 < day_0)
+
+| feature | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| P | -0.510 | 0.2000 | 1.000 |  |
+| W | -0.143 | 0.3429 | 1.000 |  |
+| M | -0.170 | 0.4857 | 1.000 |  |
+| A | -0.092 | 0.4857 | 1.000 |  |
+| K | -0.201 | 0.8857 | 1.000 |  |
 
 ## Numbers at a glance
 - `n_tests`: 60
@@ -113,7 +128,7 @@ MW rank-sum two-sided on per-replicate frequencies, n=4 day_5 (BWM_day5_rep2/3 +
 - **small-bh-family-discreteness** (per-CSV) — observed min p_adj=0.571 is the BH wall for one floor hit in a 20-test family, exactly as expected.
 
 ### Considered but not applicable
-*(Dylan did not propose any further per-CSV caveats here.)*
+- **asymptotic-with-ties** (per-CSV, ruled out) — concern that `scipy.stats.mannwhitneyu` might fall back to the asymptotic Z approximation under tied per-rep frequencies. Empirically verified via `scripts/_for_claude_mw_branch_audit.py --design between_timepoint --timepoints day5 day0 --level aa`: 0/60 (site, AA) tests have rank ties in the pooled 8-element sample; scipy `method='auto'` picked the exact branch for all 60 (recomputed p matches the pipeline CSV to ~8e-17); forcing `method='asymptotic'` shifts raw p-values by at most 0.0305 (median 0.0106), flips 0 raw-p<0.05 decisions, and leaves 0 hits at FDR<0.05 (asymptotic per-site min p_adj A/P/E = 0.776/0.606/1.000 vs as-shipped exact 0.800/0.571/1.000). The branch choice does not affect any FDR-level conclusion in this file.
 
 ## For Chumeng (joint-reading hooks)
 - Family: `between_timepoint_wilcoxon` — sister CSVs: `between_timepoint_wilcoxon_d5_vs_d0_codon.csv` (codon resolution, same contrast), and the d10_vs_d0 / d10_vs_d5 pairs at both resolutions.

@@ -9,6 +9,7 @@ n_significant_fdr10: 103
 min_p_adj: 1.402e-12
 p_floor: null
 pseudoreplicated: true
+synced_from_olive_qmd: 2026-06-01
 caveats:
   - {label: "pseudorep", proposed_by: family, status: confirmed, why: "Inherited from family `timepoint_fisher_within_condition` (see _INDEX.md)."}
   - {label: "large-N-Fisher-anticonservative", proposed_by: family, status: confirmed, why: "Inherited from family `timepoint_fisher_within_condition` (see _INDEX.md)."}
@@ -27,6 +28,7 @@ user_directives:
   - "(triage) test type → user confirmed Fisher's exact, BH-FDR per (condition, site) (locked from family, not re-asked)"
   - "(triage) per-CSV caveats → user confirmed all four Dylan-proposed: rare-codon-low-count, OR-direction-asymmetry, control-vs-BWM-divergent-direction, larger-bh-family"
   - "(invocation context) `read @shell_scripts/run_enrichment_stats.sh for further context before per csv triaging` — Dylan re-read; the test design (within-condition Fisher, BH per (condition, site)) is unchanged from the aa companion"
+  - "(readback) Reconciled shared content from the corrected .qmd on 2026-06-01 -> three-section table already mirrored; every number enumerated across the three classes and verified against the .qmd and raw CSV; 0 corrections (number-audit-only verdict confirmed)"
 ---
 
 # Interpretation — timepoint_fisher_within_condition_d10_vs_d0_codon
@@ -41,6 +43,7 @@ user_directives:
 - (resume probe) "Streamline caveat confirmation across the family?" → "If Dylan thinks the flags are appropriate then prompt me with them, I don't know myself if they are prevalent on a csv by csv basis"
 - (triage) "Per-CSV caveats Dylan wants to flag for d10_vs_d0_codon. Which apply?" → user confirmed all four Dylan-proposed: `rare-codon-low-count`, `OR-direction-asymmetry`, `control-vs-BWM-divergent-direction`, `larger-bh-family`
 - (invocation context) "read @shell_scripts/run_enrichment_stats.sh for further context before per csv triaging" → Dylan re-read; the test design is unchanged from the aa companion (within-condition Fisher, BH per (condition, site)).
+- (readback) "Reconciled shared content from the corrected .qmd on 2026-06-01" → three-section table already mirrored the corrected report; every number in prose + front-matter enumerated and verified against the .qmd and the raw CSV (all 87 table cells re-derived from `odds_ratio`); 0 corrections.
 
 ## Headline
 Strong codon-level signal at d10 vs d0 within-condition Fisher: 91/366 hits at FDR<0.05 (13/183 BWM, 78/183 control). Control's 78 codon hits dominate (6× the BWM count) and the smallest p_adj = 1.40e-12 sits at control,A,GGA (`log2_OR`=+0.520 — dominant statistical-design concern: the family-level large-N-Fisher-anticonservative caveat applies). **The aa-level direction divergences sharpen onto specific synonymous codons**: site-A AAT carries the A:N divergence (BWM `log2_OR`=+0.960 sig vs control `log2_OR`=-0.616 sig — both significant in opposite directions); site-E AAG carries the E:K divergence (BWM `log2_OR`=-0.324 vs control `log2_OR`=+0.406, both significant); site-P GGA alone carries the P:G divergence (BWM `log2_OR`=+0.008 ns vs control `log2_OR`=+0.492 sig). **Codon resolution also exposes synonymous codon-usage shifts** where aa-level signal concentrates on a subset of synonyms: BWM,A:Y depletion is purely TAC (TAT flat); BWM,P:E enrichment is purely GAG (GAA flat); BWM,P:K depletion is purely AAG; BWM,E:Q enrichment is purely CAA; BWM,A:L depletion concentrates on CTC (CTG `p_adj`=0.058 ns under the strict `< 0.05` cutoff); control,A:G enrichment is GGA-only with GGT actually significantly *depleted* (mixed-direction codon-usage shift); control,A:R enrichment is split across CGC/CGT while CGA is depleted; control,P:E enrichment is GAG-only with GAA significantly *depleted*.

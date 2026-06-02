@@ -5,10 +5,11 @@ test_type: Fisher's exact (two-sided), BH-FDR per (condition, site)
 test_type_source: user-confirmed
 n_tests: 120
 n_significant_fdr05: 36
-n_significant_fdr10: 47
+n_significant_fdr10: 51
 min_p_adj: 2.27e-12
 p_floor: null
 pseudoreplicated: true
+synced_from_olive_qmd: 2026-06-02
 caveats:
   - {label: "pseudorep", proposed_by: family, status: confirmed, why: "Inherited from family `timepoint_fisher_within_condition` (see _INDEX.md)."}
   - {label: "large-N-Fisher-anticonservative", proposed_by: family, status: confirmed, why: "Inherited from family `timepoint_fisher_within_condition` (see _INDEX.md). control,E,P at p_adj=2.27e-12 on log2_OR=-0.63 (~35% relative depletion) is the family-wide minimum and the most extreme single-feature large-N anti-conservative case."}
@@ -30,6 +31,7 @@ user_directives:
   - "(history) Prior crashed run wrote this file via batch-propagation. This session re-triaged caveats per user's explicit per-CSV preference; new `control-E-P-extreme-anticonservative` caveat added. Numbers and Top hits unchanged from prior run after spot-check."
   - "(2026-05-25 Stage 4) Family-rule rewrite — Top-hits restructured from 2 per-condition tables (top-5 per direction = 10 rows per condition) to 4 per-(condition, direction) tables with `site` column; all rows with `p_adj` < 0.05 shown (BWM 6+9 / control 9+12 = 36 = `n_significant_fdr05`); effect column `odds_ratio` -> `log2_OR` across Top-hits + frontmatter `headline` + body `## Headline` + 3 caveat `why` fields (`large-N-Fisher-anticonservative`, `control-vs-BWM-divergent-direction`, `control-E-P-extreme-anticonservative`) + `OR-direction-asymmetry` ranking-axis sentence + `## For Chumeng` cross-contrast quotes; `## Methods` sentence dropped `|log2(OR)|`-ranked FDR<0.10 fallback wording and adopted the family-rule sentence; `## Numbers at a glance` per-(condition, site) bullets reordered A/E/P -> A/P/E with direction-broken hit listings matching the new sub-tables. `.qmd` is the source of truth and was not touched by this turn; Stage 4 edits Dylan-upstream only."
   - "(2026-05-28 three-section rollout) layout directive — Top-hits restructured from the 4 per-(condition, direction) sub-tables (BWM/control x Enriched/Depleted) to the 3 paired sections (Significant in both = 6 cells / BWM only = 9 / control only = 15), matching the `.qmd` Olive rebuilt the same day. Columns now `Site | Amino Acid | BWM \`log2_OR\` | control \`log2_OR\` | Effect change | Flag`; raw/adjusted-p columns dropped (significance carried by section membership); `Effect change` = BWM log2_OR - control log2_OR; rows grouped A/P/E then `Effect change` desc. Tables from `within_condition_sig_split.py` block 15 (default 100/200 thresholds). Table flag `rare-aa-low-count` -> `low-count (BWM, C)` on A:W and `low-count (C)` on control,P,M; `rare-aa flag(ged)` prose -> `low-count flag(ged)` in body Headline + frontmatter headline + `control-vs-BWM-divergent-direction` caveat why; the `rare-aa-low-count` confirmed-caveat label is kept (conceptual caveat, distinct from the table flag glyph). All 30 underlying significant cells unchanged (BWM 15 / control 21 / 36 hit-rows); Numbers-at-a-glance / Methods / For-Chumeng numerically intact."
+  - "(readback) \"Reconciled shared content from the corrected .qmd on 2026-06-02\" -> \"NUMBER-AUDIT ONLY (no table reshape — three-section layout already mirrored). All 30 Top-hits cells re-verified vs the raw CSV `odds_ratio` column (log2_OR, effect change = BWM - control, section placement by FDR<0.05) — clean. 2 corrections: (1) `n_significant_fdr10` 47 -> 51 (BWM 19 -> 23; control 28 correct) — the FDR<0.10 count was stale in BOTH this .md and the .qmd; corrected against the CSV in both files (front-matter + Numbers-at-a-glance); (2) body Headline E:A `+0.03` -> `+0.02` (Dylan-only typo; the .md table, the .md front-matter headline, the .qmd headline, and the CSV `odds_ratio`=1.0161 all give +0.02). FDR<0.05 = 36/15/21 verified clean everywhere. Cross-file (sister-CSV / between_condition) magnitudes flagged not-CSV-verifiable here.\""
 ---
 
 # Interpretation — timepoint_fisher_within_condition_d5_vs_d0_aa
@@ -47,9 +49,10 @@ user_directives:
 - (history) Prior crashed run wrote this file via batch-propagation. This session re-triaged caveats per user's explicit per-CSV preference; new `control-E-P-extreme-anticonservative` caveat added. Numbers and Top hits unchanged from prior run after spot-check.
 - (2026-05-25 Stage 4) Family-rule rewrite applied — see frontmatter `user_directives` audit-trail entry for the change set.
 - (2026-05-28 three-section rollout) Top-hits swapped from the 4 per-(condition, direction) sub-tables to the 3 paired sections (Significant in both / BWM only / control only) matching the `.qmd`; columns `Site | Amino Acid | BWM log2_OR | control log2_OR | Effect change | Flag`, raw/adjusted-p dropped, table flag -> `low-count (BWM, C)` (A:W) / `low-count (C)` (control,P,M); `rare-aa flagged` prose -> `low-count flagged`. Underlying significant cells unchanged. See frontmatter `user_directives` for the full change set.
+- (readback 2026-06-02) NUMBER-AUDIT ONLY — three-section table already mirrored the `.qmd`, no reshape. All 30 Top-hits cells re-verified against the raw CSV (clean). Corrected `n_significant_fdr10` 47 -> 51 (BWM 19 -> 23; the FDR<0.10 count was stale in both this `.md` and the `.qmd`, fixed against the CSV in both) and a body-Headline E:A typo (`+0.03` -> `+0.02`). FDR<0.05 = 36 (15 BWM / 21 control) verified unchanged. See frontmatter `user_directives` for the full audit entry.
 
 ## Headline
-d5 vs d0 within-condition Fisher (aa-level): **36/120 hits at FDR<0.05** (15/60 BWM, 21/60 control). **Largest-magnitude divergence cell**: E:K — BWM E:K log2_OR=-0.42 FDR=1.95e-9 vs control E:K log2_OR=+0.26 FDR=7.94e-7. Cross-contrast hook for Chumeng: the d10_vs_d0_aa cell (BWM log2_OR=-0.34 / control log2_OR=+0.18) carries similar direction and magnitude; d10_vs_d5 has E:K null in both conditions (BWM log2_OR=+0.08 ns / control log2_OR=-0.08 ns) — Chumeng to weigh whether the numerical sequence supports a single d0-anchored pattern vs other readings. **Largest-magnitude shared-direction cells**: A:N enriched in both (BWM log2_OR=+0.83 vs control log2_OR=+0.33, both sig); A:W depleted in both (BWM log2_OR=-0.70 vs control log2_OR=-0.74, both sig — low-count flagged); A:Y depleted in both (BWM log2_OR=-0.46 / control log2_OR=-0.40, both sig). **Other large-magnitude divergence cells**: **A:K** (BWM log2_OR=-0.17 ns vs control log2_OR=+0.33 FDR<1e-7) and **E:A** (BWM log2_OR=+0.03 ns vs control log2_OR=-0.36 FDR<6e-5).
+d5 vs d0 within-condition Fisher (aa-level): **36/120 hits at FDR<0.05** (15/60 BWM, 21/60 control). **Largest-magnitude divergence cell**: E:K — BWM E:K log2_OR=-0.42 FDR=1.95e-9 vs control E:K log2_OR=+0.26 FDR=7.94e-7. Cross-contrast hook for Chumeng: the d10_vs_d0_aa cell (BWM log2_OR=-0.34 / control log2_OR=+0.18) carries similar direction and magnitude; d10_vs_d5 has E:K null in both conditions (BWM log2_OR=+0.08 ns / control log2_OR=-0.08 ns) — Chumeng to weigh whether the numerical sequence supports a single d0-anchored pattern vs other readings. **Largest-magnitude shared-direction cells**: A:N enriched in both (BWM log2_OR=+0.83 vs control log2_OR=+0.33, both sig); A:W depleted in both (BWM log2_OR=-0.70 vs control log2_OR=-0.74, both sig — low-count flagged); A:Y depleted in both (BWM log2_OR=-0.46 / control log2_OR=-0.40, both sig). **Other large-magnitude divergence cells**: **A:K** (BWM log2_OR=-0.17 ns vs control log2_OR=+0.33 FDR<1e-7) and **E:A** (BWM log2_OR=+0.02 ns vs control log2_OR=-0.36 FDR<6e-5).
 
 ## Top hits
 
@@ -103,7 +106,7 @@ All cells significant at `p_adj` < 0.05 in at least one condition are shown (fam
 ## Numbers at a glance
 - `n_tests`: 120 (60 per condition)
 - `n_significant` (adjusted-p < 0.05): 36 (BWM 15, control 21)
-- `n_significant` (adjusted-p < 0.10): 47 (BWM 19, control 28)
+- `n_significant` (adjusted-p < 0.10): 51 (BWM 23, control 28)
 - `min adjusted-p`: 2.27e-12 (control,E,P)
 - Per (condition, site) at FDR<0.05:
   - BWM,A: 6 (N↑, D↑, F↑, Y↓, G↓, W↓); min p_adj = 3.27e-08

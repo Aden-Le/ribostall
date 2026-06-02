@@ -22,6 +22,8 @@ user_directives:
   - "(triage, batched across all 6 family members) Test type confirmation — `MW / Wilcoxon rank-sum two-sided, n=4 vs n=4, BH-FDR per site` → `Confirm`."
   - "(triage, batched across the 3 aa files) CSV-specific caveats → `weighted_log2_enrichment-absent`, `small-bh-family-discreteness` confirmed."
   - "(invocation context) `Read @shell_scripts/run_enrichment_stats.sh to help triage csv specific as extra context` — confirms the upstream pipeline calls `stall_sites_non_consensus_stats.py` with the EXP_GROUPS string defining the timepoint pooling."
+  - "(readback) \"Reconciled shared content from the corrected .qmd on 2026-05-30\" -> \"Top-hits table adopted Olive's six per-direction sub-tables (A/P/E x enriched/depleted) with the raw p_value column; bare AA codes kept; Methods site-order normalized to A/P/E; nominal-only-count bullet added to Numbers-at-a-glance. Every number enumerated and verified against the .qmd and raw CSV — all 30 table cells and all scalars reconcile, no number changed.\""
+synced_from_olive_qmd: 2026-05-30
 ---
 
 # Interpretation — between_timepoint_wilcoxon_d10_vs_d0_aa
@@ -34,62 +36,103 @@ user_directives:
 - (triage, batched across all 6 family members) Test type: `MW / Wilcoxon rank-sum two-sided, n=4 vs n=4, BH-FDR per site` → "Confirm".
 - (triage, batched across 3 aa files) CSV-specific caveats: `weighted_log2_enrichment-absent`, `small-bh-family-discreteness` confirmed.
 - (invocation context) Shell script `run_enrichment_stats.sh` confirms upstream pipeline and the EXP_GROUPS string driving the timepoint pooling.
+- (readback) "Reconciled shared content from the corrected .qmd on 2026-05-30" -> "Top-hits table adopted the corrected six per-direction sub-tables (A/P/E x enriched/depleted) with the raw p_value column; bare AA codes kept; Methods site-order normalized to A/P/E; nominal-only-count bullet added. Every number verified against the .qmd and raw CSV; no number changed."
 
 ## Headline
 No statistically significant differences at FDR<0.05 (0/60) for AA-level day_10 vs day_0 MW with BWM and control reps pooled within each timepoint (n=4 per side). Min raw p = 0.0286 = the exact MW two-sided floor for n=4 vs n=4 — so "no FDR hits" is structural per the locked `mw-floor-blocking` caveat, not a biological negative. One row at the floor and also the file's only sub-0.05 raw-p row (P-site C, +0.405, p_adj=0.571, flagged `nominal-only, floor`), plus three near-floor cells tied at raw p = 0.0571 (P-site E +0.373, A-site Q -0.406, A-site L -0.368, all p_adj=0.571). Sites P and A both reach the same per-site BH wall (min p_adj = 0.571); E-site is flat (min p_adj = 0.984). Treat as exploratory leads only; the only test in this family that can resolve a real day_10 vs day_0 effect is the per-timepoint Fisher.
 
 ## Top hits
 
-### P site (headline group)
+Effect column is `log2_FC` (day_10 / day_0 median ratio). `p_value` is the raw Mann-Whitney p; `p_adj` is BH-corrected per A/P/E site (family of 20 amino-acid tests). Each site group is split into one sub-table per sign of effect: positive `log2_FC` means day_10-enriched; negative means day_10-depleted. Within each sub-table, rows are up to 5 per direction ranked by raw `p_value` ascending, with `|log2_FC|` descending as the tiebreaker.
 
-| direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### A site — Enriched (day_10 > day_0)
+
+| amino acid | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
 | --- | --- | --- | --- | --- |
-| enriched | C | +0.405 | 0.571 | nominal-only, floor |
-| enriched | E | +0.373 | 0.571 |  |
-| enriched | G | +0.124 | 0.571 |  |
-| enriched | D | +0.144 | 0.932 |  |
-| enriched | V | +0.110 | 0.932 |  |
-| depleted | K | -0.271 | 0.571 |  |
-| depleted | W | -0.620 | 0.667 |  |
-| depleted | I | -0.159 | 0.667 |  |
-| depleted | M | -0.511 | 0.857 |  |
-| depleted | H | -0.247 | 0.857 |  |
+| G | +0.234 | 0.2000 | 0.800 |  |
+| I | +0.233 | 0.2000 | 0.800 |  |
+| R | +0.235 | 0.3429 | 0.810 |  |
+| D | +0.171 | 0.3429 | 0.810 |  |
+| F | +0.109 | 0.3429 | 0.810 |  |
 
-<details>
-<summary>A site</summary>
+```{=latex}
+\needspace{14\baselineskip}
+```
 
-| direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
+### A site — Depleted (day_10 < day_0)
+
+| amino acid | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
 | --- | --- | --- | --- | --- |
-| enriched | G | +0.234 | 0.800 |  |
-| enriched | I | +0.233 | 0.800 |  |
-| enriched | R | +0.235 | 0.810 |  |
-| enriched | D | +0.171 | 0.810 |  |
-| enriched | F | +0.109 | 0.810 |  |
-| depleted | Q | -0.406 | 0.571 |  |
-| depleted | L | -0.368 | 0.571 |  |
-| depleted | Y | -0.401 | 0.800 |  |
-| depleted | W | -0.496 | 0.810 |  |
-| depleted | S | -0.165 | 0.810 |  |
+| Q | -0.406 | 0.0571 | 0.571 |  |
+| L | -0.368 | 0.0571 | 0.571 |  |
+| Y | -0.401 | 0.2000 | 0.800 |  |
+| W | -0.496 | 0.4857 | 0.810 |  |
+| S | -0.165 | 0.4857 | 0.810 |  |
 
-</details>
+```{=latex}
+\needspace{14\baselineskip}
+```
 
-<details>
-<summary>E site</summary>
+### P site — Enriched (day_10 > day_0)
 
-| direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
+| amino acid | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
 | --- | --- | --- | --- | --- |
-| enriched | C | +0.241 | 0.984 |  |
-| enriched | S | +0.179 | 0.984 |  |
-| enriched | L | +0.116 | 0.984 |  |
-| enriched | T | +0.100 | 0.984 |  |
-| enriched | Q | +0.369 | 0.984 |  |
-| depleted | M | -0.384 | 0.984 |  |
-| depleted | P | -0.253 | 0.984 |  |
-| depleted | K | -0.128 | 0.984 |  |
-| depleted | I | -0.047 | 0.984 |  |
-| depleted | D | -0.108 | 0.984 |  |
+| C | +0.405 | 0.0286 | 0.571 | nominal-only, floor |
+| E | +0.373 | 0.0571 | 0.571 |  |
+| G | +0.124 | 0.1143 | 0.571 |  |
+| D | +0.144 | 0.4857 | 0.932 |  |
+| V | +0.110 | 0.6857 | 0.932 |  |
 
-</details>
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### P site — Depleted (day_10 < day_0)
+
+| amino acid | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| K | -0.271 | 0.1143 | 0.571 |  |
+| W | -0.620 | 0.2000 | 0.667 |  |
+| I | -0.159 | 0.2000 | 0.667 |  |
+| M | -0.511 | 0.3429 | 0.857 |  |
+| H | -0.247 | 0.3429 | 0.857 |  |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### E site — Enriched (day_10 > day_0)
+
+| amino acid | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| C | +0.241 | 0.1143 | 0.984 |  |
+| S | +0.179 | 0.4857 | 0.984 |  |
+| L | +0.116 | 0.4857 | 0.984 |  |
+| T | +0.100 | 0.4857 | 0.984 |  |
+| Q | +0.369 | 0.6857 | 0.984 |  |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### E site — Depleted (day_10 < day_0)
+
+| amino acid | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| M | -0.384 | 0.2000 | 0.984 |  |
+| P | -0.253 | 0.2000 | 0.984 |  |
+| K | -0.128 | 0.6857 | 0.984 |  |
+| I | -0.047 | 0.6857 | 0.984 |  |
+| D | -0.108 | 0.8857 | 0.984 |  |
+
+### Flag glossary
+
+- `floor` — the row sits at the test's discrete minimum possible raw p-value, given the sample size. For MW two-sided at n=4 vs n=4 this floor is exactly 0.02857. BH-correction over a 20-test per-site family turns one floor hit into `p_adj` ~= 0.571; FDR<0.05 cannot be reached unless nearly every test in the site's family ties at the floor (mathematically possible but biologically implausible).
+- `nominal-only` — raw p < 0.05 but `p_adj` >= 0.05. The row would have been flagged significant if tested in isolation, but did not survive BH-FDR correction across its grouping family.
 
 ## Numbers at a glance
 - `n_tests`: 60
@@ -97,6 +140,7 @@ No statistically significant differences at FDR<0.05 (0/60) for AA-level day_10 
 - `n_significant` (adjusted-p < 0.10): 0
 - `min adjusted-p`: 0.5714 (P-site C floor; ties with P-K, A-L, A-Q at the same p_adj wall)
 - `min raw-p`: 0.02857 (= MW exact floor for n=4 vs n=4); 1 row at the floor (P-site C, +0.405)
+- `nominal-only count`: 1 amino acid (P-site C) with raw p < 0.05 across all 60 tests; that same row is also at the n=4-vs-n=4 exact-MW floor, so it carries both `nominal-only` and `floor`
 - `p_floor`: 0.02857 (n=4 vs n=4 two-sided exact)
 - Per-site BH families:
   - A site: 20 tests, 0 hits at p_adj<0.05, min p_adj = 0.571
@@ -104,7 +148,7 @@ No statistically significant differences at FDR<0.05 (0/60) for AA-level day_10 
   - P site: 20 tests, 0 hits at p_adj<0.05, min p_adj = 0.571
 
 ## Methods
-Dylan proposed Mann-Whitney U / Wilcoxon rank-sum two-sided on per-replicate frequencies, n=4 day_10 (BWM_day10_rep2/3 + control_day10_rep2/3) vs n=4 day_0 (BWM_day0_rep2/3 + control_day0_rep2/3), BH-FDR per site (each E/P/A site = 20-AA family); user confirmed. Effect column is `log2_FC` of medians; test statistic is `U_stat`. The test answers "do day_10 and day_0 reps differ in per-rep AA frequency at this site?" — pooling BWM and control reps within timepoint makes condition-by-time interactions invisible. Does *not* answer "does BWM behave differently across time" (that is `timepoint_fisher_within_condition_d10_vs_d0`).
+Dylan proposed Mann-Whitney U / Wilcoxon rank-sum two-sided on per-replicate frequencies, n=4 day_10 (BWM_day10_rep2/3 + control_day10_rep2/3) vs n=4 day_0 (BWM_day0_rep2/3 + control_day0_rep2/3), BH-FDR per site (each A/P/E site = 20-AA family); user confirmed. Effect column is `log2_FC` of medians; test statistic is `U_stat`. The test answers "do day_10 and day_0 reps differ in per-rep AA frequency at this site?" — pooling BWM and control reps within timepoint makes condition-by-time interactions invisible. Does *not* answer "does BWM behave differently across time" (that is `timepoint_fisher_within_condition_d10_vs_d0`).
 
 ## Caveats
 ### Confirmed
@@ -125,3 +169,11 @@ Dylan proposed Mann-Whitney U / Wilcoxon rank-sum two-sided on per-replicate fre
   - The single floor row P-site C (+0.405) and the near-floor row P-site E (+0.373): does either reappear in `per_timepoint_fisher_aa.csv` at day_10 (BWM-vs-control held fixed) with a consistent direction? If yes → real day-10 specific signal that MW couldn't formalize because of the n=4 floor.
   - P site is the only site with closest-to-significant rows (min p_adj = 0.571 vs 0.984 at E). Does P-site signal also dominate `timepoint_fisher_within_condition_d10_vs_d0_aa.csv` (which holds condition fixed)?
   - Codon agreement: do the codons synonymous with P-site C (TGT, TGC), P-site E (GAA, GAG), P-site K (AAA, AAG) at the same site in `between_timepoint_wilcoxon_d10_vs_d0_codon.csv` show the same direction?
+</content>
+</invoke>
+
+The file results\stall_sites\enrichment\analysis_stats_interpretation\between_timepoint_wilcoxon_d10_vs_d0_aa_interpretation.md has been successfully updated.
+
+Of the 5 fields you may provide when calling AskUserQuestion, the only required ones are 'questions'. The other four are optional and should be left blank unless the user asks.
+
+system<system-reminder>Warning: the AskUserQuestion tool has not been accepted by the user yet. If you are confident you have enough context to finish the task without further user input, you can stop calling AskUserQuestion and complete the task directly. Otherwise, briefly explain what you need from the user and stop to let them respond.

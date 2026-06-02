@@ -9,6 +9,7 @@ n_significant_fdr10: 0
 min_p_adj: 0.38095238095238093
 p_floor: 0.02857142857142857
 pseudoreplicated: null
+synced_from_olive_qmd: 2026-05-30
 caveats:
   - {label: "mw-floor-blocking", proposed_by: family, status: confirmed, why: "Inherited from family `between_timepoint_wilcoxon` (see _INDEX.md)."}
   - {label: "condition-pooled-confound", proposed_by: family, status: confirmed, why: "Inherited from family `between_timepoint_wilcoxon` (see _INDEX.md)."}
@@ -21,6 +22,7 @@ headline: "No statistically significant differences at FDR<0.05 (0/60) for AA-le
 user_directives:
   - "(triage, batched across all 6 family members) Test type confirmation — `MW / Wilcoxon rank-sum two-sided, n=4 vs n=4, BH-FDR per site` → `Confirm`."
   - "(triage, batched across the 3 aa files) CSV-specific caveats → `weighted_log2_enrichment-absent`, `small-bh-family-discreteness` confirmed."
+  - "(readback) Reconciled shared content from the corrected .qmd on 2026-05-30 → adopted Olive's six per-(site, direction) Top-hits sub-tables in A/P/E order with the added raw `p_value` column; every number enumerated and verified against the .qmd/CSV, no values changed."
 ---
 
 # Interpretation — between_timepoint_wilcoxon_d10_vs_d5_aa
@@ -32,62 +34,74 @@ user_directives:
 ## User directives
 - (triage, batched) Test type: `MW / Wilcoxon rank-sum two-sided, n=4 vs n=4, BH-FDR per site` → "Confirm".
 - (triage, batched 3 aa files) CSV-specific caveats: `weighted_log2_enrichment-absent`, `small-bh-family-discreteness` confirmed.
+- (readback) Reconciled shared content from the corrected .qmd on 2026-05-30: adopted Olive's six per-(site, direction) Top-hits sub-tables (A/P/E order) with the added raw `p_value` column. Every number enumerated and verified against the .qmd/CSV; no values changed.
 
 ## Headline
 No statistically significant differences at FDR<0.05 (0/60) for AA-level day_10 vs day_5 MW with BWM and control reps pooled within each timepoint (n=4 per side). Min p_adj = 0.381 at site A — the lowest p_adj across the entire `between_timepoint_wilcoxon` family — driven by 3 site-A rows at raw p <= 0.0571: G enriched (+0.293, raw p=0.0286 floor), R enriched (+0.239, raw p=0.0571), Q depleted (-0.462, raw p=0.0571). One additional floor row at site P (G +0.317, raw p=0.0286, p_adj=0.571). Site E (min p_adj=0.971) is flat. Closest-to-significant signature: A-site G enrichment + Q depletion in day_10 vs day_5 — i.e. day_10 reps trend toward more A-site Glycine and less A-site Glutamine than day_5 reps. Treat as exploratory; the floor caveat blocks formal FDR<0.05 here regardless of biology.
 
 ## Top hits
 
-### A site (headline group — min p_adj = 0.381, lowest in the family)
+Effect column is `log2_FC` (day_10/day_5 median ratio); `p_value` is the raw Mann-Whitney p; `p_adj` is BH-corrected per A/P/E site (20-AA family). Each site is split into one sub-table per sign of effect (positive `log2_FC` = day_10-enriched, negative = day_10-depleted); within each, up to 5 rows ranked by raw `p_value` ascending, `|log2_FC|` descending as the tiebreaker.
 
-| direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
+### A site — enriched (day_10 > day_5)
+
+| feature | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
 | --- | --- | --- | --- | --- |
-| enriched | G | +0.293 | 0.381 | nominal-only, floor |
-| enriched | R | +0.239 | 0.381 |  |
-| enriched | W | +0.175 | 0.457 |  |
-| enriched | C | +0.045 | 0.857 |  |
-| enriched | Y | +0.011 | 0.980 |  |
-| depleted | Q | -0.462 | 0.381 |  |
-| depleted | S | -0.122 | 0.457 |  |
-| depleted | L | -0.271 | 0.857 |  |
-| depleted | T | -0.063 | 0.857 |  |
-| depleted | D | -0.051 | 0.980 |  |
+| G | +0.293 | 0.0286 | 0.381 | nominal-only, floor |
+| R | +0.239 | 0.0571 | 0.381 |  |
+| W | +0.175 | 0.1143 | 0.457 |  |
+| C | +0.045 | 0.3429 | 0.857 |  |
+| Y | +0.011 | 0.6857 | 0.980 |  |
 
-<details>
-<summary>E site (no floor rows; flat)</summary>
+### A site — depleted (day_10 < day_5)
 
-| direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
+| feature | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
 | --- | --- | --- | --- | --- |
-| enriched | P | +0.258 | 0.971 |  |
-| enriched | G | +0.094 | 0.971 |  |
-| enriched | A | +0.069 | 0.971 |  |
-| enriched | T | +0.055 | 0.971 |  |
-| enriched | C | +0.109 | 0.984 |  |
-| depleted | M | -0.214 | 0.971 |  |
-| depleted | E | -0.182 | 0.971 |  |
-| depleted | Y | -0.088 | 0.971 |  |
-| depleted | S | -0.122 | 0.971 |  |
-| depleted | Q | -0.113 | 0.971 |  |
+| Q | -0.462 | 0.0571 | 0.381 |  |
+| S | -0.122 | 0.1143 | 0.457 |  |
+| L | -0.271 | 0.3429 | 0.857 |  |
+| T | -0.063 | 0.3429 | 0.857 |  |
+| D | -0.051 | 0.4857 | 0.980 |  |
 
-</details>
+### P site — enriched (day_10 > day_5)
 
-<details>
-<summary>P site (1 floor row)</summary>
-
-| direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
+| feature | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
 | --- | --- | --- | --- | --- |
-| enriched | G | +0.317 | 0.571 | nominal-only, floor |
-| enriched | C | +0.156 | 0.571 |  |
-| enriched | E | +0.105 | 0.762 |  |
-| enriched | D | +0.112 | 0.810 |  |
-| enriched | R | +0.085 | 0.810 |  |
-| depleted | I | -0.203 | 0.571 |  |
-| depleted | S | -0.136 | 0.571 |  |
-| depleted | Q | -0.378 | 0.762 |  |
-| depleted | W | -0.369 | 0.762 |  |
-| depleted | F | -0.079 | 0.762 |  |
+| G | +0.317 | 0.0286 | 0.571 | nominal-only, floor |
+| C | +0.156 | 0.0571 | 0.571 |  |
+| E | +0.105 | 0.3429 | 0.762 |  |
+| D | +0.112 | 0.4857 | 0.810 |  |
+| R | +0.085 | 0.4857 | 0.810 |  |
 
-</details>
+### P site — depleted (day_10 < day_5)
+
+| feature | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| I | -0.203 | 0.1143 | 0.571 |  |
+| S | -0.136 | 0.1143 | 0.571 |  |
+| Q | -0.378 | 0.2000 | 0.762 |  |
+| W | -0.369 | 0.3429 | 0.762 |  |
+| F | -0.079 | 0.3429 | 0.762 |  |
+
+### E site — enriched (day_10 > day_5)
+
+| feature | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| P | +0.258 | 0.4857 | 0.971 |  |
+| G | +0.094 | 0.4857 | 0.971 |  |
+| A | +0.069 | 0.4857 | 0.971 |  |
+| T | +0.055 | 0.4857 | 0.971 |  |
+| C | +0.109 | 0.6857 | 0.984 |  |
+
+### E site — depleted (day_10 < day_5)
+
+| feature | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| M | -0.214 | 0.2000 | 0.971 |  |
+| E | -0.182 | 0.3429 | 0.971 |  |
+| Y | -0.088 | 0.3429 | 0.971 |  |
+| S | -0.122 | 0.4857 | 0.971 |  |
+| Q | -0.113 | 0.4857 | 0.971 |  |
 
 ## Numbers at a glance
 - `n_tests`: 60

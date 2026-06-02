@@ -121,7 +121,7 @@ The effect column is `log2_OR` (log2 of the Fisher odds ratio for the day-5-vs-d
 ## Numbers at a glance
 - `n_tests`: 120 (60 per condition; BH families of 20 AAs per (condition, site))
 - `n_significant` (adjusted-p < 0.05): 36 (BWM 15, control 21)
-- `n_significant` (adjusted-p < 0.10): 47 (BWM 19, control 28)
+- `n_significant` (adjusted-p < 0.10): 51 (BWM 23, control 28)
 - `min adjusted-p`: 2.27e-12 (control, E, P — the file minimum and the family-wide minimum across `timepoint_fisher_within_condition`)
 - `p_floor`: n/a — Fisher with pooled N in the thousands has no meaningful floor; the dominant statistical-design concern is `large-N-Fisher-anticonservative` (family-wide), not floor.
 - Per (condition, site) at FDR<0.05:

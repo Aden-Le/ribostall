@@ -9,6 +9,7 @@ n_significant_fdr10: 0
 min_p_adj: 0.26406926406926406
 p_floor: null
 pseudoreplicated: null
+synced_from_olive_qmd: 2026-05-30
 caveats:
   - {label: "timepoint-pooled-confound", proposed_by: family, status: confirmed, why: "Inherited from family `between_condition_wilcoxon` (see _INDEX.md)."}
   - {label: "mw-floor-tight", proposed_by: family, status: confirmed, why: "Inherited from family `between_condition_wilcoxon` (see _INDEX.md)."}
@@ -25,6 +26,7 @@ user_directives:
   - "(triage) CSV-specific caveats (multi-select; family-wide already locked) → `larger-bh-family`, `low-count-rare-codon-instability`, `weighted_log2_enrichment-absent` confirmed; `synonymous-codon-redundancy` and `asymptotic-with-ties` denied (the latter after empirical audit, see caveats_considered)."
   - "(triage) Framing firmness → `Mixed` (mirror aa file: firm overall null, flag CGG@A and other near-threshold features as exploratory leads to reconcile against per-timepoint Fisher contrasts)."
   - "(triage) Spotlight → `No spotlight` (default top-5-up + top-5-down per site; A-site main, E and P under <details>)."
+  - "(readback) \"Reconciled shared content from the corrected .qmd on 2026-05-30\" -> \"Adopted Olive's per-(site, direction) Top-hits layout (six sub-tables in A/P/E order) with added `aa` and raw `p_value` columns; corrected the A-site For-Chumeng hook (AAA@A is BWM-depleted, opposite AAG@A); all table and prose numbers re-verified against the raw CSV, no other content changed.\""
 ---
 
 # Interpretation — between_condition_wilcoxon_codon
@@ -37,63 +39,79 @@ user_directives:
 - (triage) Test type confirmation: same test as aa variant, with the feature alphabet expanded to 61 sense codons → "Confirm".
 - (triage) CSV-specific caveats: `larger-bh-family`, `low-count-rare-codon-instability`, `weighted_log2_enrichment-absent` confirmed; `synonymous-codon-redundancy` and `asymptotic-with-ties` denied (the latter after empirical audit).
 - (triage) Framing firmness: "Mixed" — overall no-signal file but call out closest-to-significant features for cross-test follow-up.
-- (triage) Spotlight: none — default per-site tables, A-site main, E and P under details.
+- (triage) Spotlight: none — default per-site tables.
+- (readback) Reconciled shared content from the corrected .qmd on 2026-05-30 → adopted Olive's per-(site, direction) Top-hits layout (six sub-tables, A/P/E) with `aa` + raw `p_value` columns; corrected the A-site For-Chumeng hook (AAA@A is BWM-depleted, not co-directional with AAG@A); all numbers re-verified against the raw CSV.
 
 ## Headline
 No statistically significant differences at FDR<0.05 across 183 codon-level tests (3 sites x 61 sense codons) under Mann-Whitney with BWM (n=6) vs control (n=6) replicates pooled across day_0/5/10. Min `p_adj` = 0.264 — the discrete BH wall (0.00433 x 61 / 1) hit by four cells: **CGG@A** (BWM-depleted, log2_FC = -1.03), **TCA@P** (BWM-depleted, -0.32), **GTA@P** (BWM-depleted, -0.69), and **AGT@E** (BWM-depleted, -0.68). 12 codons clear raw p<0.05 across the 3 sites; all carry `nominal-only`. The codon resolution adds raw-p detail vs the aa file (smallest raw p drops from 0.0260 to 0.00433) but the larger BH family of 61 cancels the gain — FDR<0.05 remains out of reach. Treat as no signal conditional on `mw-floor-tight` + `larger-bh-family` + `timepoint-pooled-confound`; the named near-threshold codons are exploratory leads worth reconciling against per-timepoint Fisher contrasts.
 
 ## Top hits
 
-### A site (headline group)
+Effect column is `log2_FC` (BWM/control median ratio). `p_value` is the raw Mann-Whitney p; `p_adj` is BH-corrected per A/P/E site (family of 61 codon tests). Each site group is split into one sub-table per sign of effect: positive `log2_FC` means BWM-enriched; negative means BWM-depleted. Within each sub-table, rows are up to 5 per direction ranked by raw `p_value` ascending, with `|log2_FC|` descending as the tiebreaker. The `low-count` flag is applied when `min(median_BWM, median_control) < 0.005`. The `aa` column is the single-letter amino acid translation of each codon.
 
-| direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- |
-| enriched | AAG | +0.206 | 0.528 | nominal-only |
-| enriched | AGA | +0.192 | 0.710 |  |
-| enriched | CGT | +0.205 | 0.710 |  |
-| enriched | CTC | +0.265 | 0.836 |  |
-| enriched | TCC | +0.135 | 0.836 |  |
-| depleted | CGG | -1.028 | 0.264 | nominal-only, low-count |
-| depleted | GTA | -0.632 | 0.528 | nominal-only, low-count |
-| depleted | GAA | -0.220 | 0.627 | nominal-only |
-| depleted | GCG | -0.383 | 0.710 | low-count |
-| depleted | GTG | -0.318 | 0.710 |  |
+### A site — Enriched (BWM > control)
 
-<details>
-<summary>E site</summary>
+| codon | aa | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| AAG | K | +0.206 | 0.0260 | 0.528 | nominal-only |
+| AGA | R | +0.192 | 0.0649 | 0.710 |  |
+| CGT | R | +0.205 | 0.0931 | 0.710 |  |
+| CTC | L | +0.265 | 0.2403 | 0.836 |  |
+| TCC | S | +0.135 | 0.2403 | 0.836 |  |
 
-| direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- |
-| enriched | CGC | +0.619 | 0.728 | nominal-only |
-| enriched | CGT | +0.197 | 0.728 |  |
-| enriched | CTA | +0.401 | 0.728 | low-count |
-| enriched | TAC | +0.128 | 0.728 |  |
-| enriched | TTC | +0.062 | 0.728 |  |
-| depleted | AGT | -0.676 | 0.264 | nominal-only, low-count |
-| depleted | TCG | -0.691 | 0.728 | low-count |
-| depleted | GAT | -0.183 | 0.728 |  |
-| depleted | CGA | -0.779 | 0.728 | low-count |
-| depleted | CTG | -0.596 | 0.728 | low-count |
+### A site — Depleted (BWM < control)
 
-</details>
+| codon | aa | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| CGG | R | -1.028 | 0.00433 | 0.264 | nominal-only, low-count |
+| GTA | V | -0.632 | 0.0260 | 0.528 | nominal-only, low-count |
+| GAA | E | -0.220 | 0.0411 | 0.627 | nominal-only |
+| GCG | A | -0.383 | 0.0931 | 0.710 | low-count |
+| GTG | V | -0.318 | 0.0931 | 0.710 |  |
 
-<details>
-<summary>P site</summary>
+### P site — Enriched (BWM > control)
 
-| direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- |
-| enriched | AAG | +0.331 | 0.360 | nominal-only |
-| enriched | ATA | +0.513 | 0.360 | nominal-only, low-count |
-| enriched | CGT | +0.235 | 0.406 |  |
-| enriched | AGA | +0.274 | 0.424 |  |
-| enriched | AGC | +0.131 | 0.424 |  |
-| depleted | TCA | -0.320 | 0.264 | nominal-only |
-| depleted | GTA | -0.690 | 0.264 | nominal-only, low-count |
-| depleted | AGT | -0.880 | 0.308 | nominal-only, low-count |
-| depleted | CCA | -0.190 | 0.360 | nominal-only |
-| depleted | ACG | -0.715 | 0.360 | low-count |
+| codon | aa | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| AAG | K | +0.331 | 0.0260 | 0.360 | nominal-only |
+| ATA | I | +0.513 | 0.0411 | 0.360 | nominal-only, low-count |
+| CGT | R | +0.235 | 0.0931 | 0.406 |  |
+| AGA | R | +0.274 | 0.1320 | 0.424 |  |
+| AGC | S | +0.131 | 0.1320 | 0.424 |  |
 
-</details>
+### P site — Depleted (BWM < control)
+
+| codon | aa | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| TCA | S | -0.320 | 0.00433 | 0.264 | nominal-only |
+| GTA | V | -0.690 | 0.00866 | 0.264 | nominal-only, low-count |
+| AGT | S | -0.880 | 0.0152 | 0.308 | nominal-only, low-count |
+| CCA | P | -0.190 | 0.0411 | 0.360 | nominal-only |
+| ACG | T | -0.715 | 0.0649 | 0.360 | low-count |
+
+### E site — Enriched (BWM > control)
+
+| codon | aa | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| CGC | R | +0.619 | 0.0411 | 0.728 | nominal-only |
+| CGT | R | +0.197 | 0.0931 | 0.728 |  |
+| CTA | L | +0.401 | 0.2403 | 0.728 | low-count |
+| TAC | Y | +0.128 | 0.2403 | 0.728 |  |
+| TTC | F | +0.062 | 0.3095 | 0.728 |  |
+
+### E site — Depleted (BWM < control)
+
+| codon | aa | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| AGT | S | -0.676 | 0.00433 | 0.264 | nominal-only, low-count |
+| TCG | S | -0.691 | 0.0649 | 0.728 | low-count |
+| GAT | D | -0.183 | 0.0931 | 0.728 |  |
+| CGA | R | -0.779 | 0.1320 | 0.728 | low-count |
+| CTG | L | -0.596 | 0.1320 | 0.728 | low-count |
+
+### Flag glossary
+- `nominal-only` — raw p < 0.05 but `p_adj` >= 0.05. The row would have been flagged significant if tested in isolation, but did not survive BH-FDR correction across its grouping family.
+- `low-count` — `min(median_BWM, median_control) < 0.005`. The codon's per-rep frequency is below the test's stability threshold; the `log2_FC` for this row is unstable and should not be over-read. At codon level the rare-codon median frequencies in this file span ~0.0002 to ~0.005, and large |log2_FC| at these cells is dominated by single-rep fluctuations.
 
 ## Numbers at a glance
 - `n_tests`: 183
@@ -105,11 +123,11 @@ No statistically significant differences at FDR<0.05 across 183 codon-level test
 - `p_floor`: n/a — user did not flag a floor effect at the CSV level (family-wide `mw-floor-tight` instead)
 - Per-site BH families:
   - A site: 61 tests, 0 hits at p_adj<0.05, min p_adj = 0.264 (CGG, BWM-depleted)
-  - E site: 61 tests, 0 hits at p_adj<0.05, min p_adj = 0.264 (AGT, BWM-depleted)
   - P site: 61 tests, 0 hits at p_adj<0.05, min p_adj = 0.264 (TCA / GTA, BWM-depleted)
+  - E site: 61 tests, 0 hits at p_adj<0.05, min p_adj = 0.264 (AGT, BWM-depleted)
 
 ## Methods
-Dylan proposed Mann-Whitney U / Wilcoxon rank-sum two-sided on per-replicate codon frequencies, n=6 BWM vs n=6 control with reps pooled across day_0/5/10, BH-FDR per E/P/A site (each site = own family of 61 codon hypotheses); user confirmed. Effect column is `log2_FC` of medians (`median_BWM/median_control`); test statistic is `U_stat`. The codon resolution is the natural follow-up to `between_condition_wilcoxon_aa.csv` and shares its design. The test answers "is codon X distributed at different per-rep frequencies between BWM and control replicates?", *not* "is codon X enriched at stall sites vs the transcriptome's codon usage" (within-condition binomial) and *not* a comparison vs an external null.
+Dylan proposed Mann-Whitney U / Wilcoxon rank-sum two-sided on per-replicate codon frequencies, n=6 BWM vs n=6 control with reps pooled across day_0/5/10, BH-FDR per A/P/E site (each site = own family of 61 codon hypotheses); user confirmed. Effect column is `log2_FC` of medians (`median_BWM/median_control`); test statistic is `U_stat`. The codon resolution is the natural follow-up to `between_condition_wilcoxon_aa.csv` and shares its design. The test answers "is codon X distributed at different per-rep frequencies between BWM and control replicates?", *not* "is codon X enriched at stall sites vs the transcriptome's codon usage" (within-condition binomial) and *not* a comparison vs an external null.
 
 ## Caveats
 ### Confirmed
@@ -128,6 +146,6 @@ Dylan proposed Mann-Whitney U / Wilcoxon rank-sum two-sided on per-replicate cod
 - Family: `between_condition_wilcoxon` — sister CSV: `between_condition_wilcoxon_aa.csv`.
 - Open questions Chumeng should resolve at synthesis time:
   - Do the 4 codons hitting the BH wall (CGG@A, TCA@P, GTA@P, AGT@E, all BWM-depleted) reappear with consistent direction in `per_timepoint_fisher_codon.csv` at any timepoint? If at least one does, that's a real-but-small BWM-vs-control codon signal MW lacked the n to formalize.
-  - **AA ↔ codon agreement at A-site enrichment**: aa file had K (lysine) closest-to-significant in the enriched direction at A site (raw p=0.065). Codon file has AAG@A enriched at raw p=0.026 (one of K's two synonyms; AAA at raw p=0.132 in the same direction). Not significant either way, but consistent — a "small-effect lysine A-site enrichment in BWM" candidate that survives both resolutions as a sub-FDR lead.
+  - **AA ↔ codon agreement at A-site enrichment**: aa file had K (lysine) closest-to-significant in the enriched direction at A site (raw p=0.065). In this codon file AAG@A is BWM-enriched (log2_FC=+0.21, raw p=0.026), but the other Lys synonym AAA@A is BWM-*depleted* (log2_FC=-0.47, raw p=0.132) — opposite direction — so the A-site Lys lead is AAG-specific, not a clean aa-level Lys signal. Neither codon clears FDR. Does the AAG-only A-site enrichment (and the AAG/AAA direction split) reproduce in `per_timepoint_fisher_codon.csv` at any timepoint?
   - **AA ↔ codon agreement at P-site depletion**: aa file had A and P (alanine, proline) BWM-depleted at P site (raw p=0.026, 0.041; min p_adj 0.411). Codon file has CCA (a P codon) BWM-depleted at P site (raw p=0.041, p_adj=0.360) and TCA (a S codon, not P) at the BH wall. Mixed: the AA "P depletion" partly survives via CCA, but the strongest codon-level hit at P-site (TCA) does not correspond to an aa-level top hit (S was not in aa top hits at P).
   - Are the four "BH-wall" codons all biological coincidences from the discrete BH wall, or is there a thread (e.g., NNS-like or rare-codon biased)? CGG, AGT, TCA, GTA are not obviously a class — Chumeng to evaluate.

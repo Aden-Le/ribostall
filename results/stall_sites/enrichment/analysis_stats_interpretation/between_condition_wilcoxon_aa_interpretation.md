@@ -9,6 +9,7 @@ n_significant_fdr10: 0
 min_p_adj: 0.41125541125541126
 p_floor: null
 pseudoreplicated: null
+synced_from_olive_qmd: 2026-05-30
 caveats:
   - {label: "timepoint-pooled-confound", proposed_by: family, status: confirmed, why: "Inherited from family `between_condition_wilcoxon` (see _INDEX.md)."}
   - {label: "mw-floor-tight", proposed_by: family, status: confirmed, why: "Inherited from family `between_condition_wilcoxon` (see _INDEX.md)."}
@@ -23,6 +24,7 @@ user_directives:
   - "(triage) CSV-specific caveats (multi-select; family-wide already locked) → `no-near-nominal-signal`, `weighted_log2_enrichment-absent` confirmed; `asymptotic-with-ties` denied."
   - "(triage) Framing firmness → `Mixed` (firm overall null, but call out the closest-to-significant features as candidates worth checking against the per-timepoint Fisher results)."
   - "(triage) Spotlight → `No spotlight` (default top-5-up + top-5-down per site; A-site main, E and P under <details>)."
+  - "(readback 2026-05-30) Reconciled the Top hits section to Olive's table structure (per-direction sub-tables A/P/E x Enriched/Depleted, plus the raw `p_value` column) from the corrected `.qmd`. Kept Dylan conventions (bare AA codes, terse headline, Methods provenance, Confirmed/Considered caveats); Olive-only sections (Composite, Overview, Biological interpretation, Plots) not imported. **Enumerated every prose/front-matter number and verified each** (shared numbers vs the `.qmd`; Dylan-only CSV-column numbers — the 0.065/0.065/0.093 near-nominal raw-p values, exact per-site min p_adj 0.41/0.52/0.52 — vs the raw CSV): all correct, no number changed (file stays 0/60 at FDR<0.05). Derivation/audit-sourced numbers (MW exact floor ~0.00216; `_for_claude_mw_branch_audit.py` outputs k=13/3149, 0/60 rank-ties, asymptotic 0.44/0.61/0.61) flagged as not CSV-verifiable. Minor: the shared 'W,C median ~0.5%' approximation slightly understates the CSV (~0.6-1.3%) but matches the `.qmd`, so left for a `.qmd`-side touch-up."
 ---
 
 # Interpretation — between_condition_wilcoxon_aa
@@ -36,62 +38,74 @@ user_directives:
 - (triage) CSV-specific caveats: `no-near-nominal-signal`, `weighted_log2_enrichment-absent` confirmed; `asymptotic-with-ties` denied.
 - (triage) Framing firmness: "Mixed" — firm overall null but call out closest-to-significant features for cross-test follow-up.
 - (triage) Spotlight: none — default per-site tables, A-site main, E and P under details.
+- (readback 2026-05-30) Top hits reconciled to Olive's `.qmd` table structure (per-direction sub-tables A/P/E x Enriched/Depleted + raw `p_value` column); numbers unchanged (0/60 at FDR<0.05). Dylan conventions kept (bare AA codes, terse headline, Methods provenance, Confirmed/Considered caveats); Olive-only sections not imported. Provenance in front-matter `synced_from_olive_qmd`.
 
 ## Headline
 Firm null at FDR<0.05 across 60 AA-level tests (3 sites × 20 AAs) under Mann-Whitney with BWM (n=6) vs control (n=6) replicates pooled across day_0/5/10. Min `p_adj` = 0.41 at P-site (A and P, both BWM-depleted). The four nominal raw-p hits (T@A, R@E, A@P, P@P) all sit at the discrete tied raw p = 0.0260 or 0.0411 and clear `nominal-only` only — none survive BH per-site. Treat as a firm null conditional on `mw-floor-tight`, `n=6-modest-power`, and `timepoint-pooled-confound`; the four nominal hits are exploratory leads worth reconciling against the per-timepoint Fisher contrasts.
 
 ## Top hits
 
-### A site (headline group)
+Per (site, direction): top 5 rows by raw `p_value` ascending, with `|log2_FC|` descending as the tiebreaker. `p_value` is the raw two-sided Mann-Whitney p; `p_adj` is BH-corrected per A/P/E site (family of 20 AAs). Positive `log2_FC` = BWM-enriched; negative = BWM-depleted. `nominal-only` flags rows with raw p < 0.05 but `p_adj` >= 0.05.
 
-| direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag         |
-| --------- | ------- | ------------------ | -------------------- | ------------ |
-| enriched  | K       | +0.157             | 0.649                |              |
-| enriched  | R       | +0.197             | 0.909                |              |
-| enriched  | G       | +0.154             | 0.909                |              |
-| enriched  | L       | +0.104             | 0.909                |              |
-| enriched  | N       | +0.018             | 0.909                |              |
-| depleted  | T       | -0.122             | 0.519                | nominal-only |
-| depleted  | P       | -0.066             | 0.909                |              |
-| depleted  | C       | -0.019             | 0.909                |              |
-| depleted  | Y       | -0.174             | 0.909                |              |
-| depleted  | S       | -0.051             | 0.909                |              |
+### A site - Enriched (BWM > control)
 
-<details>
-<summary>E site</summary>
-
-| direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
+| feature | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
 | --- | --- | --- | --- | --- |
-| enriched | R | +0.292 | 0.519 | nominal-only |
-| enriched | W | +0.161 | 0.999 |  |
-| enriched | K | +0.099 | 0.999 |  |
-| enriched | F | +0.008 | 0.999 |  |
-| enriched | C | +0.047 | 1.000 |  |
-| depleted | D | -0.114 | 0.999 |  |
-| depleted | A | -0.042 | 0.999 |  |
-| depleted | N | -0.040 | 0.999 |  |
-| depleted | S | -0.246 | 0.999 |  |
-| depleted | Q | -0.165 | 0.999 |  |
+| K | +0.157 | 0.0649 | 0.649 |  |
+| R | +0.197 | 0.2403 | 0.909 |  |
+| G | +0.154 | 0.5887 | 0.909 |  |
+| L | +0.104 | 0.5887 | 0.909 |  |
+| N | +0.018 | 0.5887 | 0.909 |  |
 
-</details>
+### A site - Depleted (BWM < control)
 
-<details>
-<summary>P site</summary>
-
-| direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
+| feature | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
 | --- | --- | --- | --- | --- |
-| enriched | K | +0.151 | 0.433 |  |
-| enriched | R | +0.289 | 0.599 |  |
-| enriched | Q | +0.118 | 0.861 |  |
-| enriched | I | +0.094 | 0.861 |  |
-| enriched | V | +0.070 | 0.861 |  |
-| depleted | A | -0.164 | 0.411 | nominal-only |
-| depleted | P | -0.255 | 0.411 | nominal-only |
-| depleted | T | -0.109 | 0.465 |  |
-| depleted | S | -0.169 | 0.528 |  |
-| depleted | C | -0.126 | 0.861 |  |
+| T | -0.122 | 0.0260 | 0.519 | nominal-only |
+| P | -0.066 | 0.3939 | 0.909 |  |
+| C | -0.019 | 0.4848 | 0.909 |  |
+| Y | -0.174 | 0.5887 | 0.909 |  |
+| S | -0.051 | 0.5887 | 0.909 |  |
 
-</details>
+### P site - Enriched (BWM > control)
+
+| feature | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| K | +0.151 | 0.0649 | 0.433 |  |
+| R | +0.289 | 0.1797 | 0.599 |  |
+| Q | +0.118 | 0.4848 | 0.861 |  |
+| I | +0.094 | 0.4848 | 0.861 |  |
+| V | +0.070 | 0.6991 | 0.861 |  |
+
+### P site - Depleted (BWM < control)
+
+| feature | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| A | -0.164 | 0.0260 | 0.411 | nominal-only |
+| P | -0.255 | 0.0411 | 0.411 | nominal-only |
+| T | -0.109 | 0.0931 | 0.465 |  |
+| S | -0.169 | 0.1320 | 0.528 |  |
+| C | -0.126 | 0.3095 | 0.861 |  |
+
+### E site - Enriched (BWM > control)
+
+| feature | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| R | +0.292 | 0.0260 | 0.519 | nominal-only |
+| W | +0.161 | 0.4848 | 0.999 |  |
+| K | +0.099 | 0.4848 | 0.999 |  |
+| F | +0.008 | 0.6991 | 0.999 |  |
+| C | +0.047 | 0.8182 | 1.000 |  |
+
+### E site - Depleted (BWM < control)
+
+| feature | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- |
+| D | -0.114 | 0.4848 | 0.999 |  |
+| A | -0.042 | 0.4848 | 0.999 |  |
+| N | -0.040 | 0.4848 | 0.999 |  |
+| S | -0.246 | 0.5887 | 0.999 |  |
+| Q | -0.165 | 0.5887 | 0.999 |  |
 
 ## Numbers at a glance
 - `n_tests`: 60

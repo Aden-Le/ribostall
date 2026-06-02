@@ -9,6 +9,7 @@ n_significant_fdr10: 0
 min_p_adj: 0.4979591836734693
 p_floor: 0.02857142857142857
 pseudoreplicated: null
+synced_from_olive_qmd: 2026-05-30
 caveats:
   - {label: "mw-floor-blocking", proposed_by: family, status: confirmed, why: "Inherited from family `between_timepoint_wilcoxon` (see _INDEX.md)."}
   - {label: "condition-pooled-confound", proposed_by: family, status: confirmed, why: "Inherited from family `between_timepoint_wilcoxon` (see _INDEX.md)."}
@@ -22,6 +23,7 @@ headline: "No statistically significant differences at FDR<0.05 (0/183) for codo
 user_directives:
   - "(triage, batched across all 6 family members) Test type confirmation — `MW / Wilcoxon rank-sum two-sided, n=4 vs n=4, BH-FDR per site` → `Confirm`."
   - "(triage, batched across the 3 codon files) CSV-specific caveats → `weighted_log2_enrichment-absent`, `larger-bh-family`, `low-count-rare-codon-instability` confirmed."
+  - "(readback) Reconciled shared content from the corrected .qmd on 2026-05-30 → adopted Olive's six per-(site, direction) Top-hits sub-tables in A/P/E order with the added `aa` and raw `p_value` columns; every number enumerated and verified against the .qmd/CSV, no values changed."
 ---
 
 # Interpretation — between_timepoint_wilcoxon_d10_vs_d0_codon
@@ -33,62 +35,74 @@ user_directives:
 ## User directives
 - (triage, batched) Test type: `MW / Wilcoxon rank-sum two-sided, n=4 vs n=4, BH-FDR per site` → "Confirm".
 - (triage, batched 3 codon files) CSV-specific caveats: `weighted_log2_enrichment-absent`, `larger-bh-family`, `low-count-rare-codon-instability` confirmed.
+- (readback) Reconciled shared content from the corrected .qmd on 2026-05-30: adopted Olive's six per-(site, direction) Top-hits sub-tables (A/P/E order) with the added `aa` and raw `p_value` columns. Every number enumerated and verified against the .qmd/CSV; no values changed.
 
 ## Headline
 No statistically significant differences at FDR<0.05 (0/183) for codon-level day_10 vs day_0 MW with BWM and control reps pooled within each timepoint (n=4 per side). Three floor rows in the whole file: E-TCC (+0.589), P-GAG (+0.387), P-TGC (+0.219). Min p_adj = 0.498 at site A: the A-site BH wall is set by 14 codons reaching p_adj = 0.498 — 12 tied at raw p = 0.114 plus CGT and GCA at raw p = 0.057 — i.e. 0.114 * 61/14 ~= 0.498. Site A has the densest near-floor signal but no floor rows; site E has 1 floor row and site P has 2, yet min p_adj climbs to 0.93 (E) / 0.69 (P). Treat as exploratory leads only; the per-timepoint Fisher (`per_timepoint_fisher_codon`) at day_0 and day_10 is the test that can actually resolve a BWM-vs-control codon shift at either timepoint.
 
 ## Top hits
 
-### A site (headline group — min p_adj = 0.498, no floor rows but densest near-floor block)
+Effect column is `log2_FC` (day_10/day_0 median ratio); `p_value` is the raw Mann-Whitney p; `p_adj` is BH-corrected per A/P/E site (61-codon family). Each site is split into one sub-table per sign of effect (positive `log2_FC` = day_10-enriched, negative = day_10-depleted); within each, up to 5 rows ranked by raw `p_value` ascending, `|log2_FC|` descending as the tiebreaker. The `low-count` flag is applied when `min(median_day_10, median_day_0) < 0.005`. The `aa` column is the single-letter amino-acid translation of each codon.
 
-| direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- |
-| enriched | CGT | +0.276 | 0.498 |  |
-| enriched | CGC | +0.640 | 0.498 |  |
-| enriched | AAC | +0.595 | 0.498 |  |
-| enriched | ATC | +0.518 | 0.498 |  |
-| enriched | ACC | +0.295 | 0.498 |  |
-| depleted | GCA | -1.065 | 0.498 | low-count |
-| depleted | TTA | -1.201 | 0.498 | low-count |
-| depleted | GTG | -0.901 | 0.498 |  |
-| depleted | CTG | -0.800 | 0.498 | low-count |
-| depleted | GGC | -0.639 | 0.498 | low-count |
+### A site — enriched (day_10 > day_0)
 
-<details>
-<summary>E site (1 floor row)</summary>
+| codon | aa | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| CGT | R | +0.276 | 0.0571 | 0.498 |  |
+| CGC | R | +0.640 | 0.1143 | 0.498 |  |
+| AAC | N | +0.595 | 0.1143 | 0.498 |  |
+| ATC | I | +0.518 | 0.1143 | 0.498 |  |
+| ACC | T | +0.295 | 0.1143 | 0.498 |  |
 
-| direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- |
-| enriched | TCC | +0.589 | 0.930 | floor |
-| enriched | CTC | +0.490 | 0.930 |  |
-| enriched | CAG | +0.267 | 0.930 |  |
-| enriched | TGC | +0.220 | 0.930 | low-count |
-| enriched | GCT | +0.113 | 0.930 |  |
-| depleted | GCG | -1.204 | 0.930 | low-count |
-| depleted | AGG | -0.767 | 0.930 | low-count |
-| depleted | AAA | -0.468 | 0.930 |  |
-| depleted | CGA | -0.678 | 0.930 | low-count |
-| depleted | ATG | -0.384 | 0.930 |  |
+### A site — depleted (day_10 < day_0)
 
-</details>
+| codon | aa | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| GCA | A | -1.065 | 0.0571 | 0.498 | low-count |
+| TTA | L | -1.201 | 0.1143 | 0.498 | low-count |
+| GTG | V | -0.901 | 0.1143 | 0.498 |  |
+| CTG | L | -0.800 | 0.1143 | 0.498 | low-count |
+| GGC | G | -0.639 | 0.1143 | 0.498 | low-count |
 
-<details>
-<summary>P site (2 floor rows)</summary>
+### P site — enriched (day_10 > day_0)
 
-| direction | feature | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- |
-| enriched | GAG | +0.387 | 0.688 | floor |
-| enriched | TGC | +0.219 | 0.688 | floor |
-| enriched | CCC | +0.298 | 0.688 | low-count |
-| enriched | GCC | +0.221 | 0.688 |  |
-| enriched | GGG | +1.147 | 0.688 | low-count |
-| depleted | GCG | -1.031 | 0.688 | low-count |
-| depleted | CTA | -1.242 | 0.688 | low-count |
-| depleted | GCA | -0.698 | 0.688 | low-count |
-| depleted | ATT | -0.578 | 0.688 |  |
-| depleted | GGT | -0.146 | 0.688 |  |
+| codon | aa | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| GAG | E | +0.387 | 0.0286 | 0.688 | floor |
+| TGC | C | +0.219 | 0.0286 | 0.688 | floor |
+| CCC | P | +0.298 | 0.0571 | 0.688 | low-count |
+| GCC | A | +0.221 | 0.0571 | 0.688 |  |
+| GGG | G | +1.147 | 0.1143 | 0.688 | low-count |
 
-</details>
+### P site — depleted (day_10 < day_0)
+
+| codon | aa | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| GCG | A | -1.031 | 0.0571 | 0.688 | low-count |
+| CTA | L | -1.242 | 0.1143 | 0.688 | low-count |
+| GCA | A | -0.698 | 0.1143 | 0.688 | low-count |
+| ATT | I | -0.578 | 0.1143 | 0.688 |  |
+| GGT | G | -0.146 | 0.1143 | 0.688 |  |
+
+### E site — enriched (day_10 > day_0)
+
+| codon | aa | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| TCC | S | +0.589 | 0.0286 | 0.930 | floor |
+| CTC | L | +0.490 | 0.2000 | 0.930 |  |
+| CAG | Q | +0.267 | 0.2000 | 0.930 |  |
+| TGC | C | +0.220 | 0.2000 | 0.930 | low-count |
+| GCT | A | +0.113 | 0.2000 | 0.930 |  |
+
+### E site — depleted (day_10 < day_0)
+
+| codon | aa | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- |
+| GCG | A | -1.204 | 0.0571 | 0.930 | low-count |
+| AGG | R | -0.767 | 0.1143 | 0.930 | low-count |
+| AAA | K | -0.468 | 0.1143 | 0.930 |  |
+| CGA | R | -0.678 | 0.2000 | 0.930 | low-count |
+| ATG | M | -0.384 | 0.2000 | 0.930 |  |
 
 ## Numbers at a glance
 - `n_tests`: 183
@@ -103,7 +117,7 @@ No statistically significant differences at FDR<0.05 (0/183) for codon-level day
   - E site: 61 tests, 0 hits at p_adj<0.05, min p_adj = 0.930 (1 floor row)
 
 ## Methods
-Dylan proposed Mann-Whitney U / Wilcoxon rank-sum two-sided on per-replicate frequencies, n=4 day_10 (BWM_day10_rep2/3 + control_day10_rep2/3) vs n=4 day_0, BH-FDR per site (each E/P/A site = 61-codon family); user confirmed. Effect column is `log2_FC` of medians; test statistic is `U_stat`. The test answers "do day_10 and day_0 reps differ in per-rep codon frequency at this site?", with BWM and control reps pooled within each timepoint. Does *not* answer "BWM-vs-control at any single day" (that is `per_timepoint_fisher_codon`) and does *not* answer "BWM moves from day_0 to day_10 holding condition fixed" (that is `timepoint_fisher_within_condition_d10_vs_d0_codon`).
+Dylan proposed Mann-Whitney U / Wilcoxon rank-sum two-sided on per-replicate frequencies, n=4 day_10 (BWM_day10_rep2/3 + control_day10_rep2/3) vs n=4 day_0, BH-FDR per site (each A/P/E site = 61-codon family); user confirmed. Effect column is `log2_FC` of medians; test statistic is `U_stat`. The test answers "do day_10 and day_0 reps differ in per-rep codon frequency at this site?", with BWM and control reps pooled within each timepoint. Does *not* answer "BWM-vs-control at any single day" (that is `per_timepoint_fisher_codon`) and does *not* answer "BWM moves from day_0 to day_10 holding condition fixed" (that is `timepoint_fisher_within_condition_d10_vs_d0_codon`).
 
 ## Caveats
 ### Confirmed

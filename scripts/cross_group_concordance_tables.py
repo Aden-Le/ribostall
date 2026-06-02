@@ -10,17 +10,20 @@ features, so every (site, feature) cell has six per-group `log2_enrichment`
 values.
 
 This script pools the six per-group rows for each (site, feature) cell and
-sorts the cells into three Top-10 tables:
+sorts the cells into three tables:
 
     1. Concordant enrichment   all 6 groups have log2_enrichment > 0
     2. Concordant depletion     all 6 groups have log2_enrichment < 0
     3. Discordant               at least one sign disagrees across the 6 groups
 
-Each table is selected as the Top 10 cells by `#sig` descending (number of the
-6 groups with `p_adj` < the significance threshold), then `min count`
-descending (the smallest observed_count across the 6 groups — the weakest
-group's data support) as the tiebreaker. The selected rows are then displayed
-sorted by Site (A / P / E), then `#sig` desc, then `min count` desc.
+Each table shows every cell that reached FDR significance (`p_adj` < the
+significance threshold) in at least `--min-sig` of the 6 groups — a
+reproducibility floor on the same `#sig` axis the tables already rank on,
+rather than an arbitrary rank cap. `#sig` is the number of the 6 groups with
+`p_adj` < the significance threshold; `min count` is the smallest
+observed_count across the 6 groups (the weakest group's data support). The
+selected rows are displayed sorted by Site (A / P / E), then `#sig` desc, then
+`min count` desc.
 
 Columns (amino-acid CSV; the amino-acid name is spelled out on every row):
 
@@ -47,7 +50,7 @@ The script is feature-agnostic (amino_acid or codon).
 
 Usage:
     python scripts/cross_group_concordance_tables.py <path-to-csv>
-        [--top-n 10] [--sig-threshold 0.05]
+        [--min-sig 2] [--sig-threshold 0.05]
         [--iid-amp-threshold 1e-10] [--bg-tight-threshold 0.05]
         [--rare-k-threshold 100]
 
@@ -272,18 +275,19 @@ def _aggregate_cells(df: pd.DataFrame, feat: str, conditions: list[str],
 
 
 def _select_and_sort(cells: pd.DataFrame, mask: pd.Series,
-                     top_n: int) -> pd.DataFrame:
-    """Top-n by (#sig desc, Max Change desc), then display-sorted.
+                     min_sig: int) -> pd.DataFrame:
+    """Cells with `#sig` >= min_sig, then display-sorted.
 
-    Selection ranks candidates by `#sig` desc, then `min count` desc, and
-    keeps the top `top_n`. The kept rows are displayed sorted by Site (A/P/E),
-    then `#sig` desc, then `min count` desc. `mask` already restricts to
-    complete cells (the concordance masks require all 6 groups present, and the
-    discordant mask carries an explicit `n_valid == n_groups` term).
+    Selection keeps every candidate that reached significance in at least
+    `min_sig` of the 6 groups (a reproducibility floor on the `#sig` axis the
+    tables already rank on, replacing the former arbitrary rank cap). The kept
+    rows are displayed sorted by Site (A/P/E), then `#sig` desc, then
+    `min count` desc. `mask` already restricts to complete cells (the
+    concordance masks require all 6 groups present, and the discordant mask
+    carries an explicit `n_valid == n_groups` term).
     """
     sub = cells[mask].copy()
-    sub = sub.sort_values(["n_sig", "min_count"], ascending=[False, False])
-    sub = sub.head(top_n).copy()
+    sub = sub[sub["n_sig"] >= min_sig].copy()
     sub["site_key"] = sub["site"].map(_site_sort_key)
     return sub.sort_values(["site_key", "n_sig", "min_count"],
                            ascending=[True, False, False])
@@ -323,10 +327,11 @@ def _feature_cells(feat: str, val: str) -> list[str]:
 
 
 def _print_table(sub: pd.DataFrame, title: str, feat: str,
-                 group_tokens: list[str], rare_label: str) -> None:
+                 group_tokens: list[str], rare_label: str,
+                 min_sig: int) -> None:
     n_groups = len(group_tokens)
     print()
-    print(f"### {title} (top {len(sub)} by #sig, then min count)")
+    print(f"### {title} ({len(sub)} cells, #sig >= {min_sig} of {n_groups})")
     print()
 
     if feat == "amino_acid":
@@ -365,8 +370,10 @@ def main() -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("csv", type=Path, help="path to the analysis_stats CSV")
-    parser.add_argument("--top-n", type=int, default=10,
-                        help="rows per table (default 10)")
+    parser.add_argument("--min-sig", type=int, default=2,
+                        help="reproducibility floor: show a cell only if it "
+                             "reached p_adj < the significance threshold in at "
+                             "least this many of the 6 groups (default 2)")
     parser.add_argument("--sig-threshold", type=float, default=0.05,
                         help="p_adj threshold for the #sig count (default 0.05)")
     parser.add_argument("--iid-amp-threshold", type=float, default=1e-10,
@@ -419,9 +426,10 @@ def main() -> int:
           f"**discordant** cells have at least one sign disagreement. `#sig` is "
           f"the count of groups with `p_adj` < {args.sig_threshold}; `min count` "
           f"is the smallest `observed_count` across the {n_groups} groups (the "
-          f"weakest group's data support). Each table is the top {args.top_n} by "
-          f"`#sig` desc then `min count` desc, displayed sorted by Site (A/P/E), "
-          f"then `#sig` desc, then `min count` desc.")
+          f"weakest group's data support). Each table shows every cell with "
+          f"`#sig` >= {args.min_sig} (reached p_adj < {args.sig_threshold} in at "
+          f"least {args.min_sig} of the {n_groups} groups), displayed sorted by "
+          f"Site (A/P/E), then `#sig` desc, then `min count` desc.")
 
     cells = _aggregate_cells(
         df, feat, conditions, timepoints, group_tokens,
@@ -443,17 +451,19 @@ def main() -> int:
     print()
     print(f"_(Pool: {n_conc_enr} concordant-enriched, {n_conc_dep} "
           f"concordant-depleted, {n_disc} discordant cells in the data; each "
-          f"table below shows the top {args.top_n}.)_")
+          f"table below shows those with `#sig` >= {args.min_sig}.)_")
 
-    _print_table(_select_and_sort(cells, cells["all_pos"], args.top_n),
-                 "Concordant enrichment", feat, group_tokens, rare_label)
-    _print_table(_select_and_sort(cells, cells["all_neg"], args.top_n),
-                 "Concordant depletion", feat, group_tokens, rare_label)
+    _print_table(_select_and_sort(cells, cells["all_pos"], args.min_sig),
+                 "Concordant enrichment", feat, group_tokens, rare_label,
+                 args.min_sig)
+    _print_table(_select_and_sort(cells, cells["all_neg"], args.min_sig),
+                 "Concordant depletion", feat, group_tokens, rare_label,
+                 args.min_sig)
     _print_table(
         _select_and_sort(
             cells, (~cells["same_sign"]) & (cells["n_valid"] == n_groups),
-            args.top_n),
-        "Discordant", feat, group_tokens, rare_label)
+            args.min_sig),
+        "Discordant", feat, group_tokens, rare_label, args.min_sig)
     return 0
 
 

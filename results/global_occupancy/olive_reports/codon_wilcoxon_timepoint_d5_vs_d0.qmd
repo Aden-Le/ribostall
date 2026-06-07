@@ -1,0 +1,190 @@
+---
+title: "codon_wilcoxon_timepoint_d5_vs_d0 — Olive report"
+subtitle: "ribostall global_occupancy — occupancy stats"
+date: 2026-06-06
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    embed-resources: true
+    fig-cap-location: bottom
+  pdf:
+    toc: true
+    fig-cap-location: bottom
+    include-in-header:
+      text: |
+        \usepackage{needspace}
+tbl-colwidths: [22, 9, 23, 23, 23]  # Stage-1 (raw-p deferred); Stage-2 widens to 6-col [22, 8, 18, 17, 17, 26]
+execute:
+  echo: false
+---
+
+## Composite figure
+
+![Three-panel bar plot, A-site / P-site / E-site left to right, of per-codon log2 fold-change (median day_5 / median day_0) in whole-transcriptome occupancy. Within each panel the codons are sorted by log2 fold-change high to low; each bar is one codon, coloured by amino-acid class (acidic, basic, hydrophobic, neutral, polar) with the in-frame stop codon in grey (see legend). Y-axis is log2 fold-change, range ~= -0.5 to +1.3; bars above zero are day_5-enriched, below zero are day_5-depleted.](../plots/between_timepoint/d5_vs_d0/codon/composite/APE_codon_Day5_vs_Day0_barplot_composite.png){fig-pos="H" width=92%}
+
+Each panel ranks the codons by signed log2 fold-change at one ribosome site (A, P, E): a bar above zero means more day_5 occupancy than day_0 at that site, below zero means less. No significance markers are drawn on the bars.
+
+---
+
+## Overview
+
+- **CSV:** `codon_wilcoxon_timepoint_d5_vs_d0.csv`
+- **Family (from `_INDEX.md`):** `between_timepoint_wilcoxon`
+- **Sister CSV(s):**
+  - `aa_wilcoxon_timepoint_d5_vs_d0.csv`
+  - `aa_wilcoxon_timepoint_d10_vs_d0.csv`
+  - `codon_wilcoxon_timepoint_d10_vs_d0.csv`
+  - `aa_wilcoxon_timepoint_d10_vs_d5.csv`
+  - `codon_wilcoxon_timepoint_d10_vs_d5.csv`
+- **Test:** Mann-Whitney U (two-sample Wilcoxon rank-sum), day_5 vs day_0
+- **Design:** n=4 day_5 vs n=4 day_0 (each n=4 arm pools 2 BWM + 2 control replicates within the timepoint); two-sided Mann-Whitney U on per-(site, codon) occupancy; BH-FDR per A/P/E site (each site is its own family of ~62 codon tests); effect column is `log2_FC` = log2(median_day_5 / median_day_0).
+
+### Family-level caveats
+
+- **mw-floor-blocking** — the Mann-Whitney two-sided p-floor for n=4 vs n=4 is exactly 0.02857; with per-site BH families of ~20 (aa) or ~61 (codon), clearing FDR<0.05 is mathematically near-impossible unless ~every test ties at the floor.
+- **condition-pooled-confound** — n=4 per timepoint is built by pooling 2 BWM + 2 control replicates (`rep_to_timepoint`); if BWM and control diverge in their time response, pooling masks divergent signals. All 6 members share this design.
+- **n=4-low-power** — n=4 vs n=4 Mann-Whitney has very low power; nulls across all 6 files are weakly informative.
+- **p-floor-aware-headline** — Headlines must explicitly state min raw p ~= 0.0286 and explain why "no FDR hits" here is uninformative, not a biological negative.
+
+---
+
+## Headline
+
+0 of 186 day_5-vs-day_0 codon tests are significant at FDR<0.05; minimum adjusted p is 0.3543. Ten cells reach raw p<0.05, all sitting exactly at the n=4-vs-n=4 two-sided Mann-Whitney floor (0.02857), and all ten are depletions (day_5 < day_0), with five of the ten at the P site. The absence of FDR hits is floor-blocking, not a biological negative. This is a coordinated floor-limited null — the family member with the most floor cells. As nominal-only exploratory leads: the largest-magnitude floor depletions are P-site CCA (`log2_FC` -0.3507), P-site GGA (-0.3254) and E-site GGA (-0.3125); CCA, GGA and GCC recur as floor-level depletions across multiple sites. No enriched cell reaches the floor; the largest enriched raw swings are the unstable in-frame stop codon TGA (P-site +1.2366, E-site +0.9454; see caveat). The largest-magnitude sense codon overall, E-site CCA (-0.4795), sits just above the floor (raw p 0.0571).
+
+## Top hits
+
+Effect column is `log2_FC` = log2(median day_5 / median day_0): positive means day_5-enriched, negative means day_5-depleted. `p_adj` is the Mann-Whitney p after BH correction within each site's family of ~62 codons (the raw Mann-Whitney p per cell is summarised under Numbers at a glance; min raw p = 0.02857, the n=4-vs-n=4 two-sided floor, reached by 10 cells, all depletions). Each site is split into one sub-table per direction. No row reaches FDR<0.05, so every row below is a non-significant lead; within each sub-table the rows are up to 5 per direction displayed by `|log2_FC|` descending. Cells flagged `nominal-only` sit exactly at the n=4 floor (raw p 0.02857) — the maximum raw significance the test can produce at this N — and all 10 such cells in this file are depletions. The in-frame stop codon TGA carries the file's largest enriched raw swings and is annotated inline where it appears (the Enriched sub-table at every site), but is a low-support, unstable cell — see the caveats. The `aa` column is the single-letter amino acid translation of each codon (the in-frame stop codon shows as `*`).
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### A site — Enriched (day_5 > day_0)
+
+| codon | aa | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
+| ---   | ---| ---                | ---                  | ---  |
+| TGA (in-frame stop; unstable) | * | +0.4589 | 0.8857 |      |
+| AAT   | N  | +0.2142            | 0.9126               |      |
+| TGT   | C  | +0.1479            | 0.9126               |      |
+| CGG   | R  | +0.1288            | 0.9242               |      |
+| AGT   | S  | +0.1219            | 0.8857               |      |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### A site — Depleted (day_5 < day_0)
+
+| codon | aa | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
+| ---   | ---| ---                | ---                  | ---  |
+| GCC   | A  | -0.4356            | 0.8267               |              |
+| CCA   | P  | -0.3251            | 0.8267               | nominal-only |
+| GTG   | V  | -0.2953            | 0.8267               |              |
+| GGT   | G  | -0.2902            | 0.8267               |              |
+| GGA   | G  | -0.2663            | 0.8267               | nominal-only |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### P site — Enriched (day_5 > day_0)
+
+| codon | aa | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
+| ---   | ---| ---                | ---                  | ---  |
+| TGA (in-frame stop; unstable) | * | +1.2366 | 1.0000 |      |
+| TTA   | L  | +0.1570            | 1.0000               |      |
+| GCG   | A  | +0.1242            | 1.0000               |      |
+| ATA   | I  | +0.1167            | 1.0000               |      |
+| CGG   | R  | +0.0981            | 1.0000               |      |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### P site — Depleted (day_5 < day_0)
+
+| codon | aa | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
+| ---   | ---| ---                | ---                  | ---  |
+| CCA   | P  | -0.3507            | 0.3543               | nominal-only |
+| GGA   | G  | -0.3254            | 0.3543               | nominal-only |
+| AAG   | K  | -0.3021            | 0.3543               | nominal-only |
+| GCC   | A  | -0.2565            | 0.3543               | nominal-only |
+| AGA   | R  | -0.2283            | 0.3543               | nominal-only |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### E site — Enriched (day_5 > day_0)
+
+| codon | aa | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
+| ---   | ---| ---                | ---                  | ---  |
+| TGA (in-frame stop; unstable) | * | +0.9454 | 0.8604 |      |
+| ATA   | I  | +0.1537            | 0.8604               |      |
+| TCG   | S  | +0.1456            | 0.8604               |      |
+| ACG   | T  | +0.1132            | 0.8604               |      |
+| CGA   | R  | +0.0864            | 0.8604               |      |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### E site — Depleted (day_5 < day_0)
+
+| codon | aa | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
+| ---   | ---| ---                | ---                  | ---  |
+| CCA   | P  | -0.4795            | 0.7086               |              |
+| GGA   | G  | -0.3125            | 0.5905               | nominal-only |
+| GCC   | A  | -0.2934            | 0.5905               | nominal-only |
+| ACC   | T  | -0.2303            | 0.5905               | nominal-only |
+| ATC   | I  | -0.1101            | 0.7086               |              |
+
+### Flag glossary
+
+- `nominal-only` — raw p < 0.05 but `p_adj` >= 0.05: the row would have been flagged significant if tested in isolation, but did not survive BH-FDR correction across its ~62-codon site family. At n=4 vs n=4 the smallest attainable raw p is the floor itself (0.02857), so every `nominal-only` cell here sits exactly at that floor; all 10 such cells in this file are depletions (5 at the P site).
+
+## Numbers at a glance
+
+- `n_tests`: 186 (62 per site, A/P/E; 62 = 61 sense codons + the in-frame stop TGA)
+- `n_significant` (adjusted-p < 0.05): 0
+- `n_significant` (adjusted-p < 0.10): 0
+- `min adjusted-p`: 0.3543 (site P, where 5 codons tie at the floor: 0.02857 x 62/5 ~= 0.354)
+- `min raw p`: 0.0286 (= the n=4 floor; 10 cells tie here, all depletions)
+- `p_floor`: 0.02857 (theoretical two-sided Mann-Whitney floor for n=4 vs n=4 = 2/C(8,4)). Ten cells reach it — the most of any family member — yet a ~62-codon BH family still blocks FDR<0.05.
+- Per site: site A min `p_adj` 0.8267; site P min `p_adj` 0.3543; site E min `p_adj` 0.5905.
+
+## Biological interpretation
+
+**There is no detectable day_5-vs-day_0 difference at codon resolution, and the absence is a discreteness floor rather than a biological negative (concrete).** None of the 186 (site, codon) tests clears BH within its ~62-codon site family; the minimum adjusted p is 0.3543 at the P site, with sites A and E flatter still (min `p_adj` 0.8267 and 0.5905). What makes this the family's busiest floor file is that ten cells reach the exact n=4-vs-n=4 two-sided Mann-Whitney floor of 0.02857 — more than any other member — yet even five of them tied at one site only BH-corrects to 0.3543 in a ~62-codon family. So "0 of 186" here is the design's structural ceiling, not evidence that day_5 and day_0 occupancy are the same.
+
+**A recurring CCA/GGA/GCC depletion cluster runs across all three sites, all at the floor (exploratory).** Every one of the ten floor cells is a depletion (day_5 < day_0), and the same small set of codons keeps reappearing: CCA (proline) is a floor depletion at the P site (-0.3507) and the largest-magnitude depletion in the file at the E site (-0.4795); GGA (glycine) is a floor depletion at all three sites (P -0.3254, E -0.3125, A -0.2663); GCC (alanine) is a floor depletion at the P and E sites (-0.2565, -0.2934). These are small, conformationally flexible residues, but at floor magnitude there is no clean exit-tunnel or decoding-bottleneck anchor to attach the pattern to, and a co-occurring floor cluster with no independent corroboration is equally consistent with the discreteness coincidence the caveats flag. It is worth carrying into the within-condition Fisher contrast for the same time axis (`timepoint_fisher_within_condition_d5_vs_d0`), where whole-transcriptome N can resolve whether CCA/GGA/GCC genuinely deplete from day_0 to day_5; it is a direction to test, not a hit.
+
+**The P-site glycine depletion is the codon-level counterpart of the amino-acid sister's P-site signal (exploratory).** The amino-acid sister `aa_wilcoxon_timepoint_d5_vs_d0.csv` leads with a P-site glycine depletion at the floor; here that resolves to specific glycine codons GGA (-0.3254, floor) and GGT (-0.2902) both depleting at the P site, with GGA depleting at the A and E sites as well. Whether the amino-acid-level glycine signal is carried by one synonym or spread across the glycine codon family is exactly the kind of question the codon resolution is meant to answer, but at n=4 neither resolution clears FDR — so this is a synonymous-shift hypothesis to check against the more-powered Fisher sister, hedged as directional only.
+
+**The in-frame stop codon TGA is noise, not signal (concrete).** TGA carries the file's largest *enriched* raw swings (P-site `log2_FC` +1.2366, E-site +0.9454, A-site +0.4589) and appears as the tall grey bar at the left of every panel, but its footprint support is very low: the codon counting path retains in-frame stop windows that the amino-acid path drops (hence 186 codon tests vs the sister's 60), and a handful of readthrough/recoding events drive an unstable magnitude. TGA is non-significant at every site (raw p >= 0.34, `p_adj` 0.8604-1.0000); read those grey bars as a low-count artefact, not a day_5-vs-day_0 effect.
+
+**What to carry forward.** Concrete claim to quote: this file shows no signal at FDR<0.05 for day_5-vs-day_0 codon occupancy with conditions pooled; the minimum adjusted p is 0.3543 at the P site, and although ten cells reach the raw-p floor (the most of any family member, all depletions), the ~62-codon BH family blocks FDR. Exploratory patterns worth checking in sister tests: (1) does the cross-site CCA/GGA/GCC depletion cluster reproduce in `timepoint_fisher_within_condition_d5_vs_d0` at whole-transcriptome N, or collapse as a discreteness coincidence? (2) is the amino-acid sister's P-site glycine depletion carried by GGA specifically, or spread across the glycine codon family? Noise to ignore: the in-frame stop codon TGA (low-count) at every site, and the bulk of cells with magnitude but raw p above the floor.
+
+## Methods
+
+Columns present: `site`, `codon`, `median_day_5`, `median_day_0`, `log2_FC`, `U_stat`, `p_value`, `p_adj`. The test is a two-sample Wilcoxon rank-sum (Mann-Whitney U) comparing day_5 vs day_0 occupancy per (site, codon) at n=4 vs n=4. The `U_stat` column and the paired median columns are consistent with that test. The correction column is `p_adj` (BH within each site's ~62-codon family, per `merge_global_occupancy_analysis.py`). The test compares the two timepoint distributions per cell; it does not separate synonymous-codon effects from amino-acid-level effects, nor the pooled BWM and control replicates, and the ~62-codon family makes FDR<0.05 require dozens of floor-tied cells at once.
+
+## What the caveats mean for reading this file
+
+- **mw-floor-blocking.** Raw p is clamped at 0.02857 (the n=4 vs n=4 floor); even the ten floor cells here — the most of any family member, five of them at the P site — only BH-correct to `p_adj` 0.3543 in a ~62-codon per-site family. "0 of 186 at FDR<0.05" is the design's structural ceiling, not evidence that day_5 ~= day_0.
+- **condition-pooled-confound.** Each timepoint's n=4 is 2 BWM + 2 control replicates; a BWM-specific and a control-specific day_0-to-day_5 response pointing in opposite directions cancel inside the same comparison, so cross-check the within-condition Fisher (`timepoint_fisher_within_condition_d5_vs_d0_codon`) before reading any floor cell as a real day-axis change.
+- **n=4-low-power.** With n=4 vs n=4, a real effect can be missed; treat this no-signal result as weakly informative, not strong evidence that day_5 and day_0 occupancy are equal.
+- **p-floor-aware-headline.** The headline reports min raw p ~= 0.0286 (the n=4 floor) and that all ten floor cells are depletions, so "no FDR hits" is floor-blocking, not a biological negative.
+- **stop-codon-instability.** The 62 codons per site are 61 sense codons plus the single in-frame stop TGA (the codon counting path retains stop windows, unlike the amino-acid path, which is why this file has 186 tests vs the amino-acid sister's 60); TGA's footprint support is very low, so its large enriched `log2_FC` swings (P-site +1.2366, E-site +0.9454, A-site +0.4589) are unstable noise rather than a day_5-vs-day_0 effect, and all three are non-significant (raw p >= 0.34).
+
+---
+
+## Plots — individual
+
+![A-site day_5-vs-day_0 codon bar plot. X-axis is the codons ordered by log2 fold-change high to low; y-axis is log2 fold-change; bars coloured by amino-acid class with the in-frame stop codon in grey (see legend). Largest enrichment is the in-frame stop TGA (grey, ~+0.45); the largest sense enrichments are AAT (~+0.21) and CGA (~+0.20). The depleted tail is the deepest part of the panel: GGC (~-0.48) and GCC (~-0.44) are the two largest depletions, with CCA (~-0.33) and a GGT / GTG / TGG cluster (~-0.27 to -0.30) behind. GGC is the single largest A-site depletion in the plot but is absent from the raw-p-selected Top-hits table (the table ranks by raw p, the plot by magnitude).](../plots/between_timepoint/d5_vs_d0/codon/individual/site_A_codon_Day5_vs_Day0_barplot.png)
+
+![P-site day_5-vs-day_0 codon bar plot. X-axis is the codons ordered by log2 fold-change high to low; y-axis is log2 fold-change; bars coloured by amino-acid class with the in-frame stop codon in grey. The largest swing by far is the in-frame stop TGA (grey, ~+1.23), dwarfing every sense codon; the largest sense enrichments are TTA (~+0.16), GCG (~+0.12) and ATA (~+0.11). The depleted tail tops out at CCA (~-0.35), GGA (~-0.33) and AAG (~-0.30) — the file's five P-site floor depletions cluster here.](../plots/between_timepoint/d5_vs_d0/codon/individual/site_P_codon_Day5_vs_Day0_barplot.png)
+
+![E-site day_5-vs-day_0 codon bar plot. X-axis is the codons ordered by log2 fold-change high to low; y-axis is log2 fold-change; bars coloured by amino-acid class with the in-frame stop codon in grey. Largest enrichment is the in-frame stop TGA (grey, ~+0.95); the largest sense enrichments are CGG (~+0.19), ATA (~+0.15) and TCG (~+0.14). The depleted tail bottoms out at CCA (~-0.48, the largest-magnitude sense codon in the whole file), then GGA (~-0.31) and GCC (~-0.29).](../plots/between_timepoint/d5_vs_d0/codon/individual/site_E_codon_Day5_vs_Day0_barplot.png)

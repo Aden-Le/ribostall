@@ -16,6 +16,20 @@ results/stall_sites/enrichment/olive_reports/*
 # Re-ignore meta files (index, plan, manual review, remediation, etc.)
 results/stall_sites/enrichment/analysis_stats_interpretation/_*
 results/stall_sites/enrichment/olive_reports/_*
+# Track interpretation .md and report .qmd in the global_occupancy folders
+!results/global_occupancy/
+results/global_occupancy/*
+!results/global_occupancy/analysis_corrected_interpretation/
+!results/global_occupancy/olive_reports/
+results/global_occupancy/analysis_corrected_interpretation/*
+results/global_occupancy/olive_reports/*
+!results/global_occupancy/analysis_corrected_interpretation/*.md
+!results/global_occupancy/olive_reports/*.qmd
+# Re-ignore meta files (index, plan, manual review, etc.)
+results/global_occupancy/analysis_corrected_interpretation/_*
+results/global_occupancy/olive_reports/_*
+C_elegan_upload/
+for_claude_scripts/
 
 R_scripts/journals/
 docs/

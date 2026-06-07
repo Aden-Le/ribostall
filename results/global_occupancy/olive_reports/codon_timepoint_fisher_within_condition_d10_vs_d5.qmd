@@ -1,0 +1,324 @@
+---
+title: "codon_timepoint_fisher_within_condition_d10_vs_d5 — Olive report"
+subtitle: "ribostall global_occupancy — occupancy stats"
+date: 2026-06-06
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    embed-resources: true
+    fig-cap-location: bottom
+  pdf:
+    toc: true
+    fig-cap-location: bottom
+    include-in-header:
+      text: |
+        \usepackage{needspace}
+tbl-colwidths: [5, 8, 5, 15, 15, 16, 20]
+execute:
+  echo: false
+---
+
+## Composite figure
+
+![2x3 grid of day-10-vs-day-5 codon Fisher volcano panels: rows are conditions (top = BWM, bottom = control) and columns are ribosome sites (A-site / P-site / E-site, left to right). Each panel plots -log10(FDR) on the y-axis against log2(odds ratio) on the x-axis (x range about -2 to +2); each glyph is one codon, coloured by the physicochemical class of its encoded residue (acidic = red, basic = blue, hydrophobic = green, neutral = orange, polar = purple, stop = grey). Triangles mark FDR<0.05 cells and circles mark non-significant cells; the dotted vertical line is log2(OR) = 0, the dashed vertical lines mark +/-0.5, and the dashed horizontal line marks FDR = 0.05.](../plots/within_condition_timepoint_fisher/d10_vs_d5/codon/composite/codon_fisher_composite.png){fig-pos="H" width=92%}
+
+Each glyph is one codon at one (condition, site) BH-FDR family of ~62 (61 sense codons plus the in-frame stop TGA); within a panel a glyph to the right of zero is enriched at day_10 relative to day_5 within that condition, to the left is depleted, and higher up the panel means a smaller FDR. The two rows let the same (site, codon) cell be read in BWM and control side by side.
+
+---
+
+## Overview
+
+- **CSV:** `codon_timepoint_fisher_within_condition_d10_vs_d5.csv`
+- **Family (from `_INDEX.md`):** `timepoint_fisher_within_condition`
+- **Sister CSV(s):**
+  - `aa_timepoint_fisher_within_condition_d10_vs_d5.csv` (aa-level parent of this contrast)
+  - `aa_timepoint_fisher_within_condition_d10_vs_d0.csv`
+  - `codon_timepoint_fisher_within_condition_d10_vs_d0.csv`
+  - `aa_timepoint_fisher_within_condition_d5_vs_d0.csv`
+  - `codon_timepoint_fisher_within_condition_d5_vs_d0.csv`
+- **Test:** Fisher's exact (two-sided), within-condition day_10-vs-day_5 contrast per (condition, site, codon); BH-FDR within each (condition, site) family of ~62 codons
+- **Design:** Per (condition, site, codon) 2x2 day-10-vs-day-5 contingency tested by two-sided Fisher's exact within one condition; the 2 biological replicates per (condition, timepoint) are summed before the test (pseudoreplicated); BH-FDR applied independently within each of 6 (condition, site) families of ~62 codons (372 tests total). The test is **within-condition**: BWM and control are tested separately and never share a contingency.
+
+### Family-level caveats
+
+- **pseudorep** — 2 reps per (condition,timepoint) summed before Fisher. Same anti-conservative concern as per-timepoint Fisher.
+- **large-N-Fisher-anticonservative** — pooled totals are whole-transcriptome; tiny effects yield tiny p-values; odds_ratio is the primary effect column, not p.
+- **bh-per-(condition,site)** — BH-FDR is per (condition,site) within each contrast file (~20 aa or ~61 codon tests per family).
+- **within-condition-clean** — unlike the between-condition and between-timepoint Wilcoxon families, these tests do NOT mix conditions or timepoints; each Fisher is held within one (condition,contrast) cell. Structurally cleaner on the pooling-as-confound axis; positive design feature.
+
+---
+
+## Headline
+
+At codon-level within-condition Fisher day_10 vs day_5, 297/372 tests clear FDR<0.05 (BWM 140/186, control 157/186): 117 site x codon cells significant in both conditions, 23 BWM-only, 40 control-only. The minimum adjusted p is 1.273e-313 with no exact-zero underflow (unlike the other codon files in this family) at whole-transcriptome pooled N (totals 1.3M-2.4M); the informative axis is `effect change`, not p.
+
+The in-frame stop codon TGA carries the largest swings in the file (A:TGA BWM `log2_OR`=+0.536 / control -1.702; P:TGA BWM +0.633 / control -1.284; E:TGA BWM +0.950 / control -1.334) but rests on small control counts (flagged `low-count`, unstable — see caveats). Among stable sense codons the largest divergence is A:CCC (BWM -0.195 / control +0.533); the site-A proline codons consistently show control enriched at day_10 vs day_5 while BWM stays flat-to-down (A:CCA BWM -0.080 / control +0.341, A:CCT BWM -0.077 / control +0.324, A:CCG BWM -0.013 / control +0.451). Reported at equal billing, the largest shared-direction cells (both arms same sign) are A:GGG both enriched (+0.292 / +0.345), P:GGG both enriched (+0.347 / +0.241), E:GGC both enriched (+0.321 / +0.101).
+
+## Top hits
+
+`log2_OR` is the within-condition Fisher effect for the day_10 vs day_5 contrast: positive = enriched at day_10 relative to day_5 within that condition, negative = depleted. Each row pairs the BWM and control value for one (site, codon) cell; `effect change` = BWM `log2_OR` - control `log2_OR`. A value near zero means both conditions moved together from day_5 to day_10 (a shared trajectory); a large-magnitude value means the two conditions' day_10-vs-day_5 trajectories diverge (positive when BWM rose relative to control, negative when control rose relative to BWM). The three sections split every cell significant at FDR<0.05 in at least one condition by which condition(s) reach significance: both, BWM only, control only. Within each section rows are grouped by `site` in A -> P -> E order, then sorted by `effect change` descending (no row cap); cells significant in neither condition are omitted. Because the pooled per-condition totals are whole-transcriptome footprint counts, almost every shown cell clears FDR<0.05 and p magnitude is uninformative, so the cells that matter most are those with the largest `|effect change|` (the divergences at the top and bottom of each site block), not those with the smallest p. The `aa` column is the single-letter amino acid translation of each codon; the `flag` column carries `low-count`, which in this file fires only on the in-frame stop codon TGA.
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### Significant in both conditions (n = 117 site x codon cells)
+
+| site | codon | aa | BWM (`log2_OR`) | control (`log2_OR`) | effect change | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| A | TGA (in-frame stop; unstable) | * | +0.536 | -1.702 | +2.238 | low-count (C) |
+| A | ATT | I | +0.067 | -0.236 | +0.303 |  |
+| A | AGT | S | +0.108 | -0.163 | +0.270 |  |
+| A | AGA | R | +0.071 | -0.171 | +0.243 |  |
+| A | GAA | E | +0.132 | -0.101 | +0.233 |  |
+| A | TGT | C | +0.097 | -0.126 | +0.224 |  |
+| A | ATG | M | +0.021 | -0.134 | +0.155 |  |
+| A | AAG | K | -0.054 | -0.208 | +0.154 |  |
+| A | ATA | I | -0.095 | -0.243 | +0.147 |  |
+| A | TCA | S | +0.071 | -0.049 | +0.120 |  |
+| A | AGC | S | +0.057 | -0.063 | +0.120 |  |
+| A | GAG | E | +0.150 | +0.032 | +0.118 |  |
+| A | GTT | V | +0.023 | -0.092 | +0.115 |  |
+| A | ATC | I | -0.025 | -0.131 | +0.106 |  |
+| A | CAA | Q | -0.118 | -0.214 | +0.097 |  |
+| A | GAT | D | -0.040 | -0.118 | +0.078 |  |
+| A | ACA | T | -0.065 | -0.102 | +0.036 |  |
+| A | ACT | T | -0.053 | -0.086 | +0.032 |  |
+| A | TAT | Y | -0.130 | -0.162 | +0.032 |  |
+| A | GGA | G | +0.167 | +0.154 | +0.012 |  |
+| A | CAT | H | -0.045 | -0.031 | -0.014 |  |
+| A | TCG | S | +0.125 | +0.173 | -0.047 |  |
+| A | GGG | G | +0.292 | +0.345 | -0.053 |  |
+| A | GAC | D | -0.048 | +0.033 | -0.081 |  |
+| A | ACC | T | -0.091 | +0.037 | -0.128 |  |
+| A | TTG | L | -0.035 | +0.122 | -0.157 |  |
+| A | CAC | H | -0.098 | +0.075 | -0.173 |  |
+| A | GCT | A | -0.024 | +0.236 | -0.260 |  |
+| A | CTT | L | -0.154 | +0.124 | -0.278 |  |
+| A | TAC | Y | -0.087 | +0.198 | -0.285 |  |
+| A | GCG | A | +0.081 | +0.369 | -0.289 |  |
+| A | TCC | S | -0.068 | +0.237 | -0.305 |  |
+| A | CTC | L | -0.123 | +0.191 | -0.314 |  |
+| A | GGC | G | +0.110 | +0.433 | -0.322 |  |
+| A | CGG | R | +0.088 | +0.411 | -0.323 |  |
+| A | GCC | A | -0.047 | +0.309 | -0.355 |  |
+| A | TGG | W | -0.048 | +0.342 | -0.390 |  |
+| A | CCT | P | -0.077 | +0.324 | -0.401 |  |
+| A | CCA | P | -0.080 | +0.341 | -0.421 |  |
+| A | CCC | P | -0.195 | +0.533 | -0.727 |  |
+| P | TGA (in-frame stop; unstable) | * | +0.633 | -1.284 | +1.917 | low-count (C) |
+| P | TTA | L | +0.056 | -0.409 | +0.464 |  |
+| P | GTT | V | -0.042 | -0.266 | +0.224 |  |
+| P | GTC | V | +0.061 | -0.162 | +0.223 |  |
+| P | TCG | S | +0.112 | -0.085 | +0.197 |  |
+| P | GCG | A | +0.227 | +0.054 | +0.172 |  |
+| P | GTA | V | +0.071 | -0.094 | +0.165 |  |
+| P | TTG | L | -0.034 | -0.185 | +0.150 |  |
+| P | ATT | I | -0.176 | -0.299 | +0.122 |  |
+| P | GGC | G | +0.224 | +0.114 | +0.110 |  |
+| P | GGG | G | +0.347 | +0.241 | +0.106 |  |
+| P | GAA | E | +0.083 | -0.019 | +0.102 |  |
+| P | GAG | E | +0.204 | +0.103 | +0.101 |  |
+| P | GGT | G | +0.167 | +0.069 | +0.098 |  |
+| P | GAT | D | +0.137 | +0.054 | +0.083 |  |
+| P | GCA | A | +0.187 | +0.116 | +0.071 |  |
+| P | ATC | I | -0.143 | -0.203 | +0.060 |  |
+| P | TTC | F | -0.046 | -0.101 | +0.055 |  |
+| P | CCT | P | +0.189 | +0.139 | +0.050 |  |
+| P | TCT | S | -0.088 | -0.138 | +0.050 |  |
+| P | CTT | L | -0.169 | -0.204 | +0.035 |  |
+| P | CGG | R | +0.304 | +0.292 | +0.012 |  |
+| P | AAT | N | -0.073 | -0.084 | +0.011 |  |
+| P | CGA | R | +0.193 | +0.197 | -0.003 |  |
+| P | CTC | L | -0.053 | -0.034 | -0.019 |  |
+| P | GAC | D | +0.073 | +0.098 | -0.025 |  |
+| P | ATG | M | -0.051 | -0.026 | -0.026 |  |
+| P | CCG | P | +0.248 | +0.307 | -0.058 |  |
+| P | GGA | G | +0.125 | +0.202 | -0.077 |  |
+| P | CCC | P | +0.206 | +0.289 | -0.083 |  |
+| P | TAT | Y | -0.121 | -0.036 | -0.085 |  |
+| P | CGT | R | -0.027 | +0.074 | -0.102 |  |
+| P | AGG | R | +0.231 | +0.356 | -0.126 |  |
+| P | CAG | Q | +0.061 | +0.226 | -0.165 |  |
+| P | CAA | Q | -0.091 | +0.079 | -0.170 |  |
+| P | TAC | Y | -0.148 | +0.055 | -0.203 |  |
+| P | ACC | T | -0.083 | +0.120 | -0.203 |  |
+| P | AGA | R | -0.099 | +0.119 | -0.218 |  |
+| P | CCA | P | -0.051 | +0.167 | -0.218 |  |
+| P | AAG | K | -0.168 | +0.072 | -0.240 |  |
+| P | CAC | H | -0.150 | +0.140 | -0.290 |  |
+| E | TGA (in-frame stop; unstable) | * | +0.950 | -1.334 | +2.284 | low-count (C) |
+| E | GGT | G | +0.248 | -0.108 | +0.356 |  |
+| E | AGT | S | +0.207 | -0.145 | +0.353 |  |
+| E | TGG | W | +0.141 | -0.152 | +0.293 |  |
+| E | AGG | R | +0.122 | -0.150 | +0.272 |  |
+| E | ACG | T | +0.150 | -0.099 | +0.249 |  |
+| E | CAG | Q | +0.091 | -0.143 | +0.234 |  |
+| E | ATG | M | +0.051 | -0.183 | +0.234 |  |
+| E | GGC | G | +0.321 | +0.101 | +0.220 |  |
+| E | TGT | C | +0.060 | -0.145 | +0.205 |  |
+| E | TCG | S | +0.124 | -0.069 | +0.193 |  |
+| E | GTG | V | +0.067 | -0.119 | +0.185 |  |
+| E | AAG | K | -0.065 | -0.250 | +0.185 |  |
+| E | CTG | L | +0.090 | -0.056 | +0.146 |  |
+| E | AGA | R | -0.038 | -0.160 | +0.122 |  |
+| E | CAT | H | +0.047 | -0.064 | +0.111 |  |
+| E | GAT | D | +0.030 | -0.072 | +0.102 |  |
+| E | CTA | L | +0.066 | +0.063 | +0.003 |  |
+| E | AAA | K | -0.021 | -0.021 | +0.000 |  |
+| E | ATT | I | -0.081 | -0.080 | -0.002 |  |
+| E | CCG | P | +0.133 | +0.140 | -0.007 |  |
+| E | GCA | A | +0.078 | +0.118 | -0.040 |  |
+| E | TAT | Y | -0.123 | -0.040 | -0.083 |  |
+| E | GAC | D | +0.032 | +0.127 | -0.095 |  |
+| E | CTT | L | -0.049 | +0.052 | -0.101 |  |
+| E | CGC | R | -0.038 | +0.103 | -0.141 |  |
+| E | CTC | L | +0.081 | +0.254 | -0.173 |  |
+| E | CCT | P | +0.105 | +0.301 | -0.196 |  |
+| E | CAC | H | -0.067 | +0.133 | -0.200 |  |
+| E | ATC | I | -0.077 | +0.137 | -0.214 |  |
+| E | ACT | T | -0.066 | +0.158 | -0.224 |  |
+| E | TTC | F | -0.085 | +0.141 | -0.227 |  |
+| E | TAC | Y | -0.165 | +0.125 | -0.290 |  |
+| E | TCC | S | -0.058 | +0.243 | -0.301 |  |
+| E | CCA | P | -0.142 | +0.258 | -0.400 |  |
+| E | ACC | T | -0.129 | +0.275 | -0.404 |  |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### Significant in BWM only (n = 23 site x codon cells)
+
+| site | codon | aa | BWM (`log2_OR`) | control (`log2_OR`) | effect change | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| A | AGG | R | +0.206 | +0.034 | +0.172 |  |
+| A | GGT | G | +0.073 | -0.013 | +0.086 |  |
+| A | TTA | L | -0.040 | -0.032 | -0.008 |  |
+| A | GTA | V | -0.061 | -0.001 | -0.060 |  |
+| P | ACG | T | +0.158 | +0.005 | +0.153 |  |
+| P | GTG | V | +0.124 | -0.020 | +0.144 |  |
+| P | TGT | C | +0.068 | +0.008 | +0.060 |  |
+| P | CTA | L | -0.058 | -0.055 | -0.003 |  |
+| P | ACT | T | -0.052 | +0.013 | -0.065 |  |
+| P | TCC | S | -0.052 | +0.034 | -0.086 |  |
+| P | AAC | N | -0.117 | -0.007 | -0.109 |  |
+| P | CAT | H | -0.094 | +0.023 | -0.118 |  |
+| E | GGG | G | +0.306 | -0.016 | +0.322 |  |
+| E | CGG | R | +0.253 | -0.046 | +0.299 |  |
+| E | GCG | A | +0.218 | +0.029 | +0.189 |  |
+| E | CGA | R | +0.177 | -0.007 | +0.183 |  |
+| E | AGC | S | +0.071 | -0.035 | +0.106 |  |
+| E | GGA | G | +0.075 | -0.014 | +0.089 |  |
+| E | GAA | E | +0.032 | +0.002 | +0.029 |  |
+| E | TTT | F | -0.041 | -0.026 | -0.015 |  |
+| E | CAA | Q | -0.029 | -0.006 | -0.023 |  |
+| E | GTT | V | -0.048 | -0.007 | -0.041 |  |
+| E | AAC | N | -0.096 | -0.011 | -0.085 |  |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### Significant in control only (n = 40 site x codon cells)
+
+| site | codon | aa | BWM (`log2_OR`) | control (`log2_OR`) | effect change | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| A | AAT | N | +0.007 | -0.364 | +0.371 |  |
+| A | AAC | N | -0.011 | -0.325 | +0.314 |  |
+| A | AAA | K | -0.007 | -0.319 | +0.312 |  |
+| A | TTT | F | +0.024 | -0.033 | +0.057 |  |
+| A | TTC | F | +0.001 | +0.078 | -0.077 |  |
+| A | CGA | R | +0.003 | +0.121 | -0.119 |  |
+| A | CGT | R | -0.009 | +0.166 | -0.174 |  |
+| A | GTG | V | -0.011 | +0.180 | -0.191 |  |
+| A | CTA | L | -0.027 | +0.194 | -0.221 |  |
+| A | TGC | C | +0.035 | +0.256 | -0.222 |  |
+| A | GCA | A | +0.016 | +0.242 | -0.225 |  |
+| A | CTG | L | +0.033 | +0.343 | -0.310 |  |
+| A | CGC | R | -0.029 | +0.334 | -0.363 |  |
+| A | CCG | P | -0.013 | +0.451 | -0.464 |  |
+| P | TTT | F | +0.012 | -0.251 | +0.263 |  |
+| P | ATA | I | +0.026 | -0.183 | +0.209 |  |
+| P | TCA | S | +0.012 | -0.080 | +0.092 |  |
+| P | CTG | L | +0.011 | -0.045 | +0.056 |  |
+| P | AAA | K | +0.002 | -0.024 | +0.026 |  |
+| P | AGC | S | -0.037 | -0.053 | +0.016 |  |
+| P | AGT | S | +0.029 | +0.040 | -0.011 |  |
+| P | GCT | A | +0.008 | +0.025 | -0.017 |  |
+| P | TGG | W | +0.022 | +0.100 | -0.078 |  |
+| P | GCC | A | +0.017 | +0.126 | -0.109 |  |
+| P | TGC | C | +0.004 | +0.128 | -0.125 |  |
+| P | CGC | R | -0.028 | +0.186 | -0.214 |  |
+| E | TTG | L | +0.015 | -0.197 | +0.212 |  |
+| E | AAT | N | +0.014 | -0.196 | +0.210 |  |
+| E | GAG | E | -0.004 | -0.122 | +0.117 |  |
+| E | TTA | L | +0.017 | -0.087 | +0.104 |  |
+| E | ATA | I | +0.026 | -0.077 | +0.103 |  |
+| E | CGT | R | +0.025 | -0.077 | +0.102 |  |
+| E | TCA | S | +0.023 | +0.055 | -0.032 |  |
+| E | TGC | C | +0.030 | +0.066 | -0.036 |  |
+| E | ACA | T | +0.010 | +0.051 | -0.041 |  |
+| E | TCT | S | +0.000 | +0.077 | -0.076 |  |
+| E | GCT | A | +0.001 | +0.187 | -0.186 |  |
+| E | GTC | V | -0.018 | +0.215 | -0.234 |  |
+| E | CCC | P | +0.059 | +0.354 | -0.295 |  |
+| E | GCC | A | +0.002 | +0.378 | -0.377 |  |
+
+### Flag glossary
+
+- `low-count` — at least one condition arm's day-10 / day-5 footprint count for this codon is below the stability threshold (BWM < 50 / control < 50); the parenthetical names which arm(s) tripped it, where `C` = control (so `(C)` means the control count is low). In this file the flag fires only on the in-frame stop codon TGA, and only the control arm trips it (`(C)`) at all three sites. `log2_OR` (and therefore `effect change`) is unstable at small counts, so a large `|effect change|` for a flagged row may reflect sampling noise rather than biology.
+
+## Numbers at a glance
+- `n_tests`: 372 (186 per condition; 3 sites x ~62 codons each)
+- `n_significant` (adjusted-p < 0.05): 297 (BWM 140/186, control 157/186)
+- `n_significant` (adjusted-p < 0.10): 313
+- `min adjusted-p`: 1.273e-313 (no exact-zero underflow). Smallest non-zero p_adj is 1.273225e-313 (E, control, AAG).
+- `p_floor`: n/a — Fisher with pooled N in the millions has no meaningful floor; the dominant concern is `large-N-Fisher-anticonservative` (family-wide).
+- Per (condition, site) sig at FDR<0.05: BWM A 44/62, P 49/62, E 47/62; control A 54/62, P 53/62, E 50/62.
+- Section split: 117 cells sig in both, 23 BWM-only, 40 control-only.
+
+## Biological interpretation
+
+**Near-universal FDR significance is a large-N artifact; the readable axis is `effect change`, not p (concrete).** 297 of 372 cells clear FDR<0.05, with pooled per-condition totals of 1.3M-2.4M footprints per arm. At that N Fisher's exact returns a vanishing p for a trivially small composition shift, so "significant in both / BWM-only / control-only" is a weak sorter and p magnitude carries no information. One detail separates this contrast from its day_10-vs-day_0 codon sister: the minimum adjusted p here is 1.273e-313 with no cell underflowing to exactly 0.0, where the d10_vs_d0 file had seven exact-zero cells. The difference is a numerical floor of the p computation, not a biological one — what this file is built to read is how differently the two conditions moved from day_5 to day_10 at each (site, codon) cell, captured by `effect change` = BWM `log2_OR` - control `log2_OR`: near zero is a shared trajectory, large magnitude is a divergence.
+
+**The TGA stop spike is low-count instability, not a readthrough finding (concrete).** The three largest `effect change` cells in the file are the in-frame stop codon TGA: E:TGA +2.284, A:TGA +2.238, P:TGA +1.917, every one carrying the `low-count` flag because the control arm sits below 50 counts at all three sites (BWM +0.536/+0.633/+0.950 vs control -1.702/-1.284/-1.334). TGA is an in-frame stop (likely selenocysteine recoding or readthrough) and its odds ratio is dominated by the smallest cell, so the magnitude is statistically real but biologically unstable across replicates. Quote its direction at most, never its magnitude, and never let it anchor the read.
+
+**The largest stable divergences sit at the A site, where control enriches proline codons over the timecourse while BWM stays flat (concrete).** Among sense codons the largest `effect change` is A:CCC (BWM -0.195 / control +0.533, -0.727), and the same one-sided pattern runs across the whole A-site proline family: A:CCA (-0.080 / +0.341), A:CCT (-0.077 / +0.324), and the control-only A:CCG (-0.013 / +0.451). All four proline synonyms move the same way — control enriches them from day_5 to day_10 while BWM holds flat or slightly depletes — so the aa sister's A:P split is carried broadly across the proline codon family rather than concentrated on a single synonym. The A-site tryptophan codon TGG (-0.048 / +0.342) shows the same one-sided control enrichment; because TGG is Trp's only codon, the aa file's A:W split localises here trivially. These are firm FDR cells, but per the large-N caveat the direction carries the signal, not the p.
+
+**Shared-direction cells mark a day_10-vs-day_5 trajectory that both conditions follow, concentrated on glycine codons (concrete).** The cells with large magnitude but near-zero `effect change` move the same way in both arms: A:GGG both enriched (+0.292 / +0.345), P:GGG both enriched (+0.347 / +0.241), E:GGC both enriched (+0.321 / +0.101), with A:GGA, P:GGC, P:GGT and E:GGT joining the same glycine cluster. Glycine decodes through four synonymous codons and has the most flexible backbone of the 20 residues, and the co-enrichment is spread across its synonyms rather than carried by one, so this reads as a coordinated day_10 shift both lines share rather than a condition-specific perturbation. Because both arms carry it, it more likely reflects a baseline compositional drift over the timecourse than a BWM effect, which is exactly what the within-condition binomial baseline can adjudicate.
+
+**Whether the contrast sits on a consistent trajectory with the other two is the open cross-check, not a conclusion (exploratory).** This file compares day_10 to day_5 only; it cannot say whether a divergence built up gradually from day_0 or appeared in the second half of the window. The A-site proline and tryptophan control enrichments seen here run opposite in direction to what the day_10-vs-day_0 codon sister shows for the same cells, so reading this contrast alongside `codon_timepoint_fisher_within_condition_d10_vs_d0` and `codon_timepoint_fisher_within_condition_d5_vs_d0` would show whether the A-site trajectory is additive (does d10_vs_d0 ~= d5_vs_d0 + d10_vs_d5 per cell?) or biphasic. The broad-versus-synonym-specific question is itself a cross-check against the aa sister (`aa_timepoint_fisher_within_condition_d10_vs_d5`): a divergence genuine at the residue level should survive aggregation, while one carried by a single synonym points to a codon-usage shift. Both are directional hypotheses to carry forward, not findings this file establishes.
+
+**What to carry forward.** *Concrete*: the A-site BWM-vs-control divergence where control enriches and BWM stays flat (the proline family A:CCC/CCA/CCT/CCG, plus A:TGG) is the file's design-target reading; the glycine day_10 trajectory (A:GGG, P:GGG, E:GGC) is real but shared by both conditions. *Exploratory*: whether the A-site proline divergence is amino-acid-level (it is spread across all four synonyms here) versus synonym-specific in the other contrasts, and whether the A-site trajectory is additive or biphasic across the d5_vs_d0 and d10_vs_d0 sisters; the binomial baseline adjudicates the shared-direction cells. *Noise*: the in-frame stop TGA spike (low-count, flagged), the raw p magnitudes, and the near-universal significance count, all large-N or small-count artifacts rather than per-codon biology.
+
+## Methods
+Fisher's exact (two-sided) on a 2x2 of (codon_count, total - codon_count) at day_10 vs day_5 within each condition. `global_codon_occ_stats.py` (Analysis 3b) pools the replicate counts per (condition, timepoint) before the test and applies BH-FDR within each (condition, site) family of ~62 codons (corrected by `merge_global_occupancy_analysis.py`); each of the 6 (condition, site) sub-families is corrected independently, not across the full 372-row file. Effect is reported as `log2_OR` (log2 of the CSV `odds_ratio`): >0 = enriched at day_10 relative to day_5 within that condition, <0 = depleted. The test does not compare BWM against control directly (that is the `control-vs-BWM-divergent-direction` reading carried by the paired columns) and does not test enrichment vs the transcriptomic background (the `within_condition_binomial` family). About 62 of 64 codons appear per (condition, site); the in-frame stop TGA is present, TAA/TAG are not retained in the significant set.
+
+## What the caveats mean for reading this file
+
+- **pseudorep.** The 2x2 contingencies pool the 2 biological replicates per (condition, timepoint) before the test, so per-replicate variation is invisible to the statistic and p-values run anti-conservative — read `log2_OR` / `effect change` as the effect, not a tiny p as extra certainty.
+- **large-N-Fisher-anticonservative.** Pooled per-condition totals are whole-transcriptome footprint counts (day_10 ~1.56M BWM / ~1.26M control; day_5 ~2.01M BWM / ~2.41M control), so Fisher returns vanishing p for trivially small deviations — rank by effect, never by p magnitude.
+- **bh-per-(condition,site).** BH is applied within each of the 6 (condition, site) families of ~62 codons, not across the 372-test file, so two cells with the same raw p in different families can land at different `p_adj` — here significance is carried by section membership, not by a displayed p.
+- **within-condition-clean.** No condition pooling and no timepoint pooling; the file cleanly answers "does day_10 differ from day_5 within this condition", leaving the BWM-vs-control comparison to the side-by-side paired columns (the `effect change`), not to the test itself.
+- **control-vs-BWM-divergent-direction.** The design-target reading: sense codons whose two conditions split direction over the timecourse, concentrated at site A (A:CCC, A:CCA, A:CCT, A:CCG, A:GCC) — read these from the paired BWM/control columns, not from either arm alone.
+- **near-universal-sig-large-N.** 297/372 cells clear FDR<0.05, so which section a cell lands in (both / BWM-only / control-only) is weakly discriminating — rank by `|effect change|` within and across sections, not by section membership or p.
+- **rare-codon-low-count.** The `low-count` flag (BWM < 50 / control < 50) fires only on the in-frame stop TGA (A:TGA, P:TGA, E:TGA, all low-count control); every sense codon clears the threshold, so for the TGA rows quote direction, not the extreme magnitude.
+- **stop-codon-instability.** TGA carries the file's three largest effect changes (E:TGA +2.284, A:TGA +2.238, P:TGA +1.917) on small counts in at least one arm — treat as low-support instability, not a sense-codon signal; it marks the same cells as `rare-codon-low-count`.
+
+---
+
+## Plots — individual
+
+![Day-10-vs-day-5 BWM A-site codon volcano (x = log2(odds ratio), about -2 to +2; y = -log10(FDR); glyphs coloured by encoded-residue class, triangles = FDR<0.05). The acidic codons GAA / GAG (red) and the glycine codon GGA (orange) sit highest as the strongest enrichments near log2(OR) ~+0.1, with the glycine codon GGG (orange) further right at ~+0.3; the leucine and tyrosine codons CTT, CTC, TAC and the glutamine codon CAA (green / purple) are the largest depletions to the left (~-0.1 to -0.15). The in-frame stop TGA (grey) is the lone far-right outlier at log2(OR) ~+0.5 just above the FDR line; most sense codons cluster within +/-0.3 of zero.](../plots/within_condition_timepoint_fisher/d10_vs_d5/codon/individual/BWM_A_volcano.png)
+
+![Day-10-vs-day-5 BWM P-site codon volcano (same axes and colour key). The largest enrichments sit to the right — the glycine codon GGG (orange) ~+0.35, the proline codon CCG (orange) and glycine GGT near +0.25, with the acidic codons GAT / GAG (red) at the top — and the largest depletions to the left (the leucine codons CTT, ATT and the lysine codon AAG, ~-0.15 to -0.18), most pinned near the top of the panel. The in-frame stop TGA (grey) is the far-right outlier at log2(OR) ~+0.6 on a low -log10(FDR).](../plots/within_condition_timepoint_fisher/d10_vs_d5/codon/individual/BWM_P_volcano.png)
+
+![Day-10-vs-day-5 BWM E-site codon volcano (same axes and colour key). The glycine codons GGT, GGC and GGG (orange) and the serine codon AGT are the rightmost enrichments (~+0.2 to +0.35) pinned near the top; the tyrosine codon TAC (green) and the lysine codon AAG (blue) are the largest depletions to the left (~-0.15 to -0.16). The in-frame stop TGA (grey) is the lone far-right outlier at log2(OR) ~+0.95 just above the FDR line.](../plots/within_condition_timepoint_fisher/d10_vs_d5/codon/individual/BWM_E_volcano.png)
+
+![Day-10-vs-day-5 control A-site codon volcano, the densest panel. A band of depleted codons is pinned at the top-left — the asparagine and lysine codons AAT, AAC, AAA and the glutamine codon CAA (~-0.2 to -0.36) — and a matching band of enrichments at the top-right — the glycine codon GGG (orange) ~+0.45, the proline codon CCG and arginine CGG (up to ~+0.45 to +0.57), with CAC, CTA and TCG between them. The in-frame stop TGA (grey) sits alone at the far left (~-1.7) on a low -log10(FDR).](../plots/within_condition_timepoint_fisher/d10_vs_d5/codon/individual/control_A_volcano.png)
+
+![Day-10-vs-day-5 control P-site codon volcano. A top-left band of hydrophobic-codon depletions (the valine and leucine codons GTT, TTA, GTC and the isoleucine codon ATT, plus TTT, ~-0.2 to -0.3) and a top-right band of enrichments (the proline codons CCA, CCG, CCT and the glycine codon GGA, plus the arginine codon AGG, ~+0.2 to +0.36); the acidic codon GAG (red) sits mid-panel near +0.1. The in-frame stop TGA (grey) sits alone at the far left (~-1.3) on a low -log10(FDR).](../plots/within_condition_timepoint_fisher/d10_vs_d5/codon/individual/control_P_volcano.png)
+
+![Day-10-vs-day-5 control E-site codon volcano. Depletions sit at the top-left — the lysine codon AAG, the leucine codon TTG, the methionine codon ATG and the asparagine codon AAT (~-0.18 to -0.25) — and enrichments at the top-right — the alanine codons GCC, GCT, the proline codons CCC, CCT, CCA and the threonine codon ACC (~+0.19 to +0.38). The in-frame stop TGA (grey) sits alone at the far left (~-1.3) on a low -log10(FDR).](../plots/within_condition_timepoint_fisher/d10_vs_d5/codon/individual/control_E_volcano.png)

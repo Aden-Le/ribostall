@@ -1,0 +1,205 @@
+---
+title: "aa_timepoint_fisher_within_condition_d10_vs_d5 — Olive report"
+subtitle: "ribostall global_occupancy — occupancy stats"
+date: 2026-06-06
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    embed-resources: true
+    fig-cap-location: bottom
+  pdf:
+    toc: true
+    fig-cap-location: bottom
+    include-in-header:
+      text: |
+        \usepackage{needspace}
+tbl-colwidths: [7, 23, 16, 16, 20, 18]
+execute:
+  echo: false
+---
+
+## Composite figure
+
+![2x3 grid of day-10-vs-day-5 amino-acid Fisher volcano panels: rows are conditions (top = BWM, bottom = control) and columns are ribosome sites (A-site / P-site / E-site, left to right). Each panel plots -log10(FDR) on the y-axis against log2(odds ratio) on the x-axis (x range about -0.4 to +0.4); each glyph is an amino-acid one-letter code coloured by physicochemical class (acidic = red, basic = blue, hydrophobic = green, neutral = orange, polar = purple). Triangles mark FDR<0.05 cells and circles mark non-significant cells; the dotted vertical line is log2(OR) = 0 and the dashed horizontal line marks FDR = 0.05.](../plots/within_condition_timepoint_fisher/d10_vs_d5/composite/aa_fisher_composite.png){fig-pos="H" width=92%}
+
+Each glyph is a single amino acid at one (condition, site) BH-FDR family of 20. Positive log2(OR) means day-10-enriched relative to day-5 within the same condition; negative means day-10-depleted. The test does not compare BWM to control directly — that contrast is read by comparing the paired top (BWM) and bottom (control) rows of the grid panel by panel.
+
+---
+
+## Overview
+
+- **CSV:** `aa_timepoint_fisher_within_condition_d10_vs_d5.csv`
+- **Family (from `_INDEX.md`):** `timepoint_fisher_within_condition`
+- **Sister CSV(s):**
+  - `codon_timepoint_fisher_within_condition_d10_vs_d5.csv`
+  - `aa_timepoint_fisher_within_condition_d10_vs_d0.csv`
+  - `codon_timepoint_fisher_within_condition_d10_vs_d0.csv`
+  - `aa_timepoint_fisher_within_condition_d5_vs_d0.csv`
+  - `codon_timepoint_fisher_within_condition_d5_vs_d0.csv`
+- **Test:** Fisher's exact (two-sided), within-condition day-10-vs-day-5 contrast per (condition, site, aa); BH-FDR within each (condition, site) family of 20 AAs
+- **Design:** Per (condition, site, amino acid) 2x2 day-10-vs-day-5 contingency tested by two-sided Fisher's exact within one condition; the 2 biological replicates per (condition, timepoint) are summed before the test (pseudoreplicated); BH-FDR applied independently within each of 6 (condition, site) families of 20 amino acids (120 tests total). The test is within-condition: BWM and control are tested separately and never share a contingency. Effect column is `log2_OR` = log2 of the odds ratio (positive = day-10-enriched relative to day-5, negative = depleted).
+
+### Family-level caveats
+
+- **pseudorep** — 2 biological reps per (condition, timepoint) are summed before Fisher's exact; the source script literally prints a pseudoreplication warning. Anti-conservative p-values.
+- **large-N-Fisher-anticonservative** — pooled totals are whole-transcriptome footprint counts (1e5-1e6); Fisher's exact returns vanishing or exactly-zero p-values for tiny absolute deviations. The odds ratio is the primary effect column, not p.
+- **bh-per-(condition,site)** — BH-FDR is per (condition, site) within each contrast file (~20 aa or ~61 codon tests per family); `p_adj` means "corrected within this slice", not across the whole CSV.
+- **within-condition-clean** — unlike the between-condition and between-timepoint Wilcoxon families, these tests do not mix conditions or timepoints; each Fisher is held within one (condition, contrast) cell. Structurally cleaner on the pooling-as-confound axis; a positive design feature.
+
+---
+
+## Headline
+
+At AA-level within-condition Fisher d10 vs d5, 107/120 tests clear FDR<0.05 (BWM 51/60, control 56/60): 48 site x amino-acid cells are significant in both conditions, 3 in BWM only, 8 in control only. Minimum adjusted p underflows to 0.0 (5 cells) at whole-transcriptome pooled N (totals 1.3M-2.4M), so p magnitude is uninformative here and the informative axis is `effect change` (BWM `log2_OR` - control `log2_OR`); effects are small.
+
+The largest BWM-vs-control divergences split direction between the conditions at sites A and E: A:P (BWM `log2_OR`=-0.077 vs control +0.376 enriched at d10), A:W (BWM -0.048 vs control +0.342), E:P (BWM -0.061 vs control +0.254), E:W (BWM +0.141 enriched vs control -0.152 depleted), E:M (BWM +0.051 vs control -0.183), A:L (BWM -0.083 vs control +0.161). Reported at equal billing, the largest shared-direction cells (both arms same sign) are A:G both enriched (BWM +0.159 / control +0.163), P:G both enriched (+0.153 / +0.176), P:I both depleted (-0.154 / -0.259), P:E both enriched (+0.149 / +0.044), E:A both enriched (+0.042 / +0.213).
+
+## Top hits
+
+The effect column is `log2_OR` (log2 of the Fisher odds ratio for the day-10-vs-day-5 contrast within one condition; positive = day-10-enriched relative to day-5, negative = day-10-depleted). Each row pairs the BWM and control `log2_OR` for one (site, amino acid) cell. The `effect change` column is BWM `log2_OR` minus control `log2_OR`: near zero means both conditions moved together (a shared timecourse drift), large magnitude means the two conditions' day-10-vs-day-5 trajectories diverge — positive when BWM rose relative to control, negative when control rose relative to BWM. The three sections split every cell significant at FDR<0.05 in at least one condition by which condition(s) reach significance: both, BWM only, control only; cells significant in neither are omitted. Because the pooled totals are whole-transcriptome footprint counts almost every cell clears FDR<0.05 and p magnitude is uninformative, so significance is carried by section membership rather than a displayed p column, and ranking is by `|effect change|`, not by p. Within each section rows are grouped by `site` in A / P / E order, then sorted by `effect change` descending (no row cap). Each amino-acid one-letter code is expanded to `<letter> (<full name>)` on first appearance in each section.
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### Significant in both conditions
+
+| site | amino acid | BWM (`log2_OR`) | control (`log2_OR`) | effect change | flag |
+| --- | --- | --- | --- | --- | --- |
+| A | K (lysine) | -0.038 | -0.260 | +0.222 |  |
+| A | E (glutamate) | +0.147 | -0.042 | +0.189 |  |
+| A | M (methionine) | +0.021 | -0.134 | +0.155 |  |
+| A | Q (glutamine) | -0.078 | -0.149 | +0.071 |  |
+| A | D (aspartate) | -0.044 | -0.071 | +0.027 |  |
+| A | S (serine) | +0.040 | +0.034 | +0.005 |  |
+| A | C (cysteine) | +0.066 | +0.069 | -0.003 |  |
+| A | G (glycine) | +0.159 | +0.163 | -0.004 |  |
+| A | T (threonine) | -0.056 | -0.046 | -0.009 |  |
+| A | R (arginine) | +0.028 | +0.097 | -0.069 |  |
+| A | Y (tyrosine) | -0.110 | +0.020 | -0.130 |  |
+| A | L (leucine) | -0.083 | +0.161 | -0.244 |  |
+| A | W (tryptophan) | -0.048 | +0.342 | -0.390 |  |
+| A | P (proline) | -0.077 | +0.376 | -0.453 |  |
+| P | V (valine) | +0.029 | -0.186 | +0.215 |  |
+| P | F (phenylalanine) | -0.026 | -0.159 | +0.134 |  |
+| P | E | +0.149 | +0.044 | +0.106 |  |
+| P | I (isoleucine) | -0.154 | -0.259 | +0.105 |  |
+| P | L | -0.077 | -0.163 | +0.085 |  |
+| P | D | +0.123 | +0.069 | +0.054 |  |
+| P | A (alanine) | +0.074 | +0.077 | -0.003 |  |
+| P | C | +0.040 | +0.061 | -0.021 |  |
+| P | G | +0.153 | +0.176 | -0.024 |  |
+| P | M | -0.051 | -0.026 | -0.026 |  |
+| P | N (asparagine) | -0.095 | -0.054 | -0.041 |  |
+| P | T | -0.016 | +0.039 | -0.055 |  |
+| P | K | -0.098 | +0.030 | -0.129 |  |
+| P | R | +0.014 | +0.147 | -0.133 |  |
+| P | P | +0.048 | +0.198 | -0.150 |  |
+| P | Q | -0.042 | +0.130 | -0.172 |  |
+| P | H (histidine) | -0.118 | +0.070 | -0.189 |  |
+| E | W | +0.141 | -0.152 | +0.293 |  |
+| E | M | +0.051 | -0.183 | +0.234 |  |
+| E | G | +0.136 | -0.021 | +0.156 |  |
+| E | K | -0.049 | -0.167 | +0.118 |  |
+| E | R | +0.036 | -0.073 | +0.109 |  |
+| E | C | +0.045 | -0.042 | +0.088 |  |
+| E | E | +0.015 | -0.060 | +0.076 |  |
+| E | N | -0.041 | -0.110 | +0.069 |  |
+| E | S | +0.047 | +0.037 | +0.011 |  |
+| E | L | +0.024 | +0.020 | +0.005 |  |
+| E | V | -0.014 | +0.047 | -0.061 |  |
+| E | I | -0.075 | +0.023 | -0.098 |  |
+| E | F | -0.072 | +0.088 | -0.160 |  |
+| E | T | -0.038 | +0.132 | -0.170 |  |
+| E | A | +0.042 | +0.213 | -0.171 |  |
+| E | Y | -0.148 | +0.048 | -0.197 |  |
+| E | P | -0.061 | +0.254 | -0.315 |  |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### Significant in BWM only
+
+| site | amino acid | BWM (`log2_OR`) | control (`log2_OR`) | effect change | flag |
+| --- | --- | --- | --- | --- | --- |
+| A | H (histidine) | -0.068 | +0.014 | -0.082 |  |
+| P | Y (tyrosine) | -0.136 | +0.005 | -0.142 |  |
+| E | D (aspartate) | +0.032 | -0.003 | +0.035 |  |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### Significant in control only
+
+| site | amino acid | BWM (`log2_OR`) | control (`log2_OR`) | effect change | flag |
+| --- | --- | --- | --- | --- | --- |
+| A | N (asparagine) | -0.001 | -0.356 | +0.355 |  |
+| A | I (isoleucine) | +0.010 | -0.201 | +0.210 |  |
+| A | F (phenylalanine) | +0.009 | +0.041 | -0.033 |  |
+| A | A (alanine) | -0.008 | +0.283 | -0.291 |  |
+| P | S (serine) | -0.010 | -0.058 | +0.049 |  |
+| P | W (tryptophan) | +0.022 | +0.100 | -0.078 |  |
+| E | Q (glutamine) | +0.011 | -0.057 | +0.068 |  |
+| E | H (histidine) | -0.007 | +0.029 | -0.036 |  |
+
+### Flag glossary
+
+No rows are flagged at amino-acid resolution: every (condition, site, amino acid) cell has both day-10 and day-5 counts well above the test's stability threshold (the `within_condition_sig_split` low-count cutoffs of BWM < 100 / control < 200), so the `flag` column is empty across all three sections. The `low-count` flag that the codon sister CSV carries (where the in-frame stop TGA trips it) does not fire here.
+
+## Numbers at a glance
+- `n_tests`: 120 (60 per condition; 3 sites x 20 AAs each)
+- `n_significant` (adjusted-p < 0.05): 107 (BWM 51/60, control 56/60)
+- `n_significant` (adjusted-p < 0.10): 107 (no cell sits in the [0.05, 0.10) band)
+- `min adjusted-p`: 0.0 (underflow; 5 cells at exactly 0.0). Smallest non-zero p_adj is 5.257e-235 (control, E, P).
+- `p_floor`: n/a — Fisher with pooled N in the millions has no meaningful floor; the dominant concern is `large-N-Fisher-anticonservative` (family-wide).
+- Per (condition, site) sig at FDR<0.05: BWM A 15/20, P 18/20, E 18/20; control A 18/20, P 19/20, E 19/20.
+- Section split: 48 cells sig in both, 3 BWM-only, 8 control-only (59 of 60 site x aa cells sig in >=1 condition).
+
+## Biological interpretation
+
+**At whole-transcriptome read depth almost every cell is statistically significant, so effect size, not p-value, is the axis that carries information (concrete).** 107 of 120 (condition, site, amino acid) tests clear FDR<0.05 and five cells underflow to an adjusted p of exactly 0.0. With pooled day-10 + day-5 footprint totals in the millions (1.3M-2.4M per arm), Fisher's exact returns vanishing p-values for even tiny relative shifts, so "significant in both / BWM only / control only" is a weak way to rank cells. The quantity that does carry information is `effect change` — how far apart the two conditions' day-10-vs-day-5 trajectories sit — and those magnitudes are small (the largest is A:P at -0.453, where control enriches proline while BWM stays flat).
+
+**The two conditions' day-10-vs-day-5 trajectories diverge most at sites A and E, and the splits change direction across the two sites (concrete).** The largest-magnitude `effect change` cells are direction splits: A:P (BWM -0.077 vs control +0.376 enriched), A:W (-0.048 vs +0.342), A:L (-0.083 vs +0.161), and at the E site E:P (-0.061 vs +0.254), E:M (+0.051 vs -0.183), and E:W (+0.141 enriched vs -0.152 depleted). At the A site the pattern is one-sided — control enriches proline, tryptophan and leucine from day 5 to day 10 while BWM holds flat or slightly depletes — whereas at the E site the two arms move in genuinely opposite directions on E:W and E:M. Because each arm is tested only against its own day-5 baseline, these splits are the design-target reading of a within-condition contrast: they describe different A- and E-site occupancy trajectories in the perturbed (BWM) and unperturbed (control) lines over the second half of the timecourse, not a single shared drift. The A site is the decoding and accommodation position, so a control-side enrichment of bulky/imino residues (W, P) there is consistent with the two conditions sampling different A-site residue landscapes by day 10; whether that reflects altered decoding kinetics or shifted transcript composition is not resolvable from this file alone.
+
+**A separate set of cells moves the same way in both conditions, marking timecourse drift that is not condition-specific (concrete).** The largest co-directional cells are glycine enriched in both arms at the A site (BWM +0.159 / control +0.163) and at the P site (+0.153 / +0.176), isoleucine depleted in both at the P site (-0.154 / -0.259), and glutamate enriched in both at the P site (+0.149 / +0.044). Their small `effect change` (A:G -0.004, P:G -0.024, P:I +0.105) is the signature of a shared trajectory rather than a divergence. Shared-direction cells are the least-confounded reading of a within-condition contrast: both lines move their day-10 occupancy the same way relative to their own day-5 baseline, so the BWM perturbation is unlikely to be what drives them. Glycine has the most flexible backbone of the 20 residues and decodes through four synonymous codons, which makes the A/P-glycine co-enrichment the natural cell to take to codon resolution.
+
+**Whether the A/E divergences and the glycine co-enrichment are amino-acid-level or driven by single synonymous codons is the open question for the codon sister (exploratory).** The site-A and site-E splits (A:P, A:W, A:L, E:P, E:M, E:W) and the shared A/P-glycine enrichment are reported here at amino-acid resolution, which aggregates each residue's synonymous codons. A divergence or co-enrichment that is genuine at the residue level should persist when the same contrast is read at codon resolution; one that collapses onto a single synonym points instead to a codon-usage signature. This is a hypothesis to test against `codon_timepoint_fisher_within_condition_d10_vs_d5`, not a finding from this file — directional, not established here.
+
+**Whether the day-10-vs-day-5 picture sits on a consistent trajectory with the other two contrasts is a follow-up check, not a conclusion (exploratory).** This file compares day 10 to day 5; it cannot say whether a divergence built up gradually from day 0 or appeared only in the second half of the window. The A:W and A:P control enrichments seen here run opposite to what the day-10-vs-day-0 sister shows for the same cells, so reading this contrast alongside `aa_timepoint_fisher_within_condition_d10_vs_d0` and `aa_timepoint_fisher_within_condition_d5_vs_d0` would show whether the A-site trajectory is additive (d10_vs_d0 ~= d5_vs_d0 + d10_vs_d5) or biphasic. Separately, the shared-direction cells (A:G, P:G, P:I, P:E) should be checked against `within_condition_binomial`: a cell that is a stable baseline across all six condition-by-timepoint groups is a standing compositional feature both lines carry, not a day-10-vs-day-5 effect. Both are cross-checks to carry forward, not claims this file establishes.
+
+**What to carry forward.** *Concrete*: the near-universal significance at whole-transcriptome N (read by `effect change`, not p); the A-site one-sided splits (control enriches P, W, L while BWM holds flat) and the genuinely opposite-direction E-site cells (E:W, E:M) as the design-clean divergence signal; and the shared A/P-glycine enrichment plus P:I co-depletion as condition-independent timecourse drift. *Exploratory*: whether the A/E splits and the glycine co-enrichment localise to single synonymous codons (the codon sister), and whether the A-site trajectory is additive or biphasic across the d5_vs_d0 and d10_vs_d0 contrasts. *Noise*: none flagged at amino-acid resolution — every cell's counts are well above the stability threshold, so no row here is discounted for low support (the codon sister's in-frame stop TGA is the first place that changes).
+
+## Methods
+Fisher's exact (two-sided) is applied to a 2x2 of (aa_count, total - aa_count) at day_10 vs day_5 within each condition. `global_codon_occ_stats.py` (Analysis 3b) pools the replicate counts per (condition, timepoint) before the test and applies BH-FDR within each (condition, site) family of 20 AAs (corrected by `merge_global_occupancy_analysis.py`); each of the 6 (condition, site) sub-families is corrected independently, not across the full 120-row file. The effect is reported as `log2_OR` (log2 of the CSV `odds_ratio` column): >0 = enriched at day_10 relative to day_5 within that condition, <0 = depleted. The test does **not** answer whether BWM and control move in the same direction (that BWM-vs-control comparison is the `control-vs-BWM-divergent-direction` reading) and does not test whether occupancy is enriched vs the transcriptomic background (that is the `within_condition_binomial` family).
+
+## What the caveats mean for reading this file
+
+- **pseudorep.** The 2 biological replicates per (condition, timepoint) are summed into the 2x2 before Fisher, so per-replicate variance is not in the test statistic — read `log2_OR` as the primary effect column and treat the smallest p-magnitudes as inflated, not as extra certainty.
+- **large-N-Fisher-anticonservative.** Pooled totals are whole-transcriptome footprint counts (day_10 ~1.56M BWM / ~1.26M control; day_5 ~2.01M BWM / ~2.41M control), so even tiny relative deviations drive p toward 0 (5 cells underflow to exactly 0.0) — rank by `log2_OR` and `effect change`, never by p.
+- **bh-per-(condition,site).** BH is applied within each of the 6 (condition, site) families of 20 AAs, so `p_adj` means "corrected within this sub-family" — compare cells within a (condition, site) slice, not across the 120-row grid.
+- **within-condition-clean.** No condition pooling and no timepoint pooling cross-contaminate the test; the file cleanly answers "does day_10 differ from day_5 within this condition", leaving the BWM-vs-control comparison to be read by pairing the two arms (the divergent-direction cells below).
+- **control-vs-BWM-divergent-direction.** Direction-split cells span sites A and E: A:P (BWM `log2_OR`=-0.077 / control +0.376), A:W (-0.048 / +0.342), E:P (-0.061 / +0.254), E:W (+0.141 / -0.152), E:M (+0.051 / -0.183), A:L (-0.083 / +0.161) — these are the design-target reading and should anchor the BWM-specific reading at the synthesis layer.
+- **near-universal-sig-large-N.** 107/120 tests clear FDR<0.05, so "both / BWM-only / control-only" section membership is weakly discriminating — rank by `|effect change|`, treating section membership as context rather than as the effect.
+
+**Considered and ruled out**
+
+- **rare-aa-low-count.** Every (condition, site, aa) cell has both day_10 and day_5 counts well above the `within_condition_sig_split` thresholds (BWM < 100 / control < 200), so no `low-count` flag fires at AA resolution — ruled out here (the codon sister differs, where in-frame stop TGA trips it).
+
+---
+
+## Plots — individual
+
+![Day-10-vs-day-5 BWM A-site amino-acid volcano: log2(OR) on x, -log10(FDR) on y; triangles are FDR<0.05, glyphs coloured by amino-acid class. Glutamate (E, acidic red) ~= +0.15 and glycine (G, neutral orange) ~= +0.16 sit highest on the y-axis as the strongest enrichments; tyrosine (Y, hydrophobic green) ~= -0.11 and leucine (L, green) ~= -0.08 are the strongest depletions; proline (P, orange) ~= -0.08 and glutamine (Q, polar purple) ~= -0.08 sit mid-panel; methionine (M, green) sits at the origin near the FDR line. All cells fall within the +/-0.2 log2(OR) band.](../plots/within_condition_timepoint_fisher/d10_vs_d5/individual/BWM_A_volcano.png)
+
+![Day-10-vs-day-5 BWM P-site amino-acid volcano: glutamate (E, acidic red) ~= +0.15, glycine (G, neutral orange) ~= +0.15 and aspartate (D, acidic red) ~= +0.12 are the rightmost enrichments at the top of the panel; isoleucine (I, hydrophobic green) ~= -0.15, tyrosine (Y, green) ~= -0.14, histidine (H, basic blue) ~= -0.12 and lysine (K, blue) ~= -0.10 are the leftmost depletions; proline (P, orange) ~= +0.05 sits one tier lower; most remaining residues cluster near the origin.](../plots/within_condition_timepoint_fisher/d10_vs_d5/individual/BWM_P_volcano.png)
+
+![Day-10-vs-day-5 BWM E-site amino-acid volcano: tyrosine (Y, hydrophobic green) ~= -0.15 is the far-left depletion while glycine (G, neutral orange) ~= +0.14 and tryptophan (W, green) ~= +0.14 are the rightmost enrichments, all near the top of the panel; isoleucine (I, green) ~= -0.07 and phenylalanine (F, green) ~= -0.07 sit mid-panel; methionine (M), serine (S) and arginine (R) sit just above the FDR line; valine (V) and glutamate (E) sit at the origin.](../plots/within_condition_timepoint_fisher/d10_vs_d5/individual/BWM_E_volcano.png)
+
+![Day-10-vs-day-5 control A-site amino-acid volcano: the most spread of the six panels. Proline (P, neutral orange) ~= +0.38, tryptophan (W, hydrophobic green) ~= +0.34 and alanine (A, green) ~= +0.28 are the far-right enrichments; asparagine (N, polar purple) ~= -0.36, lysine (K, basic blue) ~= -0.26 and isoleucine (I, green) ~= -0.20 are the far-left depletions, all at the top of the panel; methionine (M, green) ~= -0.13 and aspartate (D, acidic red) ~= -0.07 sit mid-panel.](../plots/within_condition_timepoint_fisher/d10_vs_d5/individual/control_A_volcano.png)
+
+![Day-10-vs-day-5 control P-site amino-acid volcano: proline (P, neutral orange) ~= +0.20, glycine (G, orange) ~= +0.18 and arginine (R, basic blue) ~= +0.15 are the rightmost enrichments; isoleucine (I, hydrophobic green) ~= -0.26, valine (V, green) ~= -0.19, leucine (L, green) ~= -0.16 and phenylalanine (F, green) ~= -0.16 are the leftmost depletions, all at the top of the panel; aspartate (D, acidic red) ~= +0.07 and alanine (A, green) ~= +0.08 sit one tier lower; serine (S, polar purple) ~= -0.06 is the largest mid-panel depletion.](../plots/within_condition_timepoint_fisher/d10_vs_d5/individual/control_P_volcano.png)
+
+![Day-10-vs-day-5 control E-site amino-acid volcano: proline (P, neutral orange) ~= +0.25 and alanine (A, hydrophobic green) ~= +0.21 are the rightmost enrichments; methionine (M, green) ~= -0.18, lysine (K, basic blue) ~= -0.17, tryptophan (W, green) ~= -0.15 and asparagine (N, polar purple) ~= -0.11 are the leftmost depletions, all at the top of the panel; threonine (T, purple) ~= +0.13 and phenylalanine (F, green) ~= +0.09 sit mid-panel; glycine (G) and cysteine (C) sit near the origin at the FDR line.](../plots/within_condition_timepoint_fisher/d10_vs_d5/individual/control_E_volcano.png)

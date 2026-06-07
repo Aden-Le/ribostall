@@ -1,0 +1,375 @@
+---
+title: "codon_within_condition_binomial — Olive report"
+subtitle: "ribostall global_occupancy — occupancy stats"
+date: 2026-06-06
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    embed-resources: true
+    fig-cap-location: bottom
+    include-in-header:
+      text: |
+        <style>
+        table td, table th { padding-top: 0.5em; padding-bottom: 0.5em; }
+        </style>
+  pdf:
+    toc: true
+    fig-cap-location: bottom
+    include-in-header:
+      text: |
+        \usepackage{needspace}
+        \renewcommand{\arraystretch}{1.5}
+tbl-colwidths: [8, 5, 5, 17, 14, 14, 37]
+execute:
+  echo: false
+---
+
+## Composite figure
+
+![BWM 3x3 grid of unweighted codon binomial volcano panels: rows are the three BWM timepoints (top to bottom: Day 0, Day 5, Day 10); columns are ribosome sites in A / P / E order (left to right). Each panel plots -log10(FDR) on the y-axis against Log2 Enrichment on the x-axis (x range ~-2.5 to +3.5); each glyph is one of the 62 codons (61 sense + the in-frame stop TGA) labelled by its three-letter code and coloured by the amino-acid property of its translation (red = acidic, blue = basic, green = hydrophobic, orange = neutral, purple = polar, grey = stop). Triangles mark FDR<0.05 cells and circles mark non-significant cells; the dotted vertical line is Log2 Enrichment = 0, the dashed vertical lines mark +/-0.5, and the dashed horizontal line marks FDR = 0.05.](../plots/within_condition/codon/composite/unweighted/BWM_volcano_grid.png){fig-pos="H" width=92%}
+
+![control 3x3 grid of unweighted codon binomial volcano panels: rows are the three control timepoints (top to bottom: Day 0, Day 5, Day 10); columns are ribosome sites in A / P / E order. Axes, glyph labelling, colour key, and dashed reference lines are identical to the BWM grid above.](../plots/within_condition/codon/composite/unweighted/control_volcano_grid.png){fig-pos="H" width=92%}
+
+Each glyph is one codon tested against its transcriptome background frequency (`bg_freq`) in that group; a panel is one (group, site) BH-FDR family of 62 codons. A glyph to the right of zero is occupied more often than its transcriptomic abundance predicts in that group, to the left less often, and higher up the panel means a smaller FDR. The test is **within-group**: BWM and control are never compared directly here — that contrast lives in the per-timepoint Fisher sister file. Panels are arranged in A / P / E ribosome-site order across columns.
+
+---
+
+## Overview
+
+- **CSV:** `codon_within_condition_binomial.csv`
+- **Family (from `_INDEX.md`):** `within_condition_binomial`
+- **Sister CSV(s):**
+  - `aa_within_condition_binomial.csv`
+- **Test:** One-sample binomial test (`observed_count` out of `total_n` vs H0: `observed_freq` = `bg_freq`, two-sided); BH-FDR within each (group, site) family of 62 codons (61 sense + in-frame stop TGA)
+- **Design:** Per (group, site, codon) one-sample binomial: the observed `observed_count` is tested against the binomial null `Binomial(total_n, bg_freq)`, where `bg_freq` is the codon frequency in the transcriptome composition. 6 groups (BWM and control x d0/d5/d10) x 3 sites (A/P/E) x 62 codons = 1116 tests; replicates are pooled before the test (pseudoreplicated); BH-FDR is applied independently within each of 18 (group, site) families of 62 codons. The test is **within-group**: each group is tested against its own transcriptome background, never against another group.
+
+### Family-level caveats
+
+- **pseudorep** — replicates within a group are summed before `binomtest`. Standard pseudoreplication; anti-conservative.
+- **iid-violation-binomial** — the binomial test assumes `total_n` iid Bernoulli draws with probability p_bg; ribosome footprints are not iid (one transcript contributes overlapping A/P/E windows, and transcripts vary widely in coverage). Headline-grade tiny p-values (down to ~1e-132) reflect this violation more than a per-feature biological signal. `log2_enrichment` is the primary effect column, not p.
+- **bh-per-(group,site)** — BH-FDR is per (group,site) family of ~20 (aa) or ~61 (codon) tests. `p_adj` means "corrected within this group at this site", not across the whole CSV.
+- **bg-transcriptome-freq** — the null frequency is the transcriptome codon/AA composition (the `Transcriptome` column), so enrichment means "more occupied than its transcriptomic abundance predicts", not vs a uniform expectation.
+
+---
+
+## Headline
+
+Codon-level within-group binomial against `bg_freq`, 6 groups (BWM and control x d0/d5/d10) x 3 sites (A/P/E) x 62 codons (61 sense + the in-frame stop TGA) = 1116 tests; BH-FDR per (group, site) family of 62. 1092/1116 hits at `p_adj` < 0.05 (1095/1116 at `p_adj` < 0.10). File min `p_adj` underflows to exactly 0.0: 624 of 1116 cells return `p_adj` = 0.0 and the smallest nonzero `p_adj` is 5.93e-323 (BWM_day_0, P:CAG, `log2_enrichment` = -0.345, `observed_count` = 23483, `total_n` = 2110390). At whole-transcriptome `total_n` (~2.1M) every one of the 186 (site, codon) cells clears the `#sig` >= 2 floor, so significance separates nothing and ranking is by magnitude and reproducibility. The dominant structure is **cross-group concordance**: 55 of the 186 cells are concordantly enriched, 102 concordantly depleted, and 29 discordant across all 6 groups. The in-frame stop **TGA carries the largest `log2_enrichment` in the file** (site A/P/E means +2.68 / +2.18 / +2.03, individual values up to +3.53) but rests on 16-20 counts, so it carries `stop-codon-instability` and `rare-codon` - read its direction, not its magnitude. Among sense codons the largest-magnitude cells hold one sign across all 6 groups: E:ATA -1.49, P:ATA -1.46, P:CTA -1.26, E:AAG +1.22 (Lys), E:CTA -1.21, P:TTA -1.14, P:GGG -1.07. `p_adj` magnitudes are co-amplified by `iid-violation-binomial`; magnitude-plus-reproducibility is the anchor for reading.
+
+## Top hits
+
+The effect column is `log2_enrichment` = log2(observed `observed_freq` / `bg_freq`); positive means the codon is over-represented at that site in that group relative to its transcriptome abundance, negative under-represented. Top hits are three **cross-group** sub-tables that partition the 186 (site, codon) cells by the sign of `log2_enrichment` across the 6 groups (BWM and control x d0/d5/d10): concordant enrichment (positive in all 6), concordant depletion (negative in all 6), and discordant (>= 1 sign disagreement). A cell enters the partition only if it has a value in all 6 groups (all 186 do). Each sub-table shows every cell that reached `p_adj` < 0.05 in at least 2 of the 6 groups, a reproducibility floor on the `#sig` axis (`#sig` = groups with FDR<0.05, of 6), **not** a fixed row cap; here every cell clears it, so the three tables show all 55 / 102 / 29 cells. There is **no per-row p-value column**: significance is carried by the `#sig` count, and rows are sorted by site (A / P / E), then `#sig` descending, then `min count` (smallest `observed_count` across the 6 groups) descending. Ranking is deliberately not by p magnitude: `iid-violation-binomial` inflates p for modest effects at this `total_n` (624 cells underflow to `p_adj` = 0.0). In the `log2_enrichment` column the six values are listed on two lines — **BWM** day_0, day_5, day_10 on the first line, then **control** day_0, day_5, day_10 on the second. The `aa` column is the single-letter amino-acid translation of each codon (no parenthetical expansion); the codon cell stays bare. The `flag` column carries `iid-amp` (a group `p_adj` < 1e-10) and `rare-codon` (a group `observed_count` < 100; here only the three TGA cells); no codon's `bg_freq` exceeds 0.05, so `bg-tight` never fires.
+
+```{=latex}
+\needspace{22\baselineskip}
+```
+
+### Concordant enrichment — significant in >= 2 of 6 groups
+
+| Site | codon | aa | log2_enrichment | min count | #sig | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| A | GGA | G | +0.68, +0.46, +0.62 <br>`\newline`{=latex} +0.72, +0.48, +0.63 | 62966 | 6/6 | iid-amp |
+| A | AAG | K | +1.01, +0.94, +0.89 <br>`\newline`{=latex} +1.07, +1.05, +0.85 | 58491 | 6/6 | iid-amp |
+| A | GAT | D | +0.05, +0.38, +0.35 <br>`\newline`{=latex} +0.24, +0.40, +0.29 | 56787 | 6/6 | iid-amp |
+| A | GAG | E | +0.59, +0.61, +0.76 <br>`\newline`{=latex} +0.72, +0.70, +0.73 | 51620 | 6/6 | iid-amp |
+| A | TTC | F | +0.12, +0.20, +0.20 <br>`\newline`{=latex} +0.17, +0.16, +0.24 | 35763 | 6/6 | iid-amp |
+| A | ATC | I | +0.27, +0.44, +0.42 <br>`\newline`{=latex} +0.49, +0.53, +0.40 | 31876 | 6/6 | iid-amp |
+| A | GAC | D | +0.29, +0.40, +0.35 <br>`\newline`{=latex} +0.46, +0.34, +0.37 | 27933 | 6/6 | iid-amp |
+| A | TAC | Y | +0.79, +0.44, +0.36 <br>`\newline`{=latex} +0.66, +0.42, +0.62 | 27482 | 6/6 | iid-amp |
+| A | GTC | V | +0.36, +0.54, +0.54 <br>`\newline`{=latex} +0.61, +0.46, +0.48 | 23479 | 6/6 | iid-amp |
+| A | CGT | R | +0.71, +0.78, +0.77 <br>`\newline`{=latex} +0.79, +0.60, +0.76 | 23296 | 6/6 | iid-amp |
+| A | AGA | R | +0.13, +0.08, +0.15 <br>`\newline`{=latex} +0.14, +0.25, +0.08 | 20632 | 6/6 | iid-amp |
+| A | GCC | A | +0.30, +0.29, +0.25 <br>`\newline`{=latex} +0.53, +0.05, +0.35 | 19827 | 6/6 | iid-amp |
+| A | ACC | T | +0.21, +0.35, +0.26 <br>`\newline`{=latex} +0.54, +0.26, +0.30 | 15938 | 6/6 | iid-amp |
+| A | CAC | H | +0.29, +0.17, +0.07 <br>`\newline`{=latex} +0.30, +0.06, +0.13 | 12443 | 6/6 | iid-amp |
+| A | CGC | R | +0.95, +0.95, +0.92 <br>`\newline`{=latex} +1.01, +0.68, +1.01 | 12250 | 6/6 | iid-amp |
+| A | TGA | * | +2.49, +2.99, +3.53 <br>`\newline`{=latex} +2.62, +3.09, +1.39 | 19 | 6/6 | iid-amp, rare-codon (BWM d0, BWM d5, ctrl d10) |
+| P | GAT | D | +0.61, +0.57, +0.70 <br>`\newline`{=latex} +0.47, +0.70, +0.75 | 78068 | 6/6 | iid-amp |
+| P | GGA | G | +0.86, +0.48, +0.60 <br>`\newline`{=latex} +0.76, +0.46, +0.65 | 64004 | 6/6 | iid-amp |
+| P | AAG | K | +0.87, +0.80, +0.64 <br>`\newline`{=latex} +0.97, +0.62, +0.69 | 52116 | 6/6 | iid-amp |
+| P | GAG | E | +0.42, +0.49, +0.69 <br>`\newline`{=latex} +0.60, +0.59, +0.68 | 49949 | 6/6 | iid-amp |
+| P | TTC | F | +0.30, +0.31, +0.27 <br>`\newline`{=latex} +0.26, +0.35, +0.25 | 36033 | 6/6 | iid-amp |
+| P | GTT | V | +0.28, +0.28, +0.23 <br>`\newline`{=latex} +0.22, +0.43, +0.17 | 34653 | 6/6 | iid-amp |
+| P | AAC | N | +0.52, +0.50, +0.39 <br>`\newline`{=latex} +0.53, +0.46, +0.46 | 31624 | 6/6 | iid-amp |
+| P | GCT | A | +0.15, +0.09, +0.10 <br>`\newline`{=latex} +0.09, +0.10, +0.12 | 30898 | 6/6 | iid-amp |
+| P | ATC | I | +0.48, +0.50, +0.36 <br>`\newline`{=latex} +0.57, +0.55, +0.35 | 30757 | 6/6 | iid-amp |
+| P | GAC | D | +0.51, +0.40, +0.47 <br>`\newline`{=latex} +0.43, +0.36, +0.46 | 29743 | 6/6 | iid-amp |
+| P | CGT | R | +0.88, +0.84, +0.82 <br>`\newline`{=latex} +0.89, +0.79, +0.86 | 25013 | 6/6 | iid-amp |
+| P | GTC | V | +0.54, +0.50, +0.56 <br>`\newline`{=latex} +0.57, +0.56, +0.41 | 22349 | 6/6 | iid-amp |
+| P | TAC | Y | +0.25, +0.30, +0.15 <br>`\newline`{=latex} +0.36, +0.18, +0.23 | 21076 | 6/6 | iid-amp |
+| P | GCC | A | +0.34, +0.27, +0.29 <br>`\newline`{=latex} +0.47, +0.17, +0.29 | 18966 | 6/6 | iid-amp |
+| P | CTC | L | +0.05, +0.21, +0.16 <br>`\newline`{=latex} +0.17, +0.06, +0.02 | 18499 | 6/6 | iid-amp |
+| P | ACC | T | +0.38, +0.40, +0.32 <br>`\newline`{=latex} +0.61, +0.28, +0.40 | 17104 | 6/6 | iid-amp |
+| P | GGT | G | +0.39, +0.05, +0.22 <br>`\newline`{=latex} +0.16, +0.16, +0.22 | 16239 | 6/6 | iid-amp |
+| P | CGC | R | +0.57, +0.63, +0.60 <br>`\newline`{=latex} +0.67, +0.45, +0.63 | 9434 | 6/6 | iid-amp |
+| P | TGA | * | +1.40, +2.51, +3.14 <br>`\newline`{=latex} +1.83, +2.74, +1.46 | 20 | 6/6 | iid-amp, rare-codon (all) |
+| E | AAG | K | +1.24, +1.13, +1.06 <br>`\newline`{=latex} +1.33, +1.40, +1.17 | 72657 | 6/6 | iid-amp |
+| E | GGA | G | +0.56, +0.36, +0.43 <br>`\newline`{=latex} +0.64, +0.46, +0.44 | 55267 | 6/6 | iid-amp |
+| E | GAT | D | +0.05, +0.11, +0.14 <br>`\newline`{=latex} +0.06, +0.21, +0.14 | 51079 | 6/6 | iid-amp |
+| E | GAG | E | +0.55, +0.60, +0.59 <br>`\newline`{=latex} +0.69, +0.77, +0.65 | 48734 | 6/6 | iid-amp |
+| E | CAA | Q | +0.07, +0.15, +0.12 <br>`\newline`{=latex} +0.10, +0.07, +0.07 | 35890 | 6/6 | iid-amp |
+| E | ATC | I | +0.56, +0.56, +0.49 <br>`\newline`{=latex} +0.65, +0.44, +0.57 | 35715 | 6/6 | iid-amp |
+| E | AAC | N | +0.54, +0.56, +0.47 <br>`\newline`{=latex} +0.65, +0.57, +0.56 | 33901 | 6/6 | iid-amp |
+| E | GAC | D | +0.34, +0.32, +0.35 <br>`\newline`{=latex} +0.40, +0.28, +0.40 | 28600 | 6/6 | iid-amp |
+| E | CTT | L | +0.20, +0.22, +0.17 <br>`\newline`{=latex} +0.08, +0.05, +0.10 | 28293 | 6/6 | iid-amp |
+| E | GTC | V | +0.64, +0.70, +0.69 <br>`\newline`{=latex} +0.79, +0.51, +0.72 | 27838 | 6/6 | iid-amp |
+| E | CTC | L | +0.35, +0.39, +0.47 <br>`\newline`{=latex} +0.35, +0.17, +0.42 | 24370 | 6/6 | iid-amp |
+| E | AGA | R | +0.26, +0.14, +0.10 <br>`\newline`{=latex} +0.27, +0.31, +0.15 | 21749 | 6/6 | iid-amp |
+| E | GCC | A | +0.44, +0.37, +0.37 <br>`\newline`{=latex} +0.56, +0.06, +0.44 | 20982 | 6/6 | iid-amp |
+| E | CGT | R | +0.66, +0.57, +0.59 <br>`\newline`{=latex} +0.62, +0.60, +0.52 | 19730 | 6/6 | iid-amp |
+| E | ACC | T | +0.51, +0.53, +0.40 <br>`\newline`{=latex} +0.70, +0.25, +0.52 | 18647 | 6/6 | iid-amp |
+| E | CAC | H | +0.15, +0.28, +0.21 <br>`\newline`{=latex} +0.32, +0.11, +0.24 | 13429 | 6/6 | iid-amp |
+| E | CGC | R | +0.66, +0.72, +0.68 <br>`\newline`{=latex} +0.74, +0.55, +0.65 | 9560 | 6/6 | iid-amp |
+| E | TGA | * | +1.15, +2.35, +3.30 <br>`\newline`{=latex} +1.77, +2.47, +1.14 | 16 | 6/6 | iid-amp, rare-codon (all) |
+| E | CCA | P | +0.66, +0.28, +0.15 <br>`\newline`{=latex} +0.49, +0.01, +0.26 | 39543 | 5/6 | iid-amp |
+| E | AAA | K | +0.04, +0.03, +0.01 <br>`\newline`{=latex} +0.00, +0.12, +0.10 | 51363 | 4/6 | iid-amp |
+
+: Concordant enrichment — all 6 groups enriched; cells significant in >= 2 of 6 groups, sorted by site (A / P / E), then #sig then min count. {tbl-colwidths="[6,7,4,40,8,7,28]"}
+
+```{=latex}
+\clearpage
+```
+
+### Concordant depletion — significant in >= 2 of 6 groups
+
+| Site | codon | aa | log2_enrichment | min count | #sig | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| A | ATT | I | -0.50, -0.28, -0.21 <br>`\newline`{=latex} -0.31, -0.07, -0.30 | 33940 | 6/6 | iid-amp |
+| A | AAA | K | -0.45, -0.45, -0.45 <br>`\newline`{=latex} -0.53, -0.20, -0.51 | 33645 | 6/6 | iid-amp |
+| A | AAT | N | -0.52, -0.23, -0.22 <br>`\newline`{=latex} -0.38, -0.06, -0.41 | 29099 | 6/6 | iid-amp |
+| A | GCT | A | -0.09, -0.04, -0.06 <br>`\newline`{=latex} -0.05, -0.26, -0.03 | 27856 | 6/6 | iid-amp |
+| A | GCA | A | -0.21, -0.50, -0.48 <br>`\newline`{=latex} -0.50, -0.57, -0.33 | 20493 | 6/6 | iid-amp |
+| A | ACT | T | -0.39, -0.30, -0.35 <br>`\newline`{=latex} -0.37, -0.30, -0.38 | 18776 | 6/6 | iid-amp |
+| A | TTT | F | -0.90, -0.77, -0.75 <br>`\newline`{=latex} -0.91, -0.74, -0.77 | 17139 | 6/6 | iid-amp |
+| A | ACA | T | -0.56, -0.56, -0.62 <br>`\newline`{=latex} -0.73, -0.51, -0.61 | 17095 | 6/6 | iid-amp |
+| A | TCT | S | -0.26, -0.26, -0.28 <br>`\newline`{=latex} -0.36, -0.32, -0.32 | 16856 | 6/6 | iid-amp |
+| A | CAT | H | -0.11, -0.06, -0.11 <br>`\newline`{=latex} -0.18, -0.07, -0.10 | 16496 | 6/6 | iid-amp |
+| A | TCA | S | -0.73, -0.65, -0.58 <br>`\newline`{=latex} -0.78, -0.62, -0.67 | 16354 | 6/6 | iid-amp |
+| A | CAG | Q | -0.07, -0.06, -0.06 <br>`\newline`{=latex} -0.13, -0.17, -0.18 | 15735 | 6/6 | iid-amp |
+| A | GTG | V | -0.12, -0.41, -0.42 <br>`\newline`{=latex} -0.31, -0.44, -0.26 | 15614 | 6/6 | iid-amp |
+| A | TCG | S | -0.27, -0.31, -0.19 <br>`\newline`{=latex} -0.43, -0.36, -0.19 | 13232 | 6/6 | iid-amp |
+| A | CGA | R | -0.24, -0.29, -0.29 <br>`\newline`{=latex} -0.62, -0.41, -0.29 | 12426 | 6/6 | iid-amp |
+| A | CTG | L | -0.37, -0.52, -0.49 <br>`\newline`{=latex} -0.73, -0.67, -0.33 | 12361 | 6/6 | iid-amp |
+| A | GGT | G | -0.16, -0.39, -0.31 <br>`\newline`{=latex} -0.37, -0.48, -0.49 | 9899 | 6/6 | iid-amp |
+| A | TGT | C | -0.71, -0.58, -0.48 <br>`\newline`{=latex} -0.79, -0.46, -0.59 | 9689 | 6/6 | iid-amp |
+| A | CCG | P | -0.47, -0.49, -0.51 <br>`\newline`{=latex} -0.80, -0.88, -0.44 | 9088 | 6/6 | iid-amp |
+| A | GCG | A | -0.23, -0.44, -0.36 <br>`\newline`{=latex} -0.58, -0.60, -0.24 | 8930 | 6/6 | iid-amp |
+| A | AGT | S | -0.91, -0.79, -0.68 <br>`\newline`{=latex} -0.97, -0.64, -0.80 | 8844 | 6/6 | iid-amp |
+| A | ATA | I | -0.56, -0.42, -0.52 <br>`\newline`{=latex} -0.68, -0.26, -0.50 | 8740 | 6/6 | iid-amp |
+| A | TTA | L | -0.48, -0.50, -0.54 <br>`\newline`{=latex} -0.68, -0.48, -0.51 | 8588 | 6/6 | iid-amp |
+| A | ACG | T | -0.41, -0.42, -0.38 <br>`\newline`{=latex} -0.64, -0.41, -0.39 | 8577 | 6/6 | iid-amp |
+| A | GTA | V | -0.48, -0.59, -0.65 <br>`\newline`{=latex} -0.58, -0.60, -0.60 | 8369 | 6/6 | iid-amp |
+| A | AGC | S | -0.57, -0.54, -0.49 <br>`\newline`{=latex} -0.59, -0.47, -0.54 | 7121 | 6/6 | iid-amp |
+| A | CCT | P | -0.57, -0.67, -0.75 <br>`\newline`{=latex} -0.94, -1.00, -0.67 | 7093 | 6/6 | iid-amp |
+| A | GGC | G | -0.22, -0.69, -0.58 <br>`\newline`{=latex} -0.66, -0.90, -0.47 | 6112 | 6/6 | iid-amp |
+| A | CTA | L | -0.69, -0.84, -0.87 <br>`\newline`{=latex} -1.10, -1.04, -0.84 | 5646 | 6/6 | iid-amp |
+| A | CGG | R | -0.35, -0.47, -0.38 <br>`\newline`{=latex} -0.85, -0.70, -0.29 | 4799 | 6/6 | iid-amp |
+| A | CCC | P | -0.35, -0.69, -0.89 <br>`\newline`{=latex} -0.83, -1.09, -0.56 | 3700 | 6/6 | iid-amp |
+| A | AGG | R | -0.52, -0.72, -0.52 <br>`\newline`{=latex} -0.92, -0.56, -0.52 | 3319 | 6/6 | iid-amp |
+| A | GGG | G | -0.86, -1.04, -0.75 <br>`\newline`{=latex} -1.12, -1.20, -0.86 | 3155 | 6/6 | iid-amp |
+| P | GAA | E | -0.26, -0.22, -0.14 <br>`\newline`{=latex} -0.22, -0.10, -0.12 | 48327 | 6/6 | iid-amp |
+| P | AAA | K | -0.30, -0.26, -0.26 <br>`\newline`{=latex} -0.28, -0.23, -0.25 | 40232 | 6/6 | iid-amp |
+| P | CAA | Q | -0.13, -0.13, -0.21 <br>`\newline`{=latex} -0.15, -0.34, -0.26 | 28508 | 6/6 | iid-amp |
+| P | ATG | M | -0.33, -0.18, -0.23 <br>`\newline`{=latex} -0.20, -0.24, -0.27 | 25872 | 6/6 | iid-amp |
+| P | ACT | T | -0.11, -0.07, -0.12 <br>`\newline`{=latex} -0.14, -0.10, -0.09 | 23043 | 6/6 | iid-amp |
+| P | TTG | L | -0.35, -0.18, -0.22 <br>`\newline`{=latex} -0.20, -0.13, -0.31 | 20613 | 6/6 | iid-amp |
+| P | TTT | F | -0.62, -0.53, -0.52 <br>`\newline`{=latex} -0.75, -0.33, -0.58 | 19575 | 6/6 | iid-amp |
+| P | GCA | A | -0.54, -0.74, -0.56 <br>`\newline`{=latex} -0.71, -0.65, -0.53 | 17855 | 6/6 | iid-amp |
+| P | TCT | S | -0.27, -0.21, -0.30 <br>`\newline`{=latex} -0.35, -0.25, -0.38 | 16106 | 6/6 | iid-amp |
+| P | ACA | T | -0.78, -0.73, -0.71 <br>`\newline`{=latex} -0.80, -0.72, -0.72 | 15828 | 6/6 | iid-amp |
+| P | TCA | S | -0.77, -0.68, -0.67 <br>`\newline`{=latex} -0.80, -0.65, -0.73 | 15675 | 6/6 | iid-amp |
+| P | CAG | Q | -0.35, -0.32, -0.25 <br>`\newline`{=latex} -0.34, -0.47, -0.25 | 15058 | 6/6 | iid-amp |
+| P | GTG | V | -0.51, -0.49, -0.37 <br>`\newline`{=latex} -0.48, -0.37, -0.39 | 14247 | 6/6 | iid-amp |
+| P | AGT | S | -0.49, -0.45, -0.42 <br>`\newline`{=latex} -0.58, -0.40, -0.36 | 11993 | 6/6 | iid-amp |
+| P | TGT | C | -0.54, -0.41, -0.34 <br>`\newline`{=latex} -0.59, -0.30, -0.29 | 11896 | 6/6 | iid-amp |
+| P | CGA | R | -0.37, -0.59, -0.40 <br>`\newline`{=latex} -0.79, -0.58, -0.38 | 11626 | 6/6 | iid-amp |
+| P | TCC | S | -0.24, -0.12, -0.18 <br>`\newline`{=latex} -0.14, -0.32, -0.29 | 10793 | 6/6 | iid-amp |
+| P | TCG | S | -0.68, -0.50, -0.38 <br>`\newline`{=latex} -0.65, -0.42, -0.50 | 10661 | 6/6 | iid-amp |
+| P | CCG | P | -0.72, -0.64, -0.39 <br>`\newline`{=latex} -0.71, -0.65, -0.35 | 9652 | 6/6 | iid-amp |
+| P | TGC | C | -0.37, -0.37, -0.36 <br>`\newline`{=latex} -0.34, -0.44, -0.31 | 9475 | 6/6 | iid-amp |
+| P | TGG | W | -0.52, -0.51, -0.49 <br>`\newline`{=latex} -0.52, -0.73, -0.63 | 9188 | 6/6 | iid-amp |
+| P | AGC | S | -0.31, -0.25, -0.28 <br>`\newline`{=latex} -0.29, -0.21, -0.27 | 8595 | 6/6 | iid-amp |
+| P | CCT | P | -0.72, -0.63, -0.45 <br>`\newline`{=latex} -0.82, -0.61, -0.47 | 8165 | 6/6 | iid-amp |
+| P | ACG | T | -0.75, -0.57, -0.41 <br>`\newline`{=latex} -0.72, -0.48, -0.47 | 8106 | 6/6 | iid-amp |
+| P | GTA | V | -0.67, -0.71, -0.64 <br>`\newline`{=latex} -0.74, -0.59, -0.68 | 7901 | 6/6 | iid-amp |
+| P | CTG | L | -1.06, -0.87, -0.86 <br>`\newline`{=latex} -1.12, -0.97, -1.02 | 7684 | 6/6 | iid-amp |
+| P | GCG | A | -0.87, -0.81, -0.58 <br>`\newline`{=latex} -0.94, -0.68, -0.63 | 6798 | 6/6 | iid-amp |
+| P | GGC | G | -0.42, -0.58, -0.36 <br>`\newline`{=latex} -0.63, -0.58, -0.47 | 6116 | 6/6 | iid-amp |
+| P | TTA | L | -1.38, -1.05, -0.99 <br>`\newline`{=latex} -1.23, -0.90, -1.30 | 4961 | 6/6 | iid-amp |
+| P | ATA | I | -1.63, -1.38, -1.36 <br>`\newline`{=latex} -1.57, -1.31, -1.50 | 4381 | 6/6 | iid-amp |
+| P | CTA | L | -1.22, -1.21, -1.26 <br>`\newline`{=latex} -1.41, -1.19, -1.24 | 4286 | 6/6 | iid-amp |
+| P | CGG | R | -1.07, -0.97, -0.67 <br>`\newline`{=latex} -1.30, -1.10, -0.81 | 3348 | 6/6 | iid-amp |
+| P | CCC | P | -1.01, -0.95, -0.75 <br>`\newline`{=latex} -0.97, -1.06, -0.78 | 3253 | 6/6 | iid-amp |
+| P | GGG | G | -0.99, -1.19, -0.84 <br>`\newline`{=latex} -1.19, -1.21, -0.97 | 2914 | 6/6 | iid-amp |
+| P | AGG | R | -0.99, -0.97, -0.74 <br>`\newline`{=latex} -1.11, -1.09, -0.74 | 2859 | 6/6 | iid-amp |
+| E | ATT | I | -0.22, -0.23, -0.31 <br>`\newline`{=latex} -0.32, -0.26, -0.34 | 33113 | 6/6 | iid-amp |
+| E | ACT | T | -0.12, -0.13, -0.20 <br>`\newline`{=latex} -0.22, -0.34, -0.19 | 21505 | 6/6 | iid-amp |
+| E | TTG | L | -0.28, -0.16, -0.15 <br>`\newline`{=latex} -0.28, -0.08, -0.27 | 21188 | 6/6 | iid-amp |
+| E | TCA | S | -0.76, -0.55, -0.52 <br>`\newline`{=latex} -0.73, -0.64, -0.59 | 17306 | 6/6 | iid-amp |
+| E | GCA | A | -0.57, -0.62, -0.55 <br>`\newline`{=latex} -0.72, -0.70, -0.59 | 17221 | 6/6 | iid-amp |
+| E | ACA | T | -0.77, -0.60, -0.59 <br>`\newline`{=latex} -0.76, -0.68, -0.63 | 16867 | 6/6 | iid-amp |
+| E | TCT | S | -0.42, -0.22, -0.22 <br>`\newline`{=latex} -0.40, -0.43, -0.36 | 16405 | 6/6 | iid-amp |
+| E | TAT | Y | -0.48, -0.40, -0.52 <br>`\newline`{=latex} -0.56, -0.51, -0.55 | 15703 | 6/6 | iid-amp |
+| E | TTT | F | -0.94, -0.87, -0.91 <br>`\newline`{=latex} -1.10, -0.97, -1.00 | 14675 | 6/6 | iid-amp |
+| E | CAT | H | -0.41, -0.27, -0.23 <br>`\newline`{=latex} -0.35, -0.25, -0.32 | 14232 | 6/6 | iid-amp |
+| E | GTG | V | -0.32, -0.41, -0.35 <br>`\newline`{=latex} -0.49, -0.28, -0.39 | 14218 | 6/6 | iid-amp |
+| E | TCG | S | -0.55, -0.26, -0.14 <br>`\newline`{=latex} -0.49, -0.17, -0.23 | 12829 | 6/6 | iid-amp |
+| E | TGG | W | -0.21, -0.27, -0.13 <br>`\newline`{=latex} -0.24, -0.09, -0.24 | 11982 | 6/6 | iid-amp |
+| E | GGT | G | -0.15, -0.37, -0.12 <br>`\newline`{=latex} -0.27, -0.14, -0.25 | 11685 | 6/6 | iid-amp |
+| E | CGA | R | -0.68, -0.59, -0.41 <br>`\newline`{=latex} -0.77, -0.39, -0.40 | 11515 | 6/6 | iid-amp |
+| E | CTG | L | -0.61, -0.55, -0.46 <br>`\newline`{=latex} -0.77, -0.43, -0.48 | 11126 | 6/6 | iid-amp |
+| E | CCG | P | -0.51, -0.59, -0.46 <br>`\newline`{=latex} -0.68, -0.52, -0.39 | 9417 | 6/6 | iid-amp |
+| E | AGT | S | -0.97, -0.93, -0.72 <br>`\newline`{=latex} -1.07, -0.68, -0.82 | 8682 | 6/6 | iid-amp |
+| E | AGC | S | -0.42, -0.36, -0.29 <br>`\newline`{=latex} -0.44, -0.29, -0.32 | 8256 | 6/6 | iid-amp |
+| E | ACG | T | -0.80, -0.60, -0.45 <br>`\newline`{=latex} -0.80, -0.41, -0.51 | 7935 | 6/6 | iid-amp |
+| E | GTA | V | -0.62, -0.69, -0.70 <br>`\newline`{=latex} -0.78, -0.69, -0.70 | 7814 | 6/6 | iid-amp |
+| E | TGC | C | -0.62, -0.54, -0.51 <br>`\newline`{=latex} -0.63, -0.71, -0.64 | 7524 | 6/6 | iid-amp |
+| E | TGT | C | -0.92, -0.87, -0.81 <br>`\newline`{=latex} -1.11, -0.84, -0.99 | 7344 | 6/6 | iid-amp |
+| E | CCT | P | -0.57, -0.80, -0.70 <br>`\newline`{=latex} -0.91, -0.93, -0.63 | 7289 | 6/6 | iid-amp |
+| E | GCG | A | -0.70, -0.68, -0.47 <br>`\newline`{=latex} -0.84, -0.56, -0.53 | 7265 | 6/6 | iid-amp |
+| E | TTA | L | -1.09, -0.94, -0.93 <br>`\newline`{=latex} -1.13, -0.95, -1.03 | 5982 | 6/6 | iid-amp |
+| E | GGC | G | -0.65, -0.74, -0.42 <br>`\newline`{=latex} -0.69, -0.61, -0.51 | 5958 | 6/6 | iid-amp |
+| E | CTA | L | -1.26, -1.13, -1.06 <br>`\newline`{=latex} -1.41, -1.23, -1.17 | 4508 | 6/6 | iid-amp |
+| E | ATA | I | -1.59, -1.42, -1.40 <br>`\newline`{=latex} -1.69, -1.38, -1.46 | 4507 | 6/6 | iid-amp |
+| E | CGG | R | -1.02, -0.97, -0.72 <br>`\newline`{=latex} -1.15, -0.61, -0.65 | 3733 | 6/6 | iid-amp |
+| E | CCC | P | -0.91, -0.96, -0.90 <br>`\newline`{=latex} -0.99, -1.13, -0.77 | 3258 | 6/6 | iid-amp |
+| E | GGG | G | -1.16, -1.21, -0.91 <br>`\newline`{=latex} -1.17, -0.94, -0.95 | 2956 | 6/6 | iid-amp |
+| E | AGG | R | -0.90, -1.03, -0.91 <br>`\newline`{=latex} -1.13, -0.74, -0.89 | 2573 | 6/6 | iid-amp |
+| E | AAT | N | -0.29, -0.20, -0.19 <br>`\newline`{=latex} -0.30, -0.00, -0.19 | 33902 | 5/6 | iid-amp |
+
+: Concordant depletion — all 6 groups depleted; cells significant in >= 2 of 6 groups, sorted by site (A / P / E), then #sig then min count. {tbl-colwidths="[6,7,4,40,8,7,28]"}
+
+```{=latex}
+\clearpage
+```
+
+### Discordant — significant in >= 2 of 6 groups
+
+| Site | codon | aa | log2_enrichment | min count | #sig | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| A | CCA | P | +0.31, +0.15, +0.07 <br>`\newline`{=latex} +0.34, -0.14, +0.19 | 37808 | 6/6 | iid-amp |
+| A | TTG | L | +0.26, +0.02, -0.02 <br>`\newline`{=latex} +0.06, +0.02, +0.13 | 28088 | 6/6 | iid-amp |
+| A | CTC | L | +0.27, +0.25, +0.13 <br>`\newline`{=latex} +0.24, -0.08, +0.11 | 19621 | 6/6 | iid-amp |
+| A | TGC | C | +0.10, -0.21, -0.18 <br>`\newline`{=latex} -0.16, -0.29, -0.03 | 11464 | 6/6 | iid-amp |
+| A | ATG | M | -0.19, -0.01, +0.01 <br>`\newline`{=latex} -0.13, +0.09, -0.04 | 30255 | 5/6 | iid-amp |
+| A | GTT | V | -0.28, -0.00, +0.02 <br>`\newline`{=latex} -0.03, +0.01, -0.08 | 29160 | 5/6 | iid-amp |
+| A | CAA | Q | +0.04, +0.00, -0.11 <br>`\newline`{=latex} -0.01, -0.04, -0.24 | 28904 | 5/6 | iid-amp |
+| A | CTT | L | +0.03, +0.05, -0.10 <br>`\newline`{=latex} -0.00, -0.21, -0.09 | 24827 | 5/6 | iid-amp |
+| A | TAT | Y | -0.01, +0.09, -0.04 <br>`\newline`{=latex} -0.03, +0.22, +0.06 | 24005 | 5/6 | iid-amp |
+| A | AAC | N | +0.00, +0.18, +0.17 <br>`\newline`{=latex} +0.20, +0.29, -0.03 | 22570 | 5/6 | iid-amp |
+| A | TGG | W | +0.56, +0.03, -0.01 <br>`\newline`{=latex} +0.12, -0.13, +0.21 | 16363 | 5/6 | iid-amp |
+| A | TCC | S | +0.10, +0.07, +0.00 <br>`\newline`{=latex} +0.17, -0.16, +0.08 | 13907 | 5/6 | iid-amp |
+| A | GAA | E | +0.01, -0.01, +0.12 <br>`\newline`{=latex} -0.01, +0.24, +0.15 | 58315 | 4/6 | iid-amp |
+| P | AAT | N | -0.02, +0.13, +0.06 <br>`\newline`{=latex} -0.05, +0.23, +0.15 | 43032 | 6/6 | iid-amp |
+| P | CCA | P | +0.24, +0.10, +0.05 <br>`\newline`{=latex} +0.34, -0.05, +0.11 | 35687 | 6/6 | iid-amp |
+| P | ATT | I | -0.16, -0.07, -0.24 <br>`\newline`{=latex} -0.19, +0.02, -0.27 | 34785 | 6/6 | iid-amp |
+| P | TAT | Y | -0.02, +0.06, -0.06 <br>`\newline`{=latex} +0.02, +0.12, +0.08 | 24387 | 6/6 | iid-amp |
+| P | CAT | H | -0.06, +0.06, -0.04 <br>`\newline`{=latex} -0.08, -0.05, -0.03 | 17328 | 6/6 | iid-amp |
+| P | CAC | H | +0.14, +0.17, +0.03 <br>`\newline`{=latex} +0.22, -0.08, +0.06 | 11839 | 6/6 | iid-amp |
+| P | CTT | L | +0.13, +0.26, +0.10 <br>`\newline`{=latex} +0.15, +0.20, -0.00 | 26445 | 5/6 | iid-amp |
+| P | AGA | R | +0.03, -0.00, -0.10 <br>`\newline`{=latex} +0.06, -0.14, -0.02 | 19308 | 4/6 | iid-amp |
+| E | TTC | F | +0.14, +0.19, +0.11 <br>`\newline`{=latex} +0.11, -0.06, +0.08 | 32092 | 6/6 | iid-amp |
+| E | TAC | Y | +0.17, +0.27, +0.11 <br>`\newline`{=latex} +0.23, -0.04, +0.08 | 18956 | 6/6 | iid-amp |
+| E | TCC | S | -0.07, +0.14, +0.09 <br>`\newline`{=latex} +0.09, -0.20, +0.04 | 13522 | 6/6 | iid-amp |
+| E | GAA | E | -0.08, -0.02, +0.01 <br>`\newline`{=latex} -0.07, +0.04, +0.05 | 54315 | 5/6 | iid-amp |
+| E | ATG | M | -0.12, -0.04, +0.01 <br>`\newline`{=latex} -0.07, +0.16, -0.02 | 30636 | 5/6 | iid-amp |
+| E | GCT | A | +0.06, +0.02, +0.02 <br>`\newline`{=latex} -0.01, -0.20, -0.02 | 27992 | 5/6 | iid-amp |
+| E | GTT | V | +0.13, +0.09, +0.04 <br>`\newline`{=latex} +0.03, -0.00, -0.01 | 30584 | 4/6 | iid-amp |
+| E | CAG | Q | -0.04, +0.00, +0.09 <br>`\newline`{=latex} +0.01, +0.23, +0.09 | 19013 | 4/6 | iid-amp |
+
+: Discordant — at least one sign disagreement across the 6 groups; cells significant in >= 2 of 6 groups, sorted by site (A / P / E), then #sig then min count. {tbl-colwidths="[6,7,4,40,8,7,28]"}
+
+### Flag glossary
+
+- `iid-amp` — short for "**i.i.d.-violation amplified**" (i.i.d. = independent and identically distributed; see the `iid-violation-binomial` caveat under Family-level caveats). Applied to every Top-hits row where at least one group has `p_adj` < 1e-10. The binomial test assumes every counted position is an independent coin-flip, but footprints on the same transcript move together — so the test acts as if it has far more independent evidence than it does, and even a modest enrichment gets an astronomically tiny p. The flag is a reminder that this row's p looks tiny because of the broken independence assumption, not because the effect is biologically large. Read it by `log2_enrichment` + reproducibility, never by how small the p is. Every displayed cell carries it here, so it does not separate rows; the `min count` column and the `rare-codon` flag do.
+- `rare-codon` — at least one of the 6 groups has `observed_count` below the stability threshold (k < 100). The flag names the low-count groups — it lists them (e.g. `rare-codon (BWM d0, BWM d5, ctrl d10)`) and collapses to `(all)` when no group clears the threshold. Here it fires only on the three in-frame stop TGA cells (min counts 16-20); every sense codon has `min count` >= 2573 (E:AGG), so no sense codon is rare. Direction is reliable for a rare-codon row; magnitude is not.
+
+## Numbers at a glance
+- `n_tests`: 1116 (6 groups x 3 sites x 62 codons; 61 sense + in-frame stop TGA)
+- `n_significant` (adjusted-p < 0.05): 1092
+- `n_significant` (adjusted-p < 0.10): 1095
+- `min adjusted-p`: 0.0 (underflow) - 624 of 1116 cells return `p_adj` exactly 0.0; smallest nonzero `p_adj` is 5.93e-323 (BWM_day_0, P:CAG; log2 -0.345, k=23483, n=2110390). Under `iid-violation-binomial` this is not a magnitude claim.
+- `p_floor`: n/a - no exact-test floor for the binomial at these n.
+- Per-(group, site) hits at `p_adj` < 0.05 (each is 62 codons; A / P / E order; counts sum to 1092):
+  - BWM_day_0: A 59/62, P 62/62, E 62/62
+  - BWM_day_5: A 59/62, P 61/62, E 61/62
+  - BWM_day_10: A 59/62, P 62/62, E 59/62
+  - control_day_0: A 61/62, P 62/62, E 59/62
+  - control_day_5: A 62/62, P 62/62, E 59/62
+  - control_day_10: A 62/62, P 60/62, E 61/62
+
+## Biological interpretation
+
+**The dominant signal of this file is cross-group concordance at codon resolution, not perturbation (concrete).** Of the 186 (site, codon) cells, 55 are concordantly enriched and 102 concordantly depleted across all 6 groups (BWM and control x d0/d5/d10), leaving 29 discordant — the partition feeding the three Top-hits tables. The largest-magnitude cells hold one direction across all 6 groups, and the discordant cells that do flip sit near zero. Because the test is within-group against each group's own transcriptome background, these counts are a structural map of which codons are over- and under-occupied at each ribosome site relative to their transcriptome abundance, stable across BWM perturbation and the d0/d5/d10 time axis. As in the sister amino-acid file, perturbation contrasts (BWM vs control, time-resolved) live in the per-timepoint Fisher and within-condition Fisher files; this file's biology is the baseline codon-occupancy shape.
+
+**E-site lysine and the acidic codons are the strongest reproducible enrichments, matching the amino-acid sister at codon resolution (concrete).** E:AAG (Lys) is the single largest sense enrichment (+1.06 to +1.40 across the 6 groups, `min count` 72657), with E:AAA (Lys) co-enriched, and the acidic codons GAT/GAC (Asp) and GAG/GAA (Glu) concordantly enriched across all three sites (e.g. P:GAT +0.47 to +0.75, A:GAG/E:GAG). This is the codon-level image of the amino-acid sister's E:K and P:D / acidic-residue enrichment story. Mechanistically, E-site lysine is a textbook ribosome-dwell anchor (the positively charged side chain interacts electrostatically with the negatively charged exit tunnel after translocation), and acidic residues slow peptidyl-transfer chemistry; the codon resolution shows the lysine signal is carried by both AAG and AAA and the aspartate signal by both GAT and GAC.
+
+**Within several amino acids the C-ending synonym is over-occupied while its A/G/T-ending sisters are depleted — the central codon-versus-amino-acid refinement (concrete).** Alanine is the clearest case: GCC is concordantly enriched at all three sites (A +0.05 to +0.53, P/E similar) while GCA and GCG are concordantly depleted at all three sites, so the amino-acid sister's uniform alanine depletion resolves at codon level into an enriched C-ending synonym plus depleted A/G-ending sisters. The same split runs through isoleucine (ATC enriched vs ATA/ATT depleted), valine (GTC enriched vs GTA/GTG depleted), threonine (ACC enriched vs ACA/ACG/ACT depleted), and the C-ending synonyms of histidine (CAC), asparagine (AAC), tyrosine (TAC), and phenylalanine (TTC) sitting in the enrichment set while their T-ending sisters deplete. A consistent split of this kind points to codon-level decoding (wobble-position / codon-optimality differences between synonyms) rather than an amino-acid side-chain property — the diagnostic question this codon file exists to answer, and the place it most clearly adds to the amino-acid sister.
+
+**The largest-magnitude depletions are low-usage codons, and the small/short-side-chain residues are depleted as the structural counterpart to the K/D/E enrichment (concrete).** The most extreme sense depletions are rare A/T-rich codons — E:ATA (Ile) -1.49, P:ATA -1.46, P:CTA / E:CTA (Leu) ~-1.2, P:TTA (Leu) -1.14, P:GGG (Gly) -1.07, with CGG/AGG (Arg) and CCC (Pro) near -1 — each concordant across all 6 groups but resting on the smallest sense `min count` values (2573-5000), consistent with rarely-used codons being under-occupied because they are decoded and cleared without accumulating footprints. Layered on top, the small and hydroxyl-bearing residues (serine through TCA/TCT/TCG/AGT/AGC, threonine through ACA/ACG/ACT, alanine through GCA/GCG) are concordantly depleted at all three sites, the inverse of the charged-residue enrichment story by the same amino-acid-property logic. Read the rare-codon depletions by direction and `min count`, not by raw magnitude.
+
+**The headline-grade p magnitudes (624 cells underflow to 0.0) are iid-violation amplification, not biological strength (concrete).** 624 of 1116 cells return `p_adj` exactly 0.0 and the smallest nonzero is 5.93e-323 (BWM_day_0 P:CAG, `log2_enrichment` only -0.345). At `total_n` ~2.1M the binomial p collapses toward zero for any non-trivial deviation, because the null assumes that many independent Bernoulli draws but ribosome footprints are not independent (one transcript contributes overlapping A/P/E windows and transcripts vary in coverage) — the `iid-violation-binomial` caveat. Every displayed cell therefore carries `iid-amp`, so the p column would separate nothing; read this file by `log2_enrichment` magnitude and cross-group reproducibility, with `min count` as the support check.
+
+**The in-frame stop TGA and the discordant cells are exploratory, read by direction only (exploratory).** TGA carries the file's largest `log2_enrichment` (A/P/E means +2.68 / +2.18 / +2.03, up to +3.53 in a single group) and sits in the concordant-enrichment set, but it rests on only 16-20 counts and is mechanistically distinct from sense-codon occupancy, so its direction (consistently positive) is suggestive of readthrough/stop-context occupancy at most — not a magnitude to rank against high-count sense codons (`stop-codon-instability`, `rare-codon`). The 29 discordant cells (e.g. A:TGC, P:AAT, E:TTC) sit within roughly +/-0.3 and cluster near zero, more consistent with sign noise around a near-zero true effect than a reproducible group-specific switch. Worth checking whether TGA reaches a comparable extreme in any large-N Fisher file (a falsifier for the stop-instability reading) and whether any discordant cell flips group-consistently in the per-timepoint Fisher; absent that, treat both as not-a-hit. Exploratory only.
+
+**What to carry forward.** *Concrete*: the cross-group concordance set (55 concordantly enriched + 102 concordantly depleted of the 186 cells) as a structural map of codon occupancy stable across perturbation and time; E:AAG/AAA and the acidic codons (GAT/GAC, GAG/GAA) as the strongest enriched cells; the C-ending-synonym-enriched / A-G-T-ending-depleted splits (Ala GCC, Ile ATC, Val GTC, Thr ACC, plus CAC/AAC/TAC/TTC) as the codon-resolution refinement of the amino-acid sister; rare-codon and small-residue depletions as the structural counterpart. *Exploratory*: the in-frame stop TGA (direction only, 16-20 counts) and the 29 discordant cells (near-zero, direction unreliable). *Noise*: any per-cell p-magnitude reading below the iid-amplification floor — quote magnitude + reproducibility + `min count`, not p. Cross-checks worth running in sister files: does the per-timepoint Fisher overlay BWM-vs-control divergence on any of these concordance cells (perturbation on top of the structural map); does the amino-acid sister's concordance set re-aggregate cleanly onto these codon-level splits.
+
+## Methods
+
+The test is a one-sample binomial (`observed_count` ~ Binomial(`total_n`, `bg_freq`), two-sided), with BH-FDR computed within each (group, site) family of 62 codon tests (each of the 18 sub-families is corrected independently, not against the full 1116). The 62 codons are the 61 sense codons plus the in-frame stop TGA (TAA and TAG are absent from this file). Effect column is `log2_enrichment` = log2(`observed_freq` / `bg_freq`); a count-weighted variant `weighted_log2_enrichment` is also present in the CSV but is not used for ranking here (the unweighted log2 is what the binomial p reflects). The null `bg_freq` is the transcriptome codon composition, so a positive `log2_enrichment` means "occupied more often than its transcriptomic abundance predicts," not "more occupied than control." The test answers "is codon X observed at this site at a different frequency than its transcriptome `bg_freq` in the same group?", **not** "is codon X enriched in BWM relative to control" (that is the per-timepoint Fisher) and **not** "is the occupancy shifting across timepoints" (that is between-timepoint Wilcoxon). Counts (`observed_count`) and totals (`total_n`) are summed across replicates before the test, hence the family-level pseudoreplication caveat. Top hits are presented as three cross-group tables that partition the 186 (site, codon) cells by the sign of `log2_enrichment` across the 6 groups: concordant enrichment (positive in all 6 groups; 55 cells), concordant depletion (negative in all 6; 102 cells), and discordant (at least one sign disagreement; 29 cells). A cell enters the partition only if it has a value in all 6 groups. Each table shows every cell that reached `p_adj` < 0.05 in at least 2 of the 6 groups (`#sig` >= 2, a reproducibility floor rather than a fixed row cap; all 186 cells clear it), the kept cells sorted by site (A / P / E), then `#sig` descending, then `min count` (smallest `observed_count` across the 6 groups) descending, with an `aa` column added per the codon-table convention. Ranking is by magnitude and reproducibility, not p, because at `total_n` ~2.1M the binomial p collapses toward zero (624/1116 underflow to exactly 0.0) for modest effects.
+
+## What the caveats mean for reading this file
+
+- **pseudorep.** The binomial pools replicates into one `observed_count` and one `total_n` per (group, site, codon) cell; per-replicate variation is invisible to the statistic, so the smallest p magnitudes are inflated, not additional certainty.
+- **iid-violation-binomial.** The binomial null assumes the `total_n` counted positions are i.i.d. (independent and identically distributed), but footprints on the same transcript are correlated and transcripts vary in coverage; this is the dominant reason p-values compress toward zero (624/1116 to exactly 0.0). Rank by `log2_enrichment` + `observed_count` + cross-group reproducibility, not by p magnitude.
+- **bh-per-(group, site).** BH-FDR is per (group, site) family of 62, so FDR control is within each 62-codon family, not pooled across the 186 codons per group or across the merged A/P/E file. Two rows with the same raw p in different (group, site) families can land at different `p_adj`.
+- **bg-transcriptome-freq.** The null is the transcriptome codon composition, so "enrichment" means "occupied more than its transcriptomic abundance predicts," not vs a uniform expectation or vs control.
+- **stop-codon-instability.** The in-frame stop TGA carries the file's largest `log2_enrichment` (A/P/E means +2.68 / +2.18 / +2.03, up to +3.53 in single groups) but rests on 16-20 counts; read its direction (consistently positive across all 6 groups), never its magnitude, and do not rank it alongside high-count sense codons.
+- **rare-codon-low-count.** The `rare-codon` flag (any group `observed_count` < 100) fires only on the three TGA cells (min counts 16-20); every sense codon has `min count` >= 2573 (E:AGG), so no sense codon is low-count and the concern is confined to TGA, coinciding with `stop-codon-instability`.
+
+### Considered and ruled out
+
+*(none — both codon-specific caveats (`stop-codon-instability`, `rare-codon-low-count`) were confirmed, and the four family-wide caveats are inherited from `_INDEX.md`; no caveat was raised and ruled out for this file.)*
+
+---
+
+## Plots — individual
+
+Each panel below is one (group, site) BH-FDR family of 62 codons, plotted as a volcano: `log2_enrichment` (x-range ~-2.5 to +3.5) on the x-axis, -log10(FDR) on the y-axis. Triangles mark FDR<0.05; circles are non-significant. Codons are labelled by three-letter code and coloured by the amino-acid property of their translation (red = acidic, blue = basic, green = hydrophobic, orange = neutral, purple = polar, grey = stop). The horizontal dashed line marks FDR = 0.05; the vertical dashed lines mark log2 = +/-0.5. At whole-transcriptome n almost every codon is pinned at the top of each panel (the FDR underflows), so each panel mainly resolves the x-axis spread; the in-frame stop TGA is the far-right enriched outlier in every panel.
+
+![BWM Day 0, A site. Most codons pinned at the top (FDR underflows). The in-frame stop TGA is the far-right outlier (~+2.5, enriched). Among sense codons the largest enrichments are AAG (Lys, ~+1.0) and CGC (Arg, ~+0.95); the largest depletions are AGT/TTT (Ser/Phe, ~-0.9) and GGG (Gly, ~-0.86).](../plots/within_condition/codon/individual/unweighted/BWM_day_0_A_volcano.png)
+
+![BWM Day 0, P site. ATA (Ile, ~-1.63) is the far-left depletion and the panel's largest-magnitude sense cell; TTA (Leu) and CTA (Leu) trail it on the depleted side. The largest sense enrichment is CGT (Arg, ~+0.88); the in-frame stop TGA sits to the right (~+1.4, enriched).](../plots/within_condition/codon/individual/unweighted/BWM_day_0_P_volcano.png)
+
+![BWM Day 0, E site. ATA (Ile, ~-1.59) is the far-left depletion; CTA (Leu) and GGG (Gly) follow. AAG (Lys, ~+1.24) is the largest sense enrichment on the right; the in-frame stop TGA sits at ~+1.15 (enriched).](../plots/within_condition/codon/individual/unweighted/BWM_day_0_E_volcano.png)
+
+![BWM Day 5, A site. The in-frame stop TGA is the far-right outlier (~+3.0, enriched). Largest sense enrichments CGC/AAG (Arg/Lys, ~+0.95); largest depletion GGG (Gly, ~-1.04), with CCC (Pro) and AGT (Ser) nearby.](../plots/within_condition/codon/individual/unweighted/BWM_day_5_A_volcano.png)
+
+![BWM Day 5, P site. ATA (Ile, ~-1.38) is the far-left depletion; CTA (Leu) and GGG (Gly) follow. Largest sense enrichment CGT (Arg, ~+0.84); the in-frame stop TGA sits to the right (~+2.5, enriched).](../plots/within_condition/codon/individual/unweighted/BWM_day_5_P_volcano.png)
+
+![BWM Day 5, E site. ATA (Ile, ~-1.42) is the far-left depletion; CTA (Leu) and GGG (Gly) follow. AAG (Lys, ~+1.13) is the largest sense enrichment; the in-frame stop TGA sits to the right (~+2.35, enriched).](../plots/within_condition/codon/individual/unweighted/BWM_day_5_E_volcano.png)
+
+![BWM Day 10, A site. The in-frame stop TGA is the far-right outlier (~+3.5, the panel and file maximum, enriched). Largest sense enrichment CGC (Arg, ~+0.92); largest depletion CCC (Pro, ~-0.89), with CTA (Leu) and GGG (Gly) nearby.](../plots/within_condition/codon/individual/unweighted/BWM_day_10_A_volcano.png)
+
+![BWM Day 10, P site. ATA (Ile, ~-1.36) is the far-left depletion; CTA (Leu) follows. GAT (Asp, ~+0.70) and CGT (Arg, ~+0.82) are the largest sense enrichments; the in-frame stop TGA sits to the right (~+3.14, enriched).](../plots/within_condition/codon/individual/unweighted/BWM_day_10_P_volcano.png)
+
+![BWM Day 10, E site. ATA (Ile, ~-1.40) is the far-left depletion; CTA (Leu) follows. AAG (Lys, ~+1.06) is the largest sense enrichment; the in-frame stop TGA is the far-right outlier (~+3.30, enriched).](../plots/within_condition/codon/individual/unweighted/BWM_day_10_E_volcano.png)
+
+![control Day 0, A site. The in-frame stop TGA is the far-right outlier (~+2.6, enriched). Largest sense enrichment AAG (Lys, ~+1.07); largest depletion GGG (Gly, ~-1.12), with CTA (Leu) and AGT (Ser) nearby. Densest A-site panel (61/62 hits).](../plots/within_condition/codon/individual/unweighted/control_day_0_A_volcano.png)
+
+![control Day 0, P site. ATA (Ile, ~-1.57) is the far-left depletion; CTA (Leu) and CGG (Arg) follow. AAG (Lys, ~+0.97) and CGT (Arg, ~+0.89) are the largest sense enrichments; the in-frame stop TGA sits to the right (~+1.83, enriched). Full 62/62 P-site hits.](../plots/within_condition/codon/individual/unweighted/control_day_0_P_volcano.png)
+
+![control Day 0, E site. ATA (Ile, ~-1.69) is the far-left depletion and the file's most extreme sense cell; CTA (Leu) and GGG (Gly) follow. AAG (Lys, ~+1.33) is the largest sense enrichment; the in-frame stop TGA sits at ~+1.77 (enriched).](../plots/within_condition/codon/individual/unweighted/control_day_0_E_volcano.png)
+
+![control Day 5, A site. The in-frame stop TGA is the far-right outlier (~+3.1, enriched). Largest sense enrichment AAG (Lys, ~+1.05); largest depletion GGG (Gly, ~-1.20), with CCC (Pro) and CCT (Pro) nearby. Full 62/62 A-site hits.](../plots/within_condition/codon/individual/unweighted/control_day_5_A_volcano.png)
+
+![control Day 5, P site. ATA (Ile, ~-1.31) is the far-left depletion; GGG (Gly) and CTA (Leu) follow. Largest sense enrichment CGT (Arg, ~+0.79); the in-frame stop TGA sits to the right (~+2.74, enriched). Full 62/62 P-site hits.](../plots/within_condition/codon/individual/unweighted/control_day_5_P_volcano.png)
+
+![control Day 5, E site. AAG (Lys, ~+1.40) is the largest sense enrichment and the file maximum sense magnitude; ATA (Ile, ~-1.38) is the far-left depletion. The in-frame stop TGA sits to the right (~+2.47, enriched).](../plots/within_condition/codon/individual/unweighted/control_day_5_E_volcano.png)
+
+![control Day 10, A site. The in-frame stop TGA is the far-right outlier (~+1.4, the smallest TGA value across the 6 groups, still enriched). Largest sense enrichment CGC (Arg, ~+1.01); largest depletion GGG (Gly, ~-0.86), with CTA (Leu) nearby. Full 62/62 A-site hits.](../plots/within_condition/codon/individual/unweighted/control_day_10_A_volcano.png)
+
+![control Day 10, P site. ATA (Ile, ~-1.50) is the far-left depletion; TTA (Leu) and CTA (Leu) follow. GAT (Asp, ~+0.75) and CGT (Arg, ~+0.86) are the largest sense enrichments; the in-frame stop TGA sits to the right (~+1.46, enriched).](../plots/within_condition/codon/individual/unweighted/control_day_10_P_volcano.png)
+
+![control Day 10, E site. AAG (Lys, ~+1.17) is the largest sense enrichment on the right; ATA (Ile, ~-1.46) is the far-left depletion, with CTA (Leu) and TTT (Phe) following. The in-frame stop TGA sits at ~+1.14 (enriched).](../plots/within_condition/codon/individual/unweighted/control_day_10_E_volcano.png)

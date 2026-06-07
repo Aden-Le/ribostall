@@ -1,0 +1,191 @@
+---
+title: "aa_wilcoxon_timepoint_d5_vs_d0 — Olive report"
+subtitle: "ribostall global_occupancy — occupancy stats"
+date: 2026-06-04
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    embed-resources: true
+    fig-cap-location: bottom
+  pdf:
+    toc: true
+    fig-cap-location: bottom
+    include-in-header:
+      text: |
+        \usepackage{needspace}
+tbl-colwidths: [34, 22, 22, 22]
+execute:
+  echo: false
+---
+
+## Composite figure
+
+![Three-panel bar plot, A-site / P-site / E-site left to right, of per-amino-acid log2 fold-change (median day_5 / median day_0) in whole-transcriptome occupancy. Within each panel the 20 amino acids are sorted by log2 fold-change high to low; bars are coloured by amino-acid physicochemical class (acidic, basic, hydrophobic, neutral, polar; see legend). Y-axis is log2 fold-change, range ~= -0.25 to +0.22; bars above zero are day_5-enriched, below zero are day_5-depleted.](../plots/between_timepoint/d5_vs_d0/composite/APE_aa_Day5_vs_Day0_barplot_composite.png){fig-pos="H" width=92%}
+
+Each panel ranks the 20 amino acids by signed log2 fold-change at one ribosome site (A, P, E): a bar above zero means more day_5 occupancy than day_0 at that site, below zero means less. No significance markers are drawn on the bars.
+
+---
+
+## Overview
+
+- **CSV:** `aa_wilcoxon_timepoint_d5_vs_d0.csv`
+- **Family (from `_INDEX.md`):** `between_timepoint_wilcoxon`
+- **Sister CSV(s):**
+  - `codon_wilcoxon_timepoint_d5_vs_d0.csv`
+  - `aa_wilcoxon_timepoint_d10_vs_d0.csv`
+  - `codon_wilcoxon_timepoint_d10_vs_d0.csv`
+  - `aa_wilcoxon_timepoint_d10_vs_d5.csv`
+  - `codon_wilcoxon_timepoint_d10_vs_d5.csv`
+- **Test:** Mann-Whitney U (two-sample Wilcoxon rank-sum), day_5 vs day_0
+- **Design:** n=4 day_5 vs n=4 day_0 (each n=4 arm pools 2 BWM + 2 control replicates within the timepoint); two-sided Mann-Whitney U on per-(site, amino acid) occupancy; BH-FDR per A/P/E site (each site is its own family of 20 amino-acid tests); effect column is `log2_FC` = log2(median_day_5 / median_day_0).
+
+### Family-level caveats
+
+- **mw-floor-blocking** — the Mann-Whitney two-sided p-floor for n=4 vs n=4 is exactly 0.02857; with per-site BH families of ~20 (aa) or ~61 (codon), clearing FDR<0.05 is mathematically near-impossible unless ~every test ties at the floor.
+- **condition-pooled-confound** — n=4 per timepoint is built by pooling 2 BWM + 2 control replicates (`rep_to_timepoint`); if BWM and control diverge in their time response, pooling masks divergent signals. All 6 members share this design.
+- **n=4-low-power** — n=4 vs n=4 Mann-Whitney has very low power; nulls across all 6 files are weakly informative.
+- **p-floor-aware-headline** — Headlines must explicitly state min raw p ~= 0.0286 and explain why "no FDR hits" is uninformative, not a biological negative.
+
+---
+
+## Headline
+
+0 of 60 day_5-vs-day_0 amino-acid tests are significant at FDR<0.05; minimum adjusted p is 0.2857. Five cells reach raw p<0.05, and all five sit exactly at the n=4-vs-n=4 two-sided Mann-Whitney floor (0.02857). The absence of FDR hits is a structural floor-blocking outcome, not a biological negative. This is a coordinated floor-limited null, and it carries the most floor cells of the three amino-acid contrasts in the family. As nominal-only exploratory leads: the largest-magnitude floor cells are P-site G (`log2_FC` -0.2029, depleted in day_5) and A-site M (+0.1567, enriched); the largest-magnitude cell overall, A-site W (-0.2413), sits above the floor (raw p 0.1143).
+
+## Top hits
+
+Effect column is `log2_FC` = log2(median day_5 / median day_0): positive means day_5-enriched, negative means day_5-depleted. `p_adj` is the Mann-Whitney p after BH correction within each site's family of 20 amino acids (the raw Mann-Whitney p per cell is summarised under Numbers at a glance; min raw p = 0.0286 = the n=4 floor). Each site is split into one sub-table per direction. No row reaches FDR<0.05, so every row below is a non-significant lead; within each sub-table the rows are the up-to-5-per-direction amino acids selected by smallest raw p, displayed by `|log2_FC|` descending. Cells flagged `nominal-only` have raw p < 0.05, and all five sit exactly at the n=4-vs-n=4 two-sided Mann-Whitney floor (0.02857), so their raw significance is the maximum the test can produce at this N, not evidence of a strong effect.
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### A site — Enriched (day_5 > day_0)
+
+| amino acid     | effect (`log2_FC`) | adjusted p (`p_adj`) | flag         |
+| ---            | ---                | ---                  | ---          |
+| N (asparagine) | +0.2178            | 0.6234               |              |
+| M (methionine) | +0.1567            | 0.2857               | nominal-only |
+| D (aspartate)  | +0.1073            | 0.6234               |              |
+| F (phenylalanine) | +0.1019         | 0.6234               |              |
+| S (serine)     | +0.0597            | 0.4571               |              |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### A site — Depleted (day_5 < day_0)
+
+| amino acid      | effect (`log2_FC`) | adjusted p (`p_adj`) | flag         |
+| ---             | ---                | ---                  | ---          |
+| W (tryptophan)  | -0.2413            | 0.4571               |              |
+| G (glycine)     | -0.1770            | 0.4571               |              |
+| A (alanine)     | -0.0903            | 0.6234               |              |
+| P (proline)     | -0.0866            | 0.2857               | nominal-only |
+| L (leucine)     | -0.0425            | 0.6234               |              |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### P site — Enriched (day_5 > day_0)
+
+| amino acid      | effect (`log2_FC`) | adjusted p (`p_adj`) | flag         |
+| ---             | ---                | ---                  | ---          |
+| C (cysteine)    | +0.1311            | 0.5714               |              |
+| E (glutamate)   | +0.0936            | 0.8831               |              |
+| N (asparagine)  | +0.0905            | 0.8831               |              |
+| S (serine)      | +0.0783            | 0.2857               | nominal-only |
+| L (leucine)     | +0.0604            | 0.8831               |              |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### P site — Depleted (day_5 < day_0)
+
+| amino acid      | effect (`log2_FC`) | adjusted p (`p_adj`) | flag         |
+| ---             | ---                | ---                  | ---          |
+| G (glycine)     | -0.2029            | 0.2857               | nominal-only |
+| K (lysine)      | -0.1539            | 0.8831               |              |
+| P (proline)     | -0.0888            | 0.5714               |              |
+| R (arginine)    | -0.0654            | 0.8831               |              |
+| A (alanine)     | -0.0437            | 0.9841               |              |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### E site — Enriched (day_5 > day_0)
+
+| amino acid      | effect (`log2_FC`) | adjusted p (`p_adj`) | flag         |
+| ---             | ---                | ---                  | ---          |
+| S (serine)      | +0.1506            | 0.6667               |              |
+| C (cysteine)    | +0.1122            | 0.6667               |              |
+| M (methionine)  | +0.0727            | 0.5714               | nominal-only |
+| L (leucine)     | +0.0725            | 0.8571               |              |
+| H (histidine)   | +0.0450            | 0.6667               |              |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### E site — Depleted (day_5 < day_0)
+
+| amino acid      | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
+| ---             | ---                | ---                  | ---  |
+| P (proline)     | -0.2195            | 0.6667               |      |
+| K (lysine)      | -0.1014            | 0.8571               |      |
+| G (glycine)     | -0.0976            | 0.6667               |      |
+| I (isoleucine)  | -0.0516            | 1.0000               |      |
+| Y (tyrosine)    | -0.0422            | 1.0000               |      |
+
+### Flag glossary
+
+- `nominal-only` — raw p < 0.05 but `p_adj` >= 0.05. The row would have been flagged significant if tested in isolation, but did not survive BH-FDR correction across its grouping family. The five `nominal-only` cells in this file (A-site M, A-site P, P-site S, P-site G, E-site M) each sit exactly at the n=4-vs-n=4 two-sided Mann-Whitney floor (raw p 0.02857), so their raw significance is the test's discrete minimum, not a measure of effect size.
+
+## Numbers at a glance
+
+- `n_tests`: 60 (20 per site, A/P/E)
+- `n_significant` (adjusted-p < 0.05): 0
+- `n_significant` (adjusted-p < 0.10): 0
+- `min adjusted-p`: 0.2857 (sites A and P)
+- `min raw p`: 0.0286 (= the n=4 floor; 5 cells tie here)
+- `p_floor`: 0.02857 (theoretical two-sided Mann-Whitney floor for n=4 vs n=4 = 2/C(8,4)). Five cells reach it, the most of the three amino-acid contrasts, yet still 0 FDR hits.
+- Per site: site A min `p_adj` 0.2857; site P min `p_adj` 0.2857; site E min `p_adj` 0.5714.
+
+## Biological interpretation
+
+**No day_5-vs-day_0 difference is detectable at amino-acid resolution, and the null is structural rather than biological (concrete).** None of the 60 (site, amino acid) tests clears BH within its 20-amino-acid site family; the minimum adjusted p is 0.2857. This file actually reaches the test's raw-p floor more often than either other amino-acid contrast in the family — five cells sit at the n=4-vs-n=4 two-sided Mann-Whitney floor of 0.02857 — yet even five simultaneous floor cells BH-correct only to `p_adj` 0.2857, because clearing FDR<0.05 in a 20-amino-acid site family would require roughly a dozen amino acids tied at the floor at once. So "0 of 60" is the design's ceiling, not evidence that day_5 and day_0 occupancy are equal. Pooling narrows what the test can see further: each n=4 arm mixes 2 BWM + 2 control replicates, so a day-axis shift that points in opposite directions in the two conditions cancels inside the same comparison.
+
+**Glycine is depleted at all three ribosome sites in day_5 relative to day_0, the cleanest co-directional pattern in the file (exploratory).** P-site G is the file's largest floor depletion (-0.2029, `nominal-only`), and glycine is also depleted at the A site (-0.1770) and the E site (-0.0976), so the same amino acid moves the same way across the whole decoding channel. A coordinated cross-site glycine drop is internally coherent as a pattern, but none of the three cells clears FDR and only the P-site cell even reaches the raw-p floor, so this is a directional observation, not a finding. It is the most natural thing in the file to carry forward: codon resolution would say whether the glycine depletion localises to one Gly synonym (a codon-usage shift) or spreads across synonyms (an amino-acid-level nudge).
+
+**The remaining floor leads are scattered and lack a shared mechanistic anchor (exploratory).** Beyond P-site glycine, the floor cells are A-site M enrichment (+0.1567), E-site M enrichment (+0.0727), P-site S enrichment (+0.0783), and A-site P depletion (-0.0866) — a mix of methionine, serine, and proline that does not group into one biochemical theme. The two methionine cells move the same way (enriched at both A and E), which is the only secondary co-directional hint, but at floor magnitude it is most consistent with the discrete-floor noise the caveats describe. None of these has an obvious decoding-channel mechanism, so they are leads to look for again where N is larger, not effects to read here.
+
+**The largest-magnitude cell is an above-floor tryptophan depletion that is not even nominally significant (exploratory).** A-site W (-0.2413) is the biggest swing in the file by `|log2_FC|`, yet its raw p is 0.1143 — above the 0.05 nominal threshold and well above the floor — so it is magnitude without significance. The same is true of the E-site proline depletion (-0.2195) and the A-site asparagine enrichment (+0.2178). The bar plots are sorted by magnitude and will show these as the tallest bars, but the table selects by raw p, so the tallest bars and the flagged cells are deliberately different cells: at this N a large fold-change and a small p-value are not the same thing.
+
+**Site E is flatter than sites A and P (concrete).** Sites A and P both reach `p_adj` 0.2857 (the file minimum), while the best E-site cell only reaches `p_adj` 0.5714; whatever modest day_5-vs-day_0 modulation the pooled design can register concentrates at the A and P sites. Whether this A/P-over-E pattern is real or an artefact of the floor structure is a question for a higher-powered test on the same time axis, not something this file can settle.
+
+**What to carry forward.** Concrete claim to quote: this file shows no signal at FDR<0.05 for day_5-vs-day_0 amino-acid occupancy with conditions pooled, the absence is structural (n=4 floor-blocking, five floor cells still BH-correct to 0.2857) rather than biological, and sites A and P are marginally less flat than site E. Exploratory patterns worth checking in sister tests: (1) does the cross-site glycine depletion reappear with the same direction in the within-condition Fisher `timepoint_fisher_within_condition_d5_vs_d0`, which holds condition fixed and tests the same time axis at whole-transcriptome N, and does the codon sister `codon_wilcoxon_timepoint_d5_vs_d0.csv` localise it to one Gly synonym? (2) do these day_5-vs-day_0 floor cells decompose additively against the other two contrasts (does d10_vs_d0 ~= d5_vs_d0 + d10_vs_d5 per cell), or is the trajectory non-additive? Noise to ignore: the above-floor large-magnitude cells (A-site W, E-site P, A-site N) whose raw p exceeds 0.05, and every cell with `p_adj` >= 0.62.
+
+## Methods
+
+Columns present: `site`, `amino_acid`, `median_day_5`, `median_day_0`, `log2_FC`, `U_stat`, `p_value`, `p_adj`. The test is a two-sample Wilcoxon rank-sum (Mann-Whitney U) comparing day_5 vs day_0 occupancy per (site, amino acid) at n=4 vs n=4. The `U_stat` column and the paired median columns are consistent with that test. The correction column is `p_adj` (BH within each site's 20-feature family, per `merge_global_occupancy_analysis.py`). The test compares the two timepoint distributions per cell; it does not separate the BWM and control replicates that are pooled into each n=4 arm, and at n=4 vs n=4 a single FDR-significant cell would require ~12+ features tied at the floor simultaneously.
+
+## What the caveats mean for reading this file
+
+- **mw-floor-blocking.** The n=4-vs-n=4 two-sided Mann-Whitney floor is 0.02857; with a per-site family of 20 amino acids, even the five cells that reach the floor here only BH-correct to `p_adj` 0.2857, so "0 of 60 at FDR<0.05" is the design's structural ceiling — do not read it as evidence that day_5 ~= day_0.
+- **condition-pooled-confound.** Each n=4 arm pools 2 BWM + 2 control replicates; a BWM-specific and a control-specific time response that point in opposite directions cancel inside the same comparison, so cross-check the within-condition Fisher (`timepoint_fisher_within_condition_d5_vs_d0`) before reading any null cell as "no day-axis change."
+- **n=4-low-power.** With n=4 vs n=4, a real effect can be missed; treat this null as weakly informative, not strong evidence of equivalence.
+- **p-floor-aware-headline.** The headline reports min raw p ~= 0.0286 (the achievable floor) and explains why the FDR null is structural; read the 0 of 60 as "by design," not as a biological negative.
+
+---
+
+## Plots — individual
+
+![A-site day_5-vs-day_0 amino-acid bar plot. X-axis is the 20 amino acids ordered by log2 fold-change high to low (N, M, D, F, C, E, S, T, I, K, R, Q, V, L, H, P, A, Y, G, W); y-axis is log2 fold-change, range ~= -0.24 to +0.22; bars coloured by amino-acid class (see legend). Largest enrichment at N (~+0.22); largest depletion at W (~-0.24, the file's largest-magnitude cell overall).](../plots/between_timepoint/d5_vs_d0/individual/site_A_aa_Day5_vs_Day0_barplot.png)
+
+![P-site day_5-vs-day_0 amino-acid bar plot. X-axis is the 20 amino acids ordered by log2 fold-change high to low (C, E, N, S, F, L, Y, I, D, Q, V, M, H, T, W, A, R, P, K, G); y-axis is log2 fold-change, range ~= -0.20 to +0.13; bars coloured by amino-acid class. Largest enrichment at C (~+0.13); largest depletion at G (~-0.20, the file's largest floor cell).](../plots/between_timepoint/d5_vs_d0/individual/site_P_aa_Day5_vs_Day0_barplot.png)
+
+![E-site day_5-vs-day_0 amino-acid bar plot. X-axis is the 20 amino acids ordered by log2 fold-change high to low (S, C, Q, E, W, M, L, H, R, N, D, T, F, V, A, Y, I, G, K, P); y-axis is log2 fold-change, range ~= -0.22 to +0.15; bars coloured by amino-acid class. Largest enrichment at S (~+0.15); largest depletion at P (~-0.22).](../plots/between_timepoint/d5_vs_d0/individual/site_E_aa_Day5_vs_Day0_barplot.png)

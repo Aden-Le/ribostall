@@ -1,0 +1,177 @@
+---
+title: "aa_wilcoxon_condition — Olive report"
+subtitle: "ribostall global_occupancy — occupancy stats"
+date: 2026-06-04
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    embed-resources: true
+    fig-cap-location: bottom
+  pdf:
+    toc: true
+    fig-cap-location: bottom
+    include-in-header:
+      text: |
+        \usepackage{needspace}
+tbl-colwidths: [26, 20, 17, 17, 20]
+execute:
+  echo: false
+---
+
+## Composite figure
+
+![Three-panel bar plot, A-site / P-site / E-site left to right, of per-amino-acid log2 fold-change (BWM median / control median) in whole-transcriptome occupancy. Within each panel the 20 amino acids are sorted by log2 fold-change high to low; bars are coloured by amino-acid physicochemical class (acidic, basic, hydrophobic, neutral, polar; see legend). Y-axis is log2 fold-change, range ~= -0.22 to +0.10; bars above zero are BWM-enriched, below zero are BWM-depleted.](../plots/between_condition/composite/APE_aa_BWM_vs_Control_barplot_composite.png){fig-pos="H" width=92%}
+
+Each panel ranks the 20 amino acids by signed log2 fold-change at one ribosome site (A, P, E): a bar above zero means more BWM occupancy than control at that site, below zero means less. No significance markers are drawn on the bars.
+
+---
+
+## Overview
+
+- **CSV:** `aa_wilcoxon_condition.csv`
+- **Family (from `_INDEX.md`):** `between_condition_wilcoxon`
+- **Sister CSV(s):**
+  - `codon_wilcoxon_condition.csv`
+- **Test:** Mann-Whitney U (two-sample Wilcoxon rank-sum), BWM vs control
+- **Design:** n=6 BWM vs n=6 control replicates (the 6 replicates per condition span day_0/day_5/day_10, pooled as replicates of one condition); two-sided Mann-Whitney U on per-(site, amino acid) occupancy; BH-FDR per A/P/E site (each site is its own family of 20 amino-acid tests); effect column is `log2_FC` = log2(median_BWM / median_control).
+
+### Family-level caveats
+
+- **timepoint-pooled-confound** — n=6 per condition is built by treating the 6 replicates across day_0/day_5/day_10 as replicates (`rep_to_condition` maps all 6 BWM replicates to "BWM" and all 6 control replicates to "control"); if the BWM effect varies across timepoints, pooling timepoints as within-condition noise masks signal. Both members share this design.
+- **mw-floor-tight** — the Mann-Whitney two-sided p-floor for n=6 vs n=6 is ~=0.00216; per-site BH families of ~20 (aa) or ~61 (codon) make FDR<0.05 feasible but tight.
+- **n=6-modest-power** — Mann-Whitney with n=6 vs n=6 has modest power; a null result is weakly informative.
+- **bh-per-site** — stats were computed per site (A/P/E) and then merged by `merge_global_occupancy_analysis.py`; `p_adj` is BH-corrected within each site's ~20/61 features, not across the merged A/P/E file.
+
+---
+
+## Headline
+
+No amino-acid test is significant at FDR<0.05 (0 of 60), and none clears raw p<0.05 either (min raw p = 0.1797); the minimum adjusted p is 0.9372 (E-site, amino acid A). There is no detectable BWM-vs-control signal at amino-acid resolution. As non-significant leads only: the largest-magnitude depleted cell is A-site Y (`log2_FC` -0.2237, `p_adj` 1.0000) and the largest-magnitude enriched cell is A-site Q (`log2_FC` +0.1046, `p_adj` 1.0000); the cell with the smallest adjusted p sits at the E-site (`p_adj` 0.9372).
+
+## Top hits
+
+Effect column is `log2_FC` = log2(median BWM / median control): positive means BWM-enriched, negative means BWM-depleted. Two p-value columns are shown: `p_value` is the raw Mann-Whitney p, and `p_adj` is `p_value` after BH correction within each site's family of 20 amino acids. Each site is split into one sub-table per direction. No row reaches FDR<0.05 or raw p<0.05 (min raw p = 0.1797), so every row below is a non-significant lead; within each sub-table the rows are up to 5 per direction ranked by raw `p_value` ascending, with `|log2_FC|` descending as the tiebreaker. The `flag` column is blank because no per-row floor or nominal-only condition is met.
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### A site — Enriched (BWM > control)
+
+| amino acid     | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| ---            | ---                | ---               | ---                  | ---  |
+| Q (glutamine)  | +0.1046            | 0.2403            | 1.0000               |      |
+| D (aspartate)  | +0.0424            | 0.5887            | 1.0000               |      |
+| R (arginine)   | +0.0384            | 0.5887            | 1.0000               |      |
+| S (serine)     | +0.0212            | 0.5887            | 1.0000               |      |
+| M (methionine) | +0.0366            | 0.6991            | 1.0000               |      |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### A site — Depleted (BWM < control)
+
+| amino acid        | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| ---               | ---                | ---               | ---                  | ---  |
+| Y (tyrosine)      | -0.2237            | 0.3095            | 1.0000               |      |
+| E (glutamate)     | -0.0350            | 0.3095            | 1.0000               |      |
+| K (lysine)        | -0.0637            | 0.5887            | 1.0000               |      |
+| H (histidine)     | -0.0626            | 0.5887            | 1.0000               |      |
+| F (phenylalanine) | -0.0183            | 0.8182            | 1.0000               |      |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### P site — Enriched (BWM > control)
+
+| amino acid     | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| ---            | ---                | ---               | ---                  | ---  |
+| W (tryptophan) | +0.0647            | 0.2403            | 1.0000               |      |
+| Q (glutamine)  | +0.0503            | 0.2403            | 1.0000               |      |
+| H (histidine)  | +0.0220            | 0.4848            | 1.0000               |      |
+| L (leucine)    | +0.0215            | 0.5887            | 1.0000               |      |
+| M (methionine) | +0.0580            | 0.6991            | 1.0000               |      |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### P site — Depleted (BWM < control)
+
+| amino acid     | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| ---            | ---                | ---               | ---                  | ---  |
+| P (proline)    | -0.0637            | 0.3095            | 1.0000               |      |
+| N (asparagine) | -0.0136            | 0.4848            | 1.0000               |      |
+| E (glutamate)  | -0.0603            | 0.5887            | 1.0000               |      |
+| C (cysteine)   | -0.0233            | 0.8182            | 1.0000               |      |
+| Y (tyrosine)   | -0.1054            | 0.9372            | 1.0000               |      |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### E site — Enriched (BWM > control)
+
+| amino acid        | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| ---               | ---                | ---               | ---                  | ---  |
+| C (cysteine)      | +0.0849            | 0.1797            | 0.9372               |      |
+| Y (tyrosine)      | +0.0888            | 0.3939            | 0.9372               |      |
+| F (phenylalanine) | +0.0620            | 0.4848            | 0.9372               |      |
+| W (tryptophan)    | +0.0571            | 0.4848            | 0.9372               |      |
+| S (serine)        | +0.0569            | 0.4848            | 0.9372               |      |
+
+```{=latex}
+\needspace{14\baselineskip}
+```
+
+### E site — Depleted (BWM < control)
+
+| amino acid     | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| ---            | ---                | ---               | ---                  | ---  |
+| K (lysine)     | -0.0808            | 0.1797            | 0.9372               |      |
+| N (asparagine) | -0.0544            | 0.1797            | 0.9372               |      |
+| P (proline)    | -0.0868            | 0.6991            | 0.9372               |      |
+| R (arginine)   | -0.0398            | 0.6991            | 0.9372               |      |
+| Q (glutamine)  | -0.0348            | 0.6991            | 0.9372               |      |
+
+## Numbers at a glance
+
+- `n_tests`: 60 (20 per site, A/P/E)
+- `n_significant` (adjusted-p < 0.05): 0
+- `n_significant` (adjusted-p < 0.10): 0
+- `min adjusted-p`: 0.9372 (E-site, A)
+- `min raw p`: 0.1797
+- `p_floor`: 0.00216 (theoretical two-sided Mann-Whitney floor for n=6 vs n=6). Observed min raw p (0.1797) sits far above this floor, so the null here is signal/power-limited, not floor-limited.
+- Per site: site A min `p_adj` 1.0000; site P min `p_adj` 1.0000; site E min `p_adj` 0.9372.
+
+## Biological interpretation
+
+**There is no detectable BWM-vs-control difference at amino-acid resolution under the pooled-timepoint design (concrete).** None of the 60 (site, amino acid) tests passes BH within its site, even with the small family size of 20 hypotheses; the minimum adjusted p is 0.9372 and no cell clears raw p<0.05 (min raw p 0.1797), so the result is not merely a correction artefact. This rules out a large, timepoint-stable shift in which amino acids occupy the A, P, or E site between BWM and control. It does not rule out a timepoint-localised effect: pooling the six replicates across day_0/5/10 turns any day-specific shift into within-condition noise, and at n=6 vs 6 the test has only modest power, so a biologically meaningful effect at a single timepoint could be missed here.
+
+**The largest-magnitude cells are directional leads only, with no value above the no-signal band (exploratory).** The strongest single cell is an A-site tyrosine depletion in BWM (`log2_FC` -0.2237), with an A-site glutamine enrichment (+0.1046) the largest in the other direction; the E-site carries the file's smallest adjusted p (0.9372) without any individual cell standing out. At these effect sizes (|log2_FC| < 0.23) and adjusted p values near 1.0, none of these is a hit and none has a clean mechanistic anchor at the amino-acid level; they are most consistent with the no-signal pattern the caveats describe rather than biology. They are worth carrying forward only as directions to check, not findings.
+
+**What to carry forward.** Concrete claim to quote: this file shows no significant BWM-vs-control difference at FDR for amino-acid occupancy with timepoints pooled. Exploratory directions worth checking in sister tests: (1) does the A-site Y depletion (and the A-site Q enrichment) reappear with the same direction in the per-timepoint Fisher at amino-acid resolution, where BWM-vs-control power is not diluted by pooling across day_0/5/10, or in the within-condition Fisher contrasts? (2) does the codon-resolution sister `codon_wilcoxon_condition.csv` localise any of these cells to specific synonymous codons? Noise to ignore: the bulk of cells with `p_adj` near 1.0, which carry no direction.
+
+## Methods
+
+Columns present: `site`, `amino_acid`, `median_BWM`, `median_control`, `log2_FC`, `U_stat`, `p_value`, `p_adj`. The test is a two-sample Wilcoxon rank-sum (Mann-Whitney U) comparing BWM vs control occupancy per (site, amino acid). The `U_stat` column and the paired median columns are consistent with that test. The correction column is `p_adj` (BH within each site's 20-feature family, per `merge_global_occupancy_analysis.py`). The test compares the two condition distributions per cell; it does not address timepoint structure (the 6 replicates per condition span day_0/day_5/day_10) and does not estimate effect direction beyond the rank shift summarised by `log2_FC`.
+
+## What the caveats mean for reading this file
+
+- **timepoint-pooled-confound.** Pooling the 6 replicates across day_0/5/10 as condition replicates means a real day-localised BWM effect can wash out as within-condition noise; a null here does not imply no effect at every timepoint, so cross-check the per-timepoint Fisher before reading it as biological absence.
+- **mw-floor-tight.** The exact Mann-Whitney floor for n=6 vs 6 is ~=0.00216, so per-site BH over 20 tests is feasible only at the very smallest p in the family; here the data does not approach the floor (min raw p 0.1797), so this constraint is not what produced the null.
+- **n=6-modest-power.** With n=6 vs 6, an effect of biologically meaningful size can be missed; treat this null as weakly informative, not strong evidence of equivalence.
+- **bh-per-site.** `p_adj` is BH-corrected within each site's 20-amino-acid family, not across the merged A/P/E file, so compare adjusted p only within a single site.
+
+---
+
+## Plots — individual
+
+![A-site BWM-vs-control amino-acid bar plot. X-axis is the 20 amino acids ordered by log2 fold-change high to low (Q, N, C, G, D, R, M, T, S, W, I, L, A, P, V, F, E, H, K, Y); y-axis is log2 fold-change, range ~= -0.22 to +0.10; bars coloured by amino-acid class (see legend). Largest enrichment at Q (~+0.10) and N (~+0.10); largest depletion at Y (~-0.22).](../plots/between_condition/individual/site_A_aa_BWM_vs_Control_barplot.png)
+
+![P-site BWM-vs-control amino-acid bar plot. X-axis is the 20 amino acids ordered by log2 fold-change high to low (W, D, M, Q, F, A, H, L, I, S, V, T, R, N, G, C, K, E, P, Y); y-axis is log2 fold-change, range ~= -0.22 to +0.10; bars coloured by amino-acid class. Largest enrichment at W (~+0.06) and D (~+0.06); largest depletion at Y (~-0.11).](../plots/between_condition/individual/site_P_aa_BWM_vs_Control_barplot.png)
+
+![E-site BWM-vs-control amino-acid bar plot. X-axis is the 20 amino acids ordered by log2 fold-change high to low (Y, C, F, W, S, L, A, V, T, D, I, G, M, H, E, Q, R, N, K, P); y-axis is log2 fold-change, range ~= -0.22 to +0.10; bars coloured by amino-acid class. Largest enrichment at Y (~+0.09) and C (~+0.08); largest depletion at P (~-0.09) and K (~-0.08).](../plots/between_condition/individual/site_E_aa_BWM_vs_Control_barplot.png)

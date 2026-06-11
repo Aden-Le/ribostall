@@ -45,7 +45,7 @@ Output:
 
 Example input:
 ```
-python adj_coverage.py  \
+python scripts/adj_coverage.py  \
 --ribo "../bxc/bxc_disome.ribo" \
 --site-type "stop" \
 --min-len 57 \
@@ -56,10 +56,12 @@ python adj_coverage.py  \
 
 # 2. Get stall sites
 
-`stall_sites.py` finds stall sites from the coverage data with applied P-site offsets. This is done by:
+Stall-site analysis is split into two scripts. `stall_sites_non_consensus_call.py` calls stall sites and annotates each with its E/P/A codon and amino acid, producing two tidy CSVs (`stall_sites_codon.csv` and `stall_sites_aa.csv`) plus matching per-group background CSVs (`per_group_background_codon.csv`, `per_group_background_aa.csv`). All ribopy / FASTA work happens in the call script so the stats half can run on a machine without the `.ribo` file. `stall_sites_non_consensus_stats.py` consumes one stall-sites CSV at a time and runs three enrichment tests — run it twice, once per CSV, to get codon-level and AA-level results side-by-side (`within_condition_enrichment_{codon,aa}.csv`, `between_condition_wilcoxon_{codon,aa}.csv`, `per_timepoint_fisher_{codon,aa}.csv`). See [[stall_sites_non_consensus_call_explained]] and [[stall_sites_non_consensus_stats_explained]] for the full walkthroughs.
+
+`stall_sites_consensus.py` is the sibling consensus-based pipeline; it finds stall sites from coverage data with applied P-site offsets. This is done by:
 1. **Transcript filtering**: For each transcript, the average reads per nucleotide is computed. Transcripts with coverage below `--tx_threshold` in fewer than `--tx_min_rep` are excluded.
 2. **Codonize read counts**: An array of the number of reads per codon. `0` corresponds to the start codon.
-3. **z-score calculation**: Coverage per codon is converted to `log2(x + pseudocount)` to stabilize variance and handle zeros. Compute transcript-wide z-scores. Codons with z-scores ≥ `--min_z` and reads ≥ `--min_reads` are considered candidate stalls. The first and last `--trim_edges` codons are ignored.
+3. **z-score calculation**: The first and last `--trim_edges` codons (initiation ramp and termination region) are dropped first, so their pileups don't inflate the null. The remaining elongation body is converted to `log2(x + pseudocount)` to stabilize variance and handle zeros, and transcript-wide z-scores are computed on that trimmed body. Codons with z-scores ≥ `--min_z` and reads ≥ `--min_reads` are considered candidate stalls.
 4. **Consensus stall sites**: A site must appear in at least `--min-support` replicates to be reported. If there are >1 stall sites within `--min_sep` codons, the most downstream stall site is reported.
 5. **Output**: List of stall sites `{"group": "group", "transcript": "transcript", "tx_id": "tx_id", "gene": "gene", "pos_codon", 1}`
 
@@ -92,7 +94,7 @@ Optional: `--motif` finds amino acid enrichment around stall sites. This is done
 
 Example input to check filter thresholds:
 ```
-python stall_sites.py \
+python scripts/stall_sites_consensus.py \
 --pickle "../bxc/cov_di.pkl.gz" \
 --ribo "../bxc/bxc_disome.ribo" \
 --groups "kidney:kidney_rep1,kidney_rep2,kidney_rep3;liver:liver_rep1,liver_rep2,liver_rep3;lung:lung_rep1,lung_rep2,lung_rep3" \
@@ -102,7 +104,7 @@ python stall_sites.py \
 
 Example input for motif analysis:
 ```
-python stall_sites.py \
+python scripts/stall_sites_consensus.py \
 --pickle "../bxc/cov_di.pkl.gz" \
 --ribo "../bxc/bxc_disome.ribo" \
 --groups "kidney:kidney_rep1,kidney_rep2,kidney_rep3;liver:liver_rep1,liver_rep2,liver_rep3;lung:lung_rep1,lung_rep2,lung_rep3" \
@@ -145,7 +147,7 @@ Successful run of `adj_coverage.py`:
 
 Successful run of `stall_sites.py`:
 ```
-(ribo) (base) uwusers-imac:ribostall chunglab$ python stall_sites.py --pickle "../Gatfield_Share/cov_di.pkl.gz" --ribo "../Gatfield_Share/bxc_disome.ribo" --groups "kidney:kidney_rep1,kidney_rep2,kidney_rep3;liver:liver_rep1,liver_rep2,liver_rep3;lung:lung_rep1,lung_rep2,lung_rep3" --tx_threshold 0.3 --min_z 1.0 --motif --reference "../Gatfield_Share/appris_mouse_v2_selected.fa.gz" --flank-left 20 --flank-right 10
+(ribo) (base) uwusers-imac:ribostall chunglab$ python scripts/stall_sites_consensus.py --pickle "../Gatfield_Share/cov_di.pkl.gz" --ribo "../Gatfield_Share/bxc_disome.ribo" --groups "kidney:kidney_rep1,kidney_rep2,kidney_rep3;liver:liver_rep1,liver_rep2,liver_rep3;lung:lung_rep1,lung_rep2,lung_rep3" --tx_threshold 0.3 --min_z 1.0 --motif --reference "../Gatfield_Share/appris_mouse_v2_selected.fa.gz" --flank-left 20 --flank-right 10
 Number of filtered transcripts: 122
 Number of total stall sites per group: {'kidney': 902, 'liver': 942, 'lung': 853}
 2025-09-30 13:40:32,099  INFO  MainProcess  Saved JSON to ../ribostall_results/stall_sites.jsonl

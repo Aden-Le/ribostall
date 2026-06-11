@@ -1,0 +1,17 @@
+# Pipeline output tree — never tracked in the template
+results/
+C_elegan_upload/
+
+# Local-only helpers and working docs — not part of the template
+for_claude_scripts/
+R_scripts/journals/
+docs/
+test.py
+CLAUDE.md
+changelog/
+plans/
+scripts/_*.md
+.obsidian/
+__pycache__/
+*.pyc
+Rplots.pdf

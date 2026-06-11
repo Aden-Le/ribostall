@@ -130,11 +130,15 @@ def consensus_stalls_across_reps(
             return []
         return sorted({int(d["index"]) for d in stalls_for_tx if d is not None})
 
+    # Only takes transcripts that are common across all replicates, ALL the reps don't have to have a stall
+    # Just be present in all replicates
     common_txs = set.intersection(*(set(stalls_by_exp[r].keys()) for r in reps))
     out: Dict[str, List[int]] = {}
 
     for tx in common_txs:
+        # The stalls indices for this transcript across all replicates
         per_rep_idx = {r: _indices_from_stalls(stalls_by_exp[r][tx]) for r in reps}
+        # The union of all indices from all replicates for this transcript
         candidates = sorted(set().union(*per_rep_idx.values()))
         consensus: List[int] = []
 
@@ -145,9 +149,9 @@ def consensus_stalls_across_reps(
                 arr = per_rep_idx[r]
                 j = bisect.bisect_left(arr, c - tol)
                 hit = None
-                while j < len(arr) and arr[j] <= c + tol:
+                # If the value is not past the last element of the array and less than or equal to the tagert plus tolerance
+                if j < len(arr) and arr[j] <= c + tol:
                     hit = arr[j]
-                    break
                 if hit is not None:
                     support += 1
                     supporting_hits.append(hit)

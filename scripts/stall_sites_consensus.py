@@ -1,22 +1,31 @@
 import logging
 import argparse
 import gzip
+import os
 import pickle
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-import re
-import os
 import numpy as np
 import pandas as pd
 from ribopy import Ribo
 
-from ribostall.stall_sites import filter_tx, codonize_counts_cds, call_stalls, consensus_stalls_across_reps, consensus_to_long_df
-from ribostall.amino_acids import windows_aa, count_matrix, background_aa_freq, pwm_position_weighted_log2, plot_logo, AA_ORDER, AA_CLASS, CLASS_COLORS
+from ribostall.stall_sites import (
+    filter_tx,
+    codonize_counts_cds,
+    call_stalls,
+    consensus_stalls_across_reps,
+    consensus_to_long_df,
+)
+from ribostall.amino_acids import (
+    AA_ORDER,
+    SENSE_CODONS,
+    annotate_stalls_epa,
+    background_aa_freq,
+    background_codon_freq,
+)
 from ribostall.sequence import get_sequence, get_cds_range_lookup
 
 # =========================
@@ -29,14 +38,16 @@ logging.basicConfig(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Detect ribosome stall sites"
+        description="Detect ribosome stall sites with cross-replicate consensus and emit stats-ready E/P/A CSVs"
     )
     parser.add_argument("--pickle", required=True, help="Path to coverage pickle.gz file")
     parser.add_argument("--ribo", required=True, help="Path to ribo file")
+    parser.add_argument("--reference", required=True,
+                        help="Reference FASTA file used to look up CDS sequences for E/P/A annotation")
+    parser.add_argument("--groups", required=True,
+                        help="Experimental groups, e.g. 'groupA:rep1,rep2;groupB:rep3,rep4'")
     parser.add_argument("--tx_threshold", type=float, default=1.0,
                         help="Minimum reads/nt (in CDS) for filtering transcripts")
-    parser.add_argument("--groups", required=True,
-                    help="Semicolon-separated group:rep1,rep2 definitions")
     parser.add_argument("--tx_min_reps", type=int, default=2,
                         help="Minimum number of replicates passing threshold for filtering transcripts")
     parser.add_argument("--min_z", type=float, default=1.0,
@@ -50,19 +61,22 @@ def main():
     parser.add_argument("--pseudocount", type=float, default=0.5,
                         help="Pseudocount for stall calling")
     parser.add_argument("--stall_min_reps", type=int, default=2,
-                        help="Minimum number of replicates that must support a site")
+                        help="Default minimum number of replicates that must support a site "
+                             "(fallback for groups not listed in --stall_min_reps_per_group)")
+    parser.add_argument("--stall_min_reps_per_group", default=None,
+                        help="Per-group override for the minimum supporting replicates, "
+                             "e.g. 'control:2;treatment:1'. Groups omitted here fall back to "
+                             "--stall_min_reps.")
     parser.add_argument("--tol", type=int, default=0,
                         help="Tolerance window for matching sites across reps (same units as indices)")
     parser.add_argument("--min_sep", type=int, default=7,
                         help="Minimum separation between consensus sites; prefer downstream when closer than this")
-    parser.add_argument("--out-csv", default="results/stall_sites/motifs/stall_sites.csv", help="Output CSV for stall sites")
-    parser.add_argument("--motif", action="store_true", help="Plot motif")
-    parser.add_argument("--reference", help="Reference file path")
-    parser.add_argument("--flank-left", type=int, default=10, help="Motif")
-    parser.add_argument("--flank-right", type=int, default=6, help="Motif")
-    parser.add_argument("--psite-offset", type=int, default=0, help="Motif")
-    parser.add_argument("--out-png", default="results/stall_sites/motifs/motif.png", help="Motif")
-    parser.add_argument("--out-motif-csv", default="results/stall_sites/motifs", help="Output directory for motif PWM CSVs")
+    parser.add_argument("--psite-offset", type=int, default=0,
+                        help="Codon offset applied to each stall index before deriving E/P/A sites")
+    parser.add_argument("--basis", choices=("P", "A"), default="P",
+                        help="Register for E/P/A offsets (P: E=-1,P=0,A=+1; A: E=-2,P=-1,A=0)")
+    parser.add_argument("--out-dir", default="results/stall_sites/enrichment",
+                        help="Output directory for stall-site CSVs")
 
     args = parser.parse_args()
 
@@ -79,8 +93,40 @@ def main():
     groups = parse_groups(args.groups)
     # --- logging only ---
     logging.info(f"Parsed {len(groups)} groups: {list(groups.keys())}")
-    rep_to_group = {rep: grp for grp, reps in groups.items() for rep in reps}  # used for display only
+    rep_to_group = {rep: grp for grp, reps in groups.items() for rep in reps}
     # --- end logging ---
+
+    # -------------------------------------------------------------------------
+    # Per-group min_support: explicit overrides, falling back to --stall_min_reps
+    # -------------------------------------------------------------------------
+    def parse_min_support(arg):
+        mapping = {}
+        if not arg:
+            return mapping
+        for block in arg.split(";"):
+            name, val = block.split(":")
+            mapping[name.strip()] = int(val)
+        return mapping
+
+    min_support_override = parse_min_support(args.stall_min_reps_per_group)
+    unknown = set(min_support_override) - set(groups)
+    if unknown:
+        raise ValueError(
+            f"--stall_min_reps_per_group names unknown group(s) {sorted(unknown)}; "
+            f"declared groups are {sorted(groups)}"
+        )
+    # Resolve the effective min_support per group; warn if it exceeds the group's
+    # replicate count (which would make every site fail the support gate → empty).
+    min_support_by_group = {}
+    for group, reps in groups.items():
+        ms = min_support_override.get(group, args.stall_min_reps)
+        if ms > len(reps):
+            logging.warning(
+                f"min_support={ms} for group '{group}' exceeds its {len(reps)} replicate(s); "
+                f"no site can reach that support and the group's consensus will be empty."
+            )
+        min_support_by_group[group] = ms
+    logging.info(f"Per-group min_support: {min_support_by_group}")
 
     # -------------------------------------------------------------------------
     # Load coverage data
@@ -100,7 +146,7 @@ def main():
     logging.info(f"Keeping {len(cov)} declared replicates (dropped undeclared samples)")
 
     # -------------------------------------------------------------------------
-    # Load the ribo object
+    # Load the ribo object + reference sequences (needed for E/P/A annotation)
     # -------------------------------------------------------------------------
     # --- logging only ---
     logging.info(f"Loading ribo object from {args.ribo} ...")
@@ -108,6 +154,20 @@ def main():
     ribo_object = Ribo(args.ribo, alias=None)
     # --- logging only ---
     logging.info("Ribo object loaded")
+    print(f"\n{'='*60}\nLOADING SEQUENCES\n{'='*60}")
+    logging.info("Looking up CDS ranges ...")
+    # --- end logging ---
+    cds_range = get_cds_range_lookup(ribo_object)
+    # --- logging only ---
+    logging.info(f"CDS ranges loaded for {len(cds_range)} transcripts")
+    print(f"  CDS ranges: {len(cds_range)} transcripts")
+    logging.info(f"Loading sequences from {args.reference} ...")
+    # --- end logging ---
+    sequence = get_sequence(ribo_object, args.reference, alias=False)
+    # --- logging only ---
+    logging.info(f"Sequences loaded for {len(sequence)} transcripts")
+    print(f"  Sequences: {len(sequence)} transcripts")
+    print(f"{'='*60}\n")
     # --- end logging ---
 
     # -------------------------------------------------------------------------
@@ -118,12 +178,12 @@ def main():
         print("Warning: the following replicates are missing from coverage:", ", ".join(missing))
 
     # -------------------------------------------------------------------------
-    # Transcript filtering (per-group, then intersection across all groups)
+    # Transcript filtering (per-group, no intersection)
     # -------------------------------------------------------------------------
     # --- logging only ---
     n_before = len(next(iter(cov.values())))
     print(f"\n{'='*60}")
-    print(f"TRANSCRIPT FILTERING (per-group, then intersection)")
+    print(f"TRANSCRIPT FILTERING (per-group, no intersection)")
     print(f"{'='*60}")
     print(f"Transcripts before filtering: {n_before}")
     print(f"\n  {'Replicate':<25} {'Group':<15} {'Avg cov/tx (reads/nt)':>22} {'SD':>10} {'Total coverage':>16}")
@@ -139,6 +199,8 @@ def main():
     print()
     # --- end logging ---
 
+    # Per-group transcript universe — each group keeps its own filtered tx set
+    # (mirrors stall_sites_non_consensus_call.py; no cross-group intersection).
     filt_tx_dict = {
         group: filter_tx(cov, reps, min_reps=args.tx_min_reps, threshold=args.tx_threshold,
                          trim_start=args.trim_start, trim_stop=args.trim_stop)
@@ -147,20 +209,17 @@ def main():
     # --- logging only ---
     for group, txs in filt_tx_dict.items():
         print(f"  Per-group filter [{group}]: {len(txs)} transcripts  (lost {n_before - len(txs)})")
-    # --- end logging ---
-
-    # Intersection across all groups
-    filt_tx_set = set.intersection(*(set(v) for v in filt_tx_dict.values())) if filt_tx_dict else set()
-    # --- logging only ---
-    print(f"  Intersection across all groups: {len(filt_tx_set)} transcripts")
     print(f"{'='*60}\n")
     # --- end logging ---
 
-    # Keep only filtered transcripts in coverage
-    cov_filt = {
-        exp: {tx: arr for tx, arr in tx_dict.items() if tx in filt_tx_set}
-        for exp, tx_dict in cov.items()
-    }
+    # Keep only each group's filtered transcripts in its replicates' coverage
+    cov_filt = {}
+    for exp, tx_dict in cov.items():
+        grp = rep_to_group.get(exp)
+        if grp is None:
+            continue
+        grp_txs = filt_tx_dict[grp]
+        cov_filt[exp] = {tx: arr for tx, arr in tx_dict.items() if tx in grp_txs}
 
     # -------------------------------------------------------------------------
     # Codonize coverage
@@ -213,13 +272,13 @@ def main():
     # Consensus stalls per group
     # -------------------------------------------------------------------------
     # --- logging only ---
-    logging.info(f"Computing consensus stalls (min_support={args.stall_min_reps}, tol={args.tol}, min_sep={args.min_sep}) ...")
+    logging.info(f"Computing consensus stalls (min_support per group={min_support_by_group}, tol={args.tol}, min_sep={args.min_sep}) ...")
     # --- end logging ---
     consensus = {
         group: consensus_stalls_across_reps(
             stalls,
             reps,
-            min_support=args.stall_min_reps,
+            min_support=min_support_by_group[group],
             tol=args.tol,
             min_sep=args.min_sep
         )
@@ -239,110 +298,66 @@ def main():
     # --- end logging ---
 
     # -------------------------------------------------------------------------
-    # Write consensus stall sites to CSV
+    # Long dataframe of consensus stalls; consensus has one set per group, so
+    # treat each group as its own "replicate" for the downstream stats script.
     # -------------------------------------------------------------------------
-    # --- logging only ---
-    print(f"\n{'='*60}")
-    print(f"WRITING RESULTS")
-    print(f"{'='*60}")
-    # --- end logging ---
+    logging.info("Converting consensus stalls to long-format dataframe ...")
     df = consensus_to_long_df(consensus)
-    os.makedirs(os.path.dirname(os.path.abspath(args.out_csv)), exist_ok=True)
-    df.to_csv(args.out_csv, index=False)
-    # --- logging only ---
-    logging.info(f"Saved stall sites to {args.out_csv}")
-    print(f"  Saved: {args.out_csv}  ({len(df)} rows)")
+    df["replicate"] = df["group"]
+    logging.info(f"Long-format dataframe: {len(df)} rows")
+
+    # -------------------------------------------------------------------------
+    # Annotate each stall with E/P/A codon + AA
+    # -------------------------------------------------------------------------
+    logging.info("Annotating stalls with E/P/A codons and amino acids ...")
+    df_codon, df_aa = annotate_stalls_epa(
+        df, cds_range, sequence,
+        psite_offset_codons=args.psite_offset,
+        basis=args.basis,
+        drop_invalid=True,
+    )
+    logging.info(
+        f"Annotation complete: {len(df_codon)} codon rows, {len(df_aa)} AA rows "
+        f"(dropped {len(df) - len(df_codon)} rows where E/P/A fell outside the CDS or hit stop/unknown)"
+    )
+
+    # -------------------------------------------------------------------------
+    # Write outputs
+    # -------------------------------------------------------------------------
+    os.makedirs(args.out_dir, exist_ok=True)
+    codon_path = os.path.join(args.out_dir, "stall_sites_codon.csv")
+    aa_path = os.path.join(args.out_dir, "stall_sites_aa.csv")
+    df_codon.to_csv(codon_path, index=False)
+    df_aa.to_csv(aa_path, index=False)
+    logging.info(f"Saved codon-annotated stall sites to {codon_path}")
+    logging.info(f"Saved AA-annotated stall sites to {aa_path}")
+
+    # -------------------------------------------------------------------------
+    # Per-group background frequencies (codon + AA) for the stats script
+    # -------------------------------------------------------------------------
+    print(f"\n{'='*60}\nBACKGROUND FREQUENCIES (per group)\n{'='*60}")
+    for level, helper, alphabet, feature_col in (
+        ("codon", background_codon_freq, SENSE_CODONS, "codon"),
+        ("aa", background_aa_freq, AA_ORDER, "amino_acid"),
+    ):
+        rows = []
+        for grp, grp_txs in filt_tx_dict.items():
+            bg_freq, bg_counts = helper(
+                grp_txs, cds_range, sequence, alphabet,
+                trim_start=args.trim_start, trim_stop=args.trim_stop,
+            )
+            print(f"  [{grp}] ({level}) {len(grp_txs)} transcripts, {int(bg_counts.sum())} total {level}s")
+            for feat in bg_freq.index:
+                rows.append({
+                    "group": grp,
+                    feature_col: feat,
+                    "bg_count": int(bg_counts[feat]),
+                    "bg_freq": float(bg_freq[feat]),
+                })
+        bg_path = os.path.join(args.out_dir, f"per_group_background_{level}.csv")
+        pd.DataFrame(rows).to_csv(bg_path, index=False)
+        logging.info(f"Saved per-group {level} backgrounds to {bg_path}")
     print(f"{'='*60}\n")
-    # --- end logging ---
-
-    # Motif
-    if args.motif:
-        reference_file_path = args.reference
-
-        # --- logging only ---
-        print(f"\n{'='*60}")
-        print(f"LOADING SEQUENCES")
-        print(f"{'='*60}")
-        logging.info("Looking up CDS ranges ...")
-        # --- end logging ---
-        cds_range = get_cds_range_lookup(ribo_object)
-        # --- logging only ---
-        logging.info(f"CDS ranges loaded for {len(cds_range)} transcripts")
-        print(f"  CDS ranges: {len(cds_range)} transcripts")
-        logging.info(f"Loading sequences from {reference_file_path} ...")
-        # --- end logging ---
-        sequence = get_sequence(ribo_object, reference_file_path, alias=None)
-        # --- logging only ---
-        logging.info(f"Sequences loaded for {len(sequence)} transcripts")
-        print(f"  Sequences: {len(sequence)} transcripts")
-        print(f"{'='*60}\n")
-        print(f"\n{'='*60}")
-        print(f"MOTIF ANALYSIS")
-        print(f"{'='*60}")
-        # --- end logging ---
-        def compute_W_for_group(g):
-            stalls = consensus[g]
-            win = windows_aa(consensus[g], cds_range, sequence,
-                        flank_left=args.flank_left, flank_right=args.flank_right, psite_offset_codons=args.psite_offset)
-            counts = count_matrix(win, AA_ORDER, flank_left=args.flank_left, flank_right=args.flank_right)
-            bg = background_aa_freq(consensus[g].keys(), cds_range, sequence, AA_ORDER)
-            return pwm_position_weighted_log2(counts, bg, pseudocount=args.pseudocount)
-
-        # compute all, then unify y-limits for fair visual comparison
-        W_by_group = {g: compute_W_for_group(g) for g in groups.keys()}
-
-        # per-position heights (sum over amino acids)
-        ymax = max(
-            W.loc[:, pos][W.loc[:, pos] > 0].sum()
-            for g, W in W_by_group.items()
-            for pos in W.columns
-        )
-        ymin = max(
-            abs(W.loc[:, pos][W.loc[:, pos] < 0].sum())
-            for g, W in W_by_group.items()
-            for pos in W.columns
-        )
-
-        # plot side-by-side
-        fig, axes = plt.subplots(1, len(groups.keys()), figsize=(5*len(groups.keys()), 5), sharey=True)
-        if len(groups.keys()) == 1:
-            axes = [axes]
-
-        for ax, g in zip(axes, groups.keys()):
-            plt.sca(ax)
-            plot_logo(W_by_group[g],
-                    title=f"{g.capitalize()}",
-                    aa_class=AA_CLASS)
-            ax.set_ylim(-ymin, ymax)   # same scale across panels
-        
-        for ax in axes[1:]:
-            ax.set_ylabel("")
-            ax.tick_params(axis="y", left=False, labelleft=False)
-            ax.spines["left"].set_visible(False)
-
-        patches = [mpatches.Patch(color=c, label=cls) for cls, c in CLASS_COLORS.items()]
-        fig.legend(handles=patches, loc="lower center", ncol=len(patches))
-
-        plt.tight_layout()
-        plt.subplots_adjust(bottom=0.17)
-        fig.savefig(args.out_png, dpi=600)
-        # --- logging only ---
-        logging.info(f"Saved image to {args.out_png}")
-        print(f"  Saved: {args.out_png}")
-        # --- end logging ---
-
-        os.makedirs(args.out_motif_csv, exist_ok=True)
-        for g, W in W_by_group.items():
-            # Save PWM (AA x position)
-            pwm_csv = os.path.join(args.out_motif_csv, f"{g}_pwm_log2_enrichment.csv")
-            W.to_csv(pwm_csv)
-            # --- logging only ---
-            print(f"  Saved: {pwm_csv}")
-            # --- end logging ---
-        # --- logging only ---
-        logging.info(f"Saved PWM CSVs to {args.out_motif_csv}")
-        print(f"{'='*60}\n")
-        # --- end logging ---
 
 if __name__ == "__main__":
     main()

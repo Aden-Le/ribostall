@@ -12,11 +12,15 @@ Each test is run independently for codon-level and amino acid-level occupancy.
 
 import logging
 
-import numpy as np
 import pandas as pd
-from scipy import stats
 
-from ribostall.enrichment import bh_fdr
+from ribostall.stats_core import (
+    bh_fdr,
+    apply_bh_fdr,
+    binom_row,
+    wilcoxon_row,
+    fisher_row,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -82,36 +86,29 @@ def within_condition_binomial_occupancy(
         total_n = sum(pooled.values())
         if total_n == 0:
             continue
+        # Raw read sums are integer-valued, so int(round(total_n)) == total_n; the
+        # binomial test and the total_n column both use this integer.
+        n = int(round(total_n))
 
         for unit in all_units:
             # Rounds the pooled count to the nearest integer to get the observed count for this unit in the group
             k = int(round(pooled[unit]))
             # Get the background frequency for this unit
             p_bg = bg_freq.get(unit, 1e-6)
-            # Gets the frequency of this unit in the group by dividing the observed count by the total number of reads in the group
-            freq = k / total_n if total_n > 0 else 0.0
 
-            # Calculate log2 enrichment as log2(observed frequency / background frequency), with a pseudocount to avoid log of zero
-            log2_enrich = np.log2(freq / p_bg) if freq > 0 and p_bg > 0 else 0.0
-            weighted_log2 = freq * log2_enrich
-            # k is the observed count of the unit in the group, total_n is the total number of reads in the group,
-            # p_bg is the background frequency of the unit. The binomial test checks if the observed 
-            # count k is significantly different from what would be expected under a binomial distribution
-            # with parameters total_n and p_bg.
-            result = stats.binomtest(k, int(round(total_n)), p_bg, alternative="two-sided")
-
+            res = binom_row(k, n, p_bg)
             rows.append({
                 "group": grp,
                 "condition": condition,
                 "timepoint": timepoint,
                 feature_col: unit,
-                "observed_count": k,
-                "total_n": int(round(total_n)),
-                "observed_freq": freq,
-                "bg_freq": p_bg,
-                "log2_enrichment": log2_enrich,
-                "weighted_log2_enrichment": weighted_log2,
-                "p_value": result.pvalue,
+                "observed_count": res["observed_count"],
+                "total_n": res["total_n"],
+                "observed_freq": res["observed_freq"],
+                "bg_freq": res["bg_freq"],
+                "log2_enrichment": res["log2_enrichment"],
+                "weighted_log2_enrichment": res["weighted_log2_enrichment"],
+                "p_value": res["p_value"],
             })
 
     df = pd.DataFrame(rows)
@@ -119,13 +116,7 @@ def within_condition_binomial_occupancy(
         return df
 
     # BH-FDR correction per group
-    dfs = []
-    for grp in sorted(groups.keys()):
-        mask = df["group"] == grp
-        sub = df.loc[mask].copy()
-        sub["p_adj"] = bh_fdr(sub["p_value"].values)
-        dfs.append(sub)
-    df = pd.concat(dfs, ignore_index=True)
+    df = apply_bh_fdr(df, ["group"])
     return df.sort_values(["group", "p_adj"])
 
 
@@ -171,42 +162,25 @@ def between_condition_wilcoxon_occupancy(
         # and condition B, respectively
         # For example, the normalized occupancy rates for codon "AAA" across all replicates in the
         # BWM condition would be collected into rates_a,
-        rates_a = np.array([rates_by_exp[r][unit] for r in rates_by_exp
-                            if rep_to_condition.get(r) == cond_a], dtype=float)
-        rates_b = np.array([rates_by_exp[r][unit] for r in rates_by_exp
-                            if rep_to_condition.get(r) == cond_b], dtype=float)
+        rates_a = [rates_by_exp[r][unit] for r in rates_by_exp
+                   if rep_to_condition.get(r) == cond_a]
+        rates_b = [rates_by_exp[r][unit] for r in rates_by_exp
+                   if rep_to_condition.get(r) == cond_b]
 
-        # The medians are taken for the log2 FC calculation
-        med_a = float(np.median(rates_a)) if len(rates_a) > 0 else 0.0
-        med_b = float(np.median(rates_b)) if len(rates_b) > 0 else 0.0
-
-        # log2 FC: cond_a / cond_b (BWM / control if alphabetical)
-        if med_a > 0 and med_b > 0:
-            log2_fc = np.log2(med_a / med_b)
-        else:
-            log2_fc = 0.0
-
-        if len(rates_a) >= 2 and len(rates_b) >= 2:
-            try:
-                u_stat, p_val = stats.mannwhitneyu(rates_a, rates_b, alternative="two-sided")
-            except ValueError:
-                u_stat, p_val = np.nan, 1.0
-        else:
-            u_stat, p_val = np.nan, 1.0
-
+        res = wilcoxon_row(rates_a, rates_b)
         rows.append({
             feature_col: unit,
-            f"median_{cond_a}": med_a,
-            f"median_{cond_b}": med_b,
-            "log2_FC": log2_fc,
-            "U_stat": u_stat,
-            "p_value": p_val,
+            f"median_{cond_a}": res["median_a"],
+            f"median_{cond_b}": res["median_b"],
+            "log2_FC": res["log2_FC"],
+            "U_stat": res["U_stat"],
+            "p_value": res["p_value"],
         })
 
     df = pd.DataFrame(rows)
     if df.empty:
         return df
-    df["p_adj"] = bh_fdr(df["p_value"].values)
+    df = apply_bh_fdr(df)
     return df.sort_values("p_adj")
 
 
@@ -247,42 +221,26 @@ def between_timepoint_wilcoxon_occupancy(
     rows = []
     for unit in all_units:
         # All replicates with timepoint day_10
-        rates_a = np.array([rates_by_exp[r][unit] for r in rates_by_exp
-                            if rep_to_timepoint.get(r) == time_a], dtype=float)
+        rates_a = [rates_by_exp[r][unit] for r in rates_by_exp
+                   if rep_to_timepoint.get(r) == time_a]
         # All replicates with timepoint day_0
-        rates_b = np.array([rates_by_exp[r][unit] for r in rates_by_exp
-                            if rep_to_timepoint.get(r) == time_b], dtype=float)
+        rates_b = [rates_by_exp[r][unit] for r in rates_by_exp
+                   if rep_to_timepoint.get(r) == time_b]
 
-        med_a = float(np.median(rates_a)) if len(rates_a) > 0 else 0.0
-        med_b = float(np.median(rates_b)) if len(rates_b) > 0 else 0.0
-
-        # Log fold change of time_a vs time_b (e.g. day_10 vs day_0)
-        if med_a > 0 and med_b > 0:
-            log2_fc = np.log2(med_a / med_b)
-        else:
-            log2_fc = 0.0
-
-        if len(rates_a) >= 2 and len(rates_b) >= 2:
-            try:
-                u_stat, p_val = stats.mannwhitneyu(rates_a, rates_b, alternative="two-sided")
-            except ValueError:
-                u_stat, p_val = np.nan, 1.0
-        else:
-            u_stat, p_val = np.nan, 1.0
-
+        res = wilcoxon_row(rates_a, rates_b)
         rows.append({
             feature_col: unit,
-            f"median_{time_a}": med_a,
-            f"median_{time_b}": med_b,
-            "log2_FC": log2_fc,
-            "U_stat": u_stat,
-            "p_value": p_val,
+            f"median_{time_a}": res["median_a"],
+            f"median_{time_b}": res["median_b"],
+            "log2_FC": res["log2_FC"],
+            "U_stat": res["U_stat"],
+            "p_value": res["p_value"],
         })
 
     df = pd.DataFrame(rows)
     if df.empty:
         return df
-    df["p_adj"] = bh_fdr(df["p_value"].values)
+    df = apply_bh_fdr(df)
     return df.sort_values("p_adj")
 
 
@@ -355,28 +313,23 @@ def between_timepoint_fisher_within_condition(
         total_b = sum(pooled[time_b].values())
         if total_a == 0 or total_b == 0:
             continue
+        total_a_int = int(round(total_a))
+        total_b_int = int(round(total_b))
 
         for unit in all_units:
             count_a = int(round(pooled[time_a][unit]))
             count_b = int(round(pooled[time_b][unit]))
-            not_a = int(round(total_a)) - count_a
-            not_b = int(round(total_b)) - count_b
 
-            table = np.array([[count_a, not_a], [count_b, not_b]])
-            try:
-                odds_ratio, p_val = stats.fisher_exact(table, alternative="two-sided")
-            except ValueError:
-                odds_ratio, p_val = np.nan, 1.0
-
+            res = fisher_row(count_a, total_a_int, count_b, total_b_int)
             rows.append({
                 "condition": cond,
                 feature_col: unit,
                 f"{time_a}_count": count_a,
-                f"{time_a}_total": int(round(total_a)),
+                f"{time_a}_total": total_a_int,
                 f"{time_b}_count": count_b,
-                f"{time_b}_total": int(round(total_b)),
-                "odds_ratio": odds_ratio,
-                "p_value": p_val,
+                f"{time_b}_total": total_b_int,
+                "odds_ratio": res["odds_ratio"],
+                "p_value": res["p_value"],
             })
 
     df = pd.DataFrame(rows)
@@ -384,13 +337,7 @@ def between_timepoint_fisher_within_condition(
         return df
 
     # BH-FDR correction per condition
-    dfs = []
-    for cond in conditions:
-        mask = df["condition"] == cond
-        sub = df.loc[mask].copy()
-        sub["p_adj"] = bh_fdr(sub["p_value"].values)
-        dfs.append(sub)
-    df = pd.concat(dfs, ignore_index=True)
+    df = apply_bh_fdr(df, ["condition"])
     return df.sort_values(["condition", "p_adj"])
 
 
@@ -459,28 +406,22 @@ def per_timepoint_fisher_occupancy(
         
         # For each Amino Acid
         for unit in all_units:
-            counts_list = []
-            # BWM first and then control (BWM on top)
-            for cond in conditions:
-                c = int(round(pooled_by_cond[cond][unit]))
-                t = int(round(totals[cond]))
-                counts_list.append([c, t - c])
-
-            table = np.array(counts_list)
-            try:
-                odds_ratio, p_val = stats.fisher_exact(table, alternative="two-sided")
-            except ValueError:
-                odds_ratio, p_val = np.nan, 1.0
+            # Table: BWM first then control (BWM on top); conditions are sorted,
+            # so row 0 = cond_a, row 1 = cond_b.
+            counts = {cond: int(round(pooled_by_cond[cond][unit])) for cond in conditions}
+            totals_int = {cond: int(round(totals[cond])) for cond in conditions}
+            cond_a, cond_b = conditions[0], conditions[1]
+            res = fisher_row(counts[cond_a], totals_int[cond_a], counts[cond_b], totals_int[cond_b])
 
             row = {
                 "timepoint": tp,
                 feature_col: unit,
-                "odds_ratio": odds_ratio,
-                "p_value": p_val,
+                "odds_ratio": res["odds_ratio"],
+                "p_value": res["p_value"],
             }
             for cond in conditions:
-                row[f"{cond}_count"] = int(round(pooled_by_cond[cond][unit]))
-                row[f"{cond}_total"] = int(round(totals[cond]))
+                row[f"{cond}_count"] = counts[cond]
+                row[f"{cond}_total"] = totals_int[cond]
             rows.append(row)
 
     df = pd.DataFrame(rows)
@@ -488,13 +429,7 @@ def per_timepoint_fisher_occupancy(
         return df
 
     # BH-FDR correction per timepoint
-    dfs = []
-    for tp in timepoints:
-        mask = df["timepoint"] == tp
-        sub = df.loc[mask].copy()
-        sub["p_adj"] = bh_fdr(sub["p_value"].values)
-        dfs.append(sub)
-    df = pd.concat(dfs, ignore_index=True)
+    df = apply_bh_fdr(df, ["timepoint"])
     return df.sort_values(["timepoint", "p_adj"])
 
 

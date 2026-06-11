@@ -2,12 +2,15 @@
 #----------------------------------------------------
 # Bash script: run global_codon_occ_stats.py
 # Runs statistical tests on the base CSVs produced
-# by run_global_codon_occ.sh (reads from out_dir/raw/,
-# writes results to out_dir/analysis/{E,P,A}/).
+# by run_global_codon_occ.sh (reads from out_dir/raw/).
 #
-# The Python script is general-purpose: it processes one
-# CSV (one site, one level) per invocation. This shell
-# script loops over all 6 combinations (3 sites x 2 levels).
+# The Python script now processes all 3 sites (E/P/A)
+# for one level per invocation, and writes BOTH:
+#   - per-site CSVs to out_dir/analysis/{E,P,A}/
+#   - merged CSVs   to out_dir/analysis_corrected/
+#     (per-site frames concatenated with a 'site' column —
+#      the old merge_global_occupancy_analysis.py step is
+#      now folded in). This shell script loops the 2 levels.
 #----------------------------------------------------
 
 # ============== CONFIG: edit these ==============
@@ -31,38 +34,35 @@ echo "=============================================="
 echo "GLOBAL CODON & AMINO ACID OCCUPANCY — STEP 2"
 echo "Statistical tests on base CSVs"
 echo "=============================================="
-echo "Input directory:  $OUT_DIR/raw/"
-echo "Output directory: $OUT_DIR/analysis/{${SITES[*]// /,}}/"
-echo "Sites:            ${SITES[*]}"
-echo "Levels:           ${LEVELS[*]}"
-echo "Groups:           $EXP_GROUPS"
+echo "Raw directory:        $OUT_DIR/raw/"
+echo "Per-site output:      $OUT_DIR/analysis/{${SITES[*]// /,}}/"
+echo "Merged output:        $OUT_DIR/analysis_corrected/"
+echo "Sites:                ${SITES[*]}"
+echo "Levels:               ${LEVELS[*]}"
+echo "Groups:               $EXP_GROUPS"
 echo "=============================================="
 
-for site in "${SITES[@]}"; do
-  for level in "${LEVELS[@]}"; do
-    INPUT_CSV="$OUT_DIR/raw/${level}_occupancy_${site}.csv"
-    SITE_OUT_DIR="$OUT_DIR/analysis/$site"
+for level in "${LEVELS[@]}"; do
+  echo ""
+  echo "----------------------------------------------"
+  echo "Level: $level  |  Sites: ${SITES[*]}"
+  echo "----------------------------------------------"
 
-    echo ""
-    echo "----------------------------------------------"
-    echo "Site: $site  |  Level: $level"
-    echo "Input:  $INPUT_CSV"
-    echo "Output: $SITE_OUT_DIR/"
-    echo "----------------------------------------------"
+  CMD=(python3 scripts/global_codon_occ_stats.py \
+    --raw-dir "$OUT_DIR/raw" \
+    --analysis-dir "$OUT_DIR/analysis" \
+    --corrected-dir "$OUT_DIR/analysis_corrected" \
+    --level "$level" \
+    --sites "${SITES[@]}" \
+    --groups "$EXP_GROUPS")
 
-    CMD=(python3 scripts/global_codon_occ_stats.py \
-      --input-csv "$INPUT_CSV" \
-      --out-dir "$SITE_OUT_DIR" \
-      --groups "$EXP_GROUPS" \
-      --prefix "$level")
-
-    echo "Running: ${CMD[@]}"
-    "${CMD[@]}"
-  done
+  echo "Running: ${CMD[@]}"
+  "${CMD[@]}"
 done
 
 echo ""
 echo "=============================================="
-echo "Done. Results written to $OUT_DIR/analysis/{${SITES[*]// /,}}/"
+echo "Done. Per-site CSVs in $OUT_DIR/analysis/{${SITES[*]// /,}}/"
+echo "      Merged CSVs in   $OUT_DIR/analysis_corrected/"
 date
 echo "=============================================="

@@ -17,16 +17,25 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy import stats
 
+from ribostall.stats_core import (
+    bh_fdr,
+    apply_bh_fdr,
+    binom_row,
+    wilcoxon_row,
+    fisher_row,
+)
 
-# ---------------------------------------------------------------------------
-# BH-FDR correction
-# ---------------------------------------------------------------------------
-def bh_fdr(p_values: np.ndarray) -> np.ndarray:
-    """Benjamini-Hochberg FDR correction. Returns adjusted p-values."""
-    p = np.asarray(p_values, dtype=float)
-    if p.size == 0:
-        return p.copy()
-    return stats.false_discovery_control(p, method="bh")
+# bh_fdr is re-exported from stats_core so existing
+# `from ribostall.enrichment import bh_fdr` callers keep working.
+__all__ = [
+    "bh_fdr",
+    "within_condition_enrichment",
+    "between_condition_wilcoxon",
+    "between_timepoint_wilcoxon",
+    "between_timepoint_fisher_within_condition",
+    "per_timepoint_fisher",
+    "plot_coverage_density",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -101,27 +110,21 @@ def within_condition_enrichment(
                 # p_bg is the background frequency of this aa in this group (with small pseudocount to avoid zero)
                 p_bg = float(bg_freq.get(aa, 1e-6))
 
-                result = stats.binomtest(k, total_n, p_bg, alternative="two-sided")
-                
-                # freq is the observed frequency of this aa at this site in this group
-                freq = k / total_n
-                log2_enrich = np.log2(freq / p_bg) if freq > 0 and p_bg > 0 else 0.0
-                weighted_log2 = freq * log2_enrich
-
                 # For output, we want the raw p-value. Multiple testing correction will be done later per (group, site).
+                res = binom_row(k, total_n, p_bg)
                 rows.append({
                     "site": site,
                     "group": group,
                     "condition": condition,
                     "timepoint": timepoint,
                     feature_col: aa,
-                    "observed_count": k,
-                    "total_n": total_n,
-                    "observed_freq": freq,
-                    "bg_freq": p_bg,
-                    "log2_enrichment": log2_enrich,
-                    "weighted_log2_enrichment": weighted_log2,
-                    "p_value": result.pvalue,
+                    "observed_count": res["observed_count"],
+                    "total_n": res["total_n"],
+                    "observed_freq": res["observed_freq"],
+                    "bg_freq": res["bg_freq"],
+                    "log2_enrichment": res["log2_enrichment"],
+                    "weighted_log2_enrichment": res["weighted_log2_enrichment"],
+                    "p_value": res["p_value"],
                 })
 
     df = pd.DataFrame(rows)
@@ -130,12 +133,7 @@ def within_condition_enrichment(
 
     # BH-FDR correction per (group, site): each E/P/A site is treated as its own
     # family of hypotheses ("which AAs stand out at this position in this group?").
-    dfs = []
-    for (group, site), sub in df.groupby(["group", "site"], sort=False):
-        sub = sub.copy()
-        sub["p_adj"] = bh_fdr(sub["p_value"].values)
-        dfs.append(sub)
-    df = pd.concat(dfs, ignore_index=True)
+    df = apply_bh_fdr(df, ["group", "site"])
     return df.sort_values(["group", "site", "p_adj"])
 
 
@@ -199,47 +197,23 @@ def between_condition_wilcoxon(
             # Get frequencies for this unit at this site across replicates in each condition
             freqs_a = [rep_freqs[r][site][unit] for r in rep_freqs if rep_to_condition.get(r) == cond_a]
             freqs_b = [rep_freqs[r][site][unit] for r in rep_freqs if rep_to_condition.get(r) == cond_b]
-            # Convert to numpy arrays for median and stats functions
-            freqs_a = np.array(freqs_a, dtype=float)
-            freqs_b = np.array(freqs_b, dtype=float)
-            # Get the median frequency for this unit at this site in each condition for fold change calculation
-            med_a = float(np.median(freqs_a))
-            med_b = float(np.median(freqs_b))
 
-            if len(freqs_a) >= 2 and len(freqs_b) >= 2:
-                try:
-                    u_stat, p_val = stats.mannwhitneyu(freqs_a, freqs_b, alternative="two-sided")
-                except ValueError:
-                    u_stat, p_val = np.nan, 1.0
-            else:
-                u_stat, p_val = np.nan, 1.0
-
-            # log2 fold change: cond_a / cond_b (e.g. BWM / control if alphabetical)
-            if med_a > 0 and med_b > 0:
-                log2_fc = np.log2(med_a / med_b)
-            else:
-                log2_fc = 0.0
-
+            res = wilcoxon_row(freqs_a, freqs_b)
             rows.append({
                 "site": site,
                 feature_col: unit,
-                f"median_{cond_a}": med_a,
-                f"median_{cond_b}": med_b,
-                "log2_FC": log2_fc,
-                "U_stat": u_stat,
-                "p_value": p_val,
+                f"median_{cond_a}": res["median_a"],
+                f"median_{cond_b}": res["median_b"],
+                "log2_FC": res["log2_FC"],
+                "U_stat": res["U_stat"],
+                "p_value": res["p_value"],
             })
 
     df = pd.DataFrame(rows)
     if df.empty:
         return df
     # BH-FDR correction per site: each E/P/A site is treated as its own family.
-    dfs = []
-    for site, sub in df.groupby("site", sort=False):
-        sub = sub.copy()
-        sub["p_adj"] = bh_fdr(sub["p_value"].values)
-        dfs.append(sub)
-    df = pd.concat(dfs, ignore_index=True)
+    df = apply_bh_fdr(df, ["site"])
     return df.sort_values(["site", "p_adj"])
 
 
@@ -299,53 +273,26 @@ def between_timepoint_wilcoxon(
     for site in ("E", "P", "A"):
         for unit in unit_list:
             # All reps with timepoint == time_a, pooled across conditions (n=4 typically)
-            freqs_a = np.array(
-                [rep_freqs[r][site][unit] for r in rep_freqs if rep_to_timepoint.get(r) == time_a],
-                dtype=float,
-            )
+            freqs_a = [rep_freqs[r][site][unit] for r in rep_freqs if rep_to_timepoint.get(r) == time_a]
             # All reps with timepoint == time_b, pooled across conditions (n=4 typically)
-            freqs_b = np.array(
-                [rep_freqs[r][site][unit] for r in rep_freqs if rep_to_timepoint.get(r) == time_b],
-                dtype=float,
-            )
+            freqs_b = [rep_freqs[r][site][unit] for r in rep_freqs if rep_to_timepoint.get(r) == time_b]
 
-            med_a = float(np.median(freqs_a)) if len(freqs_a) > 0 else 0.0
-            med_b = float(np.median(freqs_b)) if len(freqs_b) > 0 else 0.0
-
-            if len(freqs_a) >= 2 and len(freqs_b) >= 2:
-                try:
-                    u_stat, p_val = stats.mannwhitneyu(freqs_a, freqs_b, alternative="two-sided")
-                except ValueError:
-                    u_stat, p_val = np.nan, 1.0
-            else:
-                u_stat, p_val = np.nan, 1.0
-
-            # log2 fold change: time_a / time_b (e.g. day_10 / day_0)
-            if med_a > 0 and med_b > 0:
-                log2_fc = np.log2(med_a / med_b)
-            else:
-                log2_fc = 0.0
-
+            res = wilcoxon_row(freqs_a, freqs_b)
             rows.append({
                 "site": site,
                 feature_col: unit,
-                f"median_{time_a}": med_a,
-                f"median_{time_b}": med_b,
-                "log2_FC": log2_fc,
-                "U_stat": u_stat,
-                "p_value": p_val,
+                f"median_{time_a}": res["median_a"],
+                f"median_{time_b}": res["median_b"],
+                "log2_FC": res["log2_FC"],
+                "U_stat": res["U_stat"],
+                "p_value": res["p_value"],
             })
 
     df = pd.DataFrame(rows)
     if df.empty:
         return df
     # BH-FDR correction per site: each E/P/A site is treated as its own family.
-    dfs = []
-    for site, sub in df.groupby("site", sort=False):
-        sub = sub.copy()
-        sub["p_adj"] = bh_fdr(sub["p_value"].values)
-        dfs.append(sub)
-    df = pd.concat(dfs, ignore_index=True)
+    df = apply_bh_fdr(df, ["site"])
     return df.sort_values(["site", "p_adj"])
 
 
@@ -422,18 +369,11 @@ def between_timepoint_fisher_within_condition(
                 continue
 
             for unit in unit_list:
+                # 2x2 table: [[time_a_unit, time_a_notUnit], [time_b_unit, time_b_notUnit]]
                 count_a = int(pooled_by_tp[time_a].get(unit, 0))
                 count_b = int(pooled_by_tp[time_b].get(unit, 0))
-                not_a = total_a - count_a
-                not_b = total_b - count_b
 
-                # 2x2 table: [[time_a_unit, time_a_notUnit], [time_b_unit, time_b_notUnit]]
-                table = np.array([[count_a, not_a], [count_b, not_b]])
-                try:
-                    odds_ratio, p_val = stats.fisher_exact(table, alternative="two-sided")
-                except ValueError:
-                    odds_ratio, p_val = np.nan, 1.0
-
+                res = fisher_row(count_a, total_a, count_b, total_b)
                 rows.append({
                     "site": site,
                     "condition": cond,
@@ -442,8 +382,8 @@ def between_timepoint_fisher_within_condition(
                     f"{time_a}_total": total_a,
                     f"{time_b}_count": count_b,
                     f"{time_b}_total": total_b,
-                    "odds_ratio": odds_ratio,
-                    "p_value": p_val,
+                    "odds_ratio": res["odds_ratio"],
+                    "p_value": res["p_value"],
                 })
 
     df = pd.DataFrame(rows)
@@ -452,12 +392,7 @@ def between_timepoint_fisher_within_condition(
 
     # BH-FDR correction per (condition, site): each E/P/A site within a condition
     # is treated as its own family of hypotheses.
-    dfs = []
-    for (cond, site), sub in df.groupby(["condition", "site"], sort=False):
-        sub = sub.copy()
-        sub["p_adj"] = bh_fdr(sub["p_value"].values)
-        dfs.append(sub)
-    df = pd.concat(dfs, ignore_index=True)
+    df = apply_bh_fdr(df, ["condition", "site"])
     return df.sort_values(["condition", "site", "p_adj"])
 
 
@@ -531,36 +466,22 @@ def per_timepoint_fisher(
 
             # For each unit, build the 2x2 contingency table and run Fisher's exact test
             for unit in unit_list:
-                # 2x2 table: [[cond_a_unit, cond_a_notUnit], [cond_b_unit, cond_b_notUnit]]
-                counts_list = []
-                totals = {}
-                for cond in conditions:
-                    # The count of this unit at this site in this condition (pooled across replicates)
-                    unit_count = int(pooled_by_cond[cond].get(unit, 0))
-                    # The total count of all units at this site in this condition (pooled across replicates)
-                    total = int(pooled_by_cond[cond].sum())
-                    # The count of all other units at this site in this condition is total - unit_count
-                    not_unit = total - unit_count
-                    # appends the counts for this condition to the contingency table list
-                    counts_list.append([unit_count, not_unit])
-                    totals[cond] = total
-
-                # Table looks like this: [[BWM_unit, BWM_notUnit], [control_unit, control_notUnit]]
-                table = np.array(counts_list)
-                try:
-                    odds_ratio, p_val = stats.fisher_exact(table, alternative="two-sided")
-                except ValueError:
-                    odds_ratio, p_val = np.nan, 1.0
+                # Table: [[BWM_unit, BWM_notUnit], [control_unit, control_notUnit]]
+                # — conditions are sorted, so row 0 = cond_a, row 1 = cond_b.
+                counts = {cond: int(pooled_by_cond[cond].get(unit, 0)) for cond in conditions}
+                totals = {cond: int(pooled_by_cond[cond].sum()) for cond in conditions}
+                cond_a, cond_b = conditions[0], conditions[1]
+                res = fisher_row(counts[cond_a], totals[cond_a], counts[cond_b], totals[cond_b])
 
                 row = {
                     "site": site,
                     "timepoint": tp,
                     feature_col: unit,
-                    "odds_ratio": odds_ratio,
-                    "p_value": p_val,
+                    "odds_ratio": res["odds_ratio"],
+                    "p_value": res["p_value"],
                 }
                 for cond in conditions:
-                    row[f"{cond}_count"] = int(pooled_by_cond[cond].get(unit, 0))
+                    row[f"{cond}_count"] = counts[cond]
                     row[f"{cond}_total"] = totals[cond]
                 rows.append(row)
 
@@ -570,12 +491,7 @@ def per_timepoint_fisher(
 
     # BH-FDR correction per (timepoint, site): each E/P/A site within a timepoint
     # is treated as its own family of hypotheses.
-    dfs = []
-    for (tp, site), sub in df.groupby(["timepoint", "site"], sort=False):
-        sub = sub.copy()
-        sub["p_adj"] = bh_fdr(sub["p_value"].values)
-        dfs.append(sub)
-    df = pd.concat(dfs, ignore_index=True)
+    df = apply_bh_fdr(df, ["timepoint", "site"])
     return df.sort_values(["timepoint", "site", "p_adj"])
 
 

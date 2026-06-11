@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import bisect
-from typing import Dict, List, Iterable, Any
+from typing import Dict, List
 
 def filter_tx(cov_by_exp: dict, reps: list[str], min_reps: int = 2, threshold: float = 1.0,
               trim_start: int = 0, trim_stop: int = 0):
@@ -123,35 +123,12 @@ def consensus_stalls_across_reps(
         - "drop_both": remove both close sites
     """
 
-    def _indices_from_stalls(stalls_for_tx: Any) -> List[int]:
+    def _indices_from_stalls(stalls_for_tx: List[dict]) -> List[int]:
+        # call_stalls always yields a (possibly empty) list of dicts each with
+        # an "index" key; pull out the sorted, de-duplicated indices.
         if not stalls_for_tx:
             return []
-        if isinstance(stalls_for_tx, dict) and "indices" in stalls_for_tx:
-            return sorted(set(int(i) for i in stalls_for_tx["indices"]))
-        if isinstance(stalls_for_tx, Iterable) and not isinstance(stalls_for_tx, (str, bytes, dict)):
-            it = iter(stalls_for_tx)
-            first = next(it, None)
-            if first is None:
-                return []
-            if isinstance(first, dict):
-                candidate_keys = ["idx", "index", "pos", "position", "codon", "codon_idx", "codon_index"]
-                key = next((k for k in candidate_keys if k in first), None)
-                if key is None:
-                    raise TypeError(
-                        f"Don't know which key holds the stall index in dicts. "
-                        f"Expected one of {candidate_keys}, got keys: {list(first.keys())}"
-                    )
-                idxs = [int(d[key]) for d in stalls_for_tx if d is not None]
-                return sorted(set(idxs))
-            if isinstance(first, (list, tuple)):
-                return sorted(set(int(x[0]) for x in stalls_for_tx))
-            if isinstance(first, (int, np.integer)):
-                return sorted(set(int(x) for x in stalls_for_tx))
-            if isinstance(first, str):
-                return sorted(set(int(x) for x in stalls_for_tx))
-        if isinstance(stalls_for_tx, (int, np.integer)):
-            return [int(stalls_for_tx)]
-        raise TypeError(f"Unsupported stalls_for_tx shape/type: {type(stalls_for_tx)}")
+        return sorted({int(d["index"]) for d in stalls_for_tx if d is not None})
 
     common_txs = set.intersection(*(set(stalls_by_exp[r].keys()) for r in reps))
     out: Dict[str, List[int]] = {}

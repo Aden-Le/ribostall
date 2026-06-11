@@ -3,7 +3,7 @@
 # Re-render Olive Quarto reports.
 #
 # WORKFLOW
-#   - Full run    : `bash shell_scripts/render_olive_reports.sh`  (from repo root)
+#   - Full run    : `bash shell_scripts/misc/render_olive_reports.sh`  (from repo root)
 #   - Single one  : copy the two-line block under any numbered banner below
 #                   and paste it into your shell (bash OR PowerShell).
 #                   Each block uses a literal relative path, so as long as
@@ -14,11 +14,11 @@
 # All 18 blocks are active; their .qmd files have been generated.
 #----------------------------------------------------
 
-# When running the whole script via bash, cd to repo root so the relative
-# paths below resolve. (This block is bash-only and is skipped by anyone
+
+# cd to repo root (two levels up) so the relative paths below resolve. (This block is bash-only and is skipped by anyone
 # copy-pasting an individual numbered block.)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR/.."
+cd "$SCRIPT_DIR/../.."
 
 # ============================================================
 # 1. between_condition_wilcoxon_aa

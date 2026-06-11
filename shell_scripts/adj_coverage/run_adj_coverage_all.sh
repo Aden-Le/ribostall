@@ -29,9 +29,9 @@ PROCS=64
 source ${HOME}/miniconda3/etc/profile.d/conda.sh
 conda activate ribostall_env
 
-# Navigate to repo root (one level up from shell_scripts/)
+# Navigate to repo root (two levels up from shell_scripts/<subdir>/)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR/.."
+cd "$SCRIPT_DIR/../.."
 
 # Process all .ribo files
 for RIBO in "$RIBO_DIR"/*.ribo; do

@@ -5,7 +5,7 @@
 #
 # Produces stall_sites_{codon,aa}.csv and
 # per_group_background_{codon,aa}.csv in $OUT_ENRICHMENT.
-# Run run_enrichment_stats.sh afterwards for the
+# Run run_stall_sites_non_consensus_stats.sh afterwards for the
 # enrichment tests — it is ribopy-free and consumes
 # only those CSVs.
 #----------------------------------------------------
@@ -56,9 +56,9 @@ OUT_ENRICHMENT="./results/stall_sites/enrichment"
 source ${HOME}/miniconda3/etc/profile.d/conda.sh
 conda activate ribostall_env
 
-# Navigate to repo root (one level up from shell_scripts/)
+# Navigate to repo root (two levels up from shell_scripts/<subdir>/)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR/.."
+cd "$SCRIPT_DIR/../.."
 
 # Find coverage pickle
 PICKLE=$(ls "$RIBO_DIR"/*_coverage.pkl.gz 2>/dev/null | head -1)

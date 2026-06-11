@@ -18,7 +18,7 @@ DPI=300
 
 # Navigate to repo root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR/.."
+cd "$SCRIPT_DIR/../.."
 
 echo "=============================================="
 echo "GLOBAL OCCUPANCY WILCOXON BAR PLOTS"

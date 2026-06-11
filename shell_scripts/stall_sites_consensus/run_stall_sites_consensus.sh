@@ -45,9 +45,9 @@ MOTIF_FLAG=""
 source ${HOME}/miniconda3/etc/profile.d/conda.sh
 conda activate ribostall_env
 
-# Navigate to repo root (one level up from shell_scripts/)
+# Navigate to repo root (two levels up from shell_scripts/<subdir>/)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR/.."
+cd "$SCRIPT_DIR/../.."
 
 # Find coverage pickle
 PICKLE=$(ls "$RIBO_DIR"/*_coverage.pkl.gz 2>/dev/null | head -1)

@@ -5,7 +5,7 @@
 #
 # Ribopy-free. Consumes stall_sites_{codon,aa}.csv and
 # per_group_background_{codon,aa}.csv produced by
-# run_enrichment.sh and writes within-condition,
+# run_stall_sites_non_consensus.sh and writes within-condition,
 # between-condition Wilcoxon, and per-timepoint Fisher
 # result CSVs into $OUT_ENRICHMENT.
 #----------------------------------------------------
@@ -15,15 +15,15 @@
 EXP_GROUPS='control_day_0:control_day0_rep2,control_day0_rep3;control_day_5:control_day5_rep2,control_day5_rep3;control_day_10:control_day10_rep2,control_day10_rep3;BWM_day_0:BWM_day0_rep2,BWM_day0_rep3;BWM_day_5:BWM_day5_rep2,BWM_day5_rep3;BWM_day_10:BWM_day10_rep2,BWM_day10_rep3'
 
 # Directory containing stall_sites_{codon,aa}.csv and
-# per_group_background_{codon,aa}.csv from run_enrichment.sh
+# per_group_background_{codon,aa}.csv from run_stall_sites_non_consensus.sh
 OUT_ENRICHMENT="./results/stall_sites/enrichment"
 OUT_DIR="./results/stall_sites/enrichment/analysis_stats"
 
 # ===============================================
 
-# Navigate to repo root (one level up from shell_scripts/)
+# Navigate to repo root (two levels up from shell_scripts/<subdir>/)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR/.."
+cd "$SCRIPT_DIR/../.."
 
 echo "=============================================="
 echo "RIBOSOME STALL SITE ENRICHMENT STATS"

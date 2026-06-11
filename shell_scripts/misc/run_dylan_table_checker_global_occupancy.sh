@@ -21,7 +21,7 @@
 # discordant) pasted into the matching .qmd `## Top hits` section.
 #
 # WORKFLOW
-#   - Full run    : `bash shell_scripts/run_dylan_table_checker_global_occupancy.sh`
+#   - Full run    : `bash shell_scripts/misc/run_dylan_table_checker_global_occupancy.sh`
 #   - Single one  : copy the two-line block under any numbered banner below
 #                   and paste it into your shell (bash OR PowerShell).
 #                   Each block uses a literal relative path, so as long as
@@ -55,10 +55,10 @@
 # `--sig-threshold`, `--bg-tight-threshold`, `--rare-k-threshold`.
 #----------------------------------------------------
 
-# When running the whole script via bash, cd to repo root so the relative
-# paths below resolve. (Bash-only -- irrelevant for copy-paste.)
+
+# cd to repo root (two levels up) so the relative paths below resolve. (Bash-only -- irrelevant for copy-paste.)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR/.."
+cd "$SCRIPT_DIR/../.."
 
 # ============================================================
 # 1. aa_wilcoxon_condition  (family: between_condition_wilcoxon)

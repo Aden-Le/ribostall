@@ -34,6 +34,7 @@ __all__ = [
     "between_timepoint_wilcoxon",
     "between_timepoint_fisher_within_condition",
     "per_timepoint_fisher",
+    "between_condition_fisher",
     "plot_coverage_density",
 ]
 
@@ -493,6 +494,100 @@ def per_timepoint_fisher(
     # is treated as its own family of hypotheses.
     df = apply_bh_fdr(df, ["timepoint", "site"])
     return df.sort_values(["timepoint", "site", "p_adj"])
+
+
+# ---------------------------------------------------------------------------
+# Analysis 5: Between-condition (Fisher's exact test, timepoint-free)
+# ---------------------------------------------------------------------------
+def between_condition_fisher(
+    replicate_counts: dict,
+    rep_to_condition: dict,
+    *,
+    feature_col: str = "amino_acid",
+) -> pd.DataFrame:
+    """
+    For each unit (amino acid or codon) at each E/P/A site, pool replicate
+    counts per condition and run Fisher's exact test comparing the two
+    conditions. This is the timepoint-free counterpart of
+    ``per_timepoint_fisher`` — there is only one comparison per site.
+
+    NOTE: pooling replicates is pseudoreplication. P-values should be
+    interpreted cautiously.
+
+    Parameters
+    ----------
+    replicate_counts : dict
+        {replicate: {"E": Series, "P": Series, "A": Series}}
+    rep_to_condition : dict
+        {replicate: "control" or "treatment"}
+    feature_col : str
+        Output column name for the feature level (e.g. "amino_acid" or "codon").
+
+    Returns
+    -------
+    pd.DataFrame with columns:
+        site, <feature_col>, <cond_a>_count, <cond_a>_total, <cond_b>_count,
+        <cond_b>_total, odds_ratio, p_value, p_adj
+    """
+    # Exactly two conditions, sorted alphabetically for consistent column naming.
+    conditions = sorted(set(rep_to_condition.values()))
+    if len(conditions) != 2:
+        raise ValueError(f"Expected exactly 2 conditions, got {conditions}")
+    cond_a, cond_b = conditions
+
+    # Unit list from first replicate (assumes all replicates share the same index).
+    first_rep = next(iter(replicate_counts))
+    unit_list = list(replicate_counts[first_rep]["E"].index)
+
+    rows = []
+    for site in ("E", "P", "A"):
+        # Pool counts per condition across replicates at this site.
+        pooled_by_cond = {}
+        for cond in conditions:
+            pooled = None
+            for rep in replicate_counts:
+                if rep_to_condition.get(rep) != cond:
+                    continue
+                counts = replicate_counts[rep][site]
+                if pooled is None:
+                    pooled = counts.copy()
+                else:
+                    pooled = pooled.add(counts, fill_value=0)
+            pooled_by_cond[cond] = pooled
+
+        # Skip the site if either condition has no replicates.
+        if any(v is None for v in pooled_by_cond.values()):
+            continue
+
+        total_a = int(pooled_by_cond[cond_a].sum())
+        total_b = int(pooled_by_cond[cond_b].sum())
+        if total_a == 0 or total_b == 0:
+            continue
+
+        for unit in unit_list:
+            # 2x2 table: [[cond_a_unit, cond_a_notUnit], [cond_b_unit, cond_b_notUnit]]
+            count_a = int(pooled_by_cond[cond_a].get(unit, 0))
+            count_b = int(pooled_by_cond[cond_b].get(unit, 0))
+
+            res = fisher_row(count_a, total_a, count_b, total_b)
+            rows.append({
+                "site": site,
+                feature_col: unit,
+                f"{cond_a}_count": count_a,
+                f"{cond_a}_total": total_a,
+                f"{cond_b}_count": count_b,
+                f"{cond_b}_total": total_b,
+                "odds_ratio": res["odds_ratio"],
+                "p_value": res["p_value"],
+            })
+
+    df = pd.DataFrame(rows)
+    if df.empty:
+        return df
+
+    # BH-FDR correction per site: each E/P/A site is its own family of hypotheses.
+    df = apply_bh_fdr(df, ["site"])
+    return df.sort_values(["site", "p_adj"])
 
 
 # ---------------------------------------------------------------------------

@@ -10,7 +10,9 @@ RIBO_DIR="./all_ribo_file"
 RIBO_FILE="$RIBO_DIR/C_elegan_all_02_04_2026.ribo"
 
 # Format: "group1:rep1,rep2;group2:rep1,rep2"
-EXP_GROUPS='control_day_0:control_day0_rep2,control_day0_rep3;control_day_5:control_day5_rep2,control_day5_rep3;control_day_10:control_day10_rep2,control_day10_rep3;BWM_day_0:BWM_day0_rep2,BWM_day0_rep3;BWM_day_5:BWM_day5_rep2,BWM_day5_rep3;BWM_day_10:BWM_day10_rep2,BWM_day10_rep3'
+# Flat control-vs-treatment design (no timepoints). Edit the replicate sample
+# names to match the experiments in the coverage pickle.
+EXP_GROUPS='control:control_rep1,control_rep2;treatment:treatment_rep1,treatment_rep2'
 
 # Transcript filtering thresholds
 TX_THRESHOLD=1.0
@@ -28,16 +30,16 @@ STALL_MIN_REPS=2
 TOL=0
 MIN_SEP=7
 
-# Reference file (required for motif analysis)
+# Reference file (required for E/P/A annotation)
 REFERENCE_FILE="./reference/appris_celegans_v1_selected_new.fa"
 
-# Output files
-OUT_CSV="results/stall_sites/motifs/stall_sites.csv"
-OUT_PNG="results/stall_sites/motifs/motif.png"
-OUT_MOTIF_CSV="results/stall_sites/motifs"
+# E/P/A annotation parameters
+BASIS="P"            # register for E/P/A offsets (P or A)
+PSITE_OFFSET=0       # codon offset applied to each stall index before deriving E/P/A
 
-# Set to "--motif" to enable motif plotting, or "" to skip
-MOTIF_FLAG=""
+# Output directory for stats-ready stall-site CSVs
+# (stall_sites_{codon,aa}.csv + per_group_background_{codon,aa}.csv)
+OUT_DIR="results/stall_sites/enrichment"
 
 # ===============================================
 
@@ -66,12 +68,14 @@ echo "Reference: $REFERENCE_FILE"
 echo "Groups: $EXP_GROUPS"
 echo "Parameters: min_z=$MIN_Z, min_reads=$MIN_READS, trim_start=$TRIM_START, trim_stop=$TRIM_STOP, pseudocount=$PSEUDOCOUNT"
 echo "Consensus: stall_min_reps=$STALL_MIN_REPS, tol=$TOL, min_sep=$MIN_SEP"
-echo "Output CSV: $OUT_CSV"
+echo "E/P/A: basis=$BASIS, psite_offset=$PSITE_OFFSET"
+echo "Output dir: $OUT_DIR"
 echo "=============================================="
 
 CMD=(python3 scripts/stall_sites_consensus.py \
   --pickle "$PICKLE" \
   --ribo "$RIBO_FILE" \
+  --reference "$REFERENCE_FILE" \
   --groups "$EXP_GROUPS" \
   --tx_threshold "$TX_THRESHOLD" \
   --tx_min_reps "$TX_MIN_REPS" \
@@ -83,15 +87,9 @@ CMD=(python3 scripts/stall_sites_consensus.py \
   --stall_min_reps "$STALL_MIN_REPS" \
   --tol "$TOL" \
   --min_sep "$MIN_SEP" \
-  --out-csv "$OUT_CSV" \
-  --reference "$REFERENCE_FILE" \
-  --out-png "$OUT_PNG" \
-  --out-motif-csv "$OUT_MOTIF_CSV")
-
-# Append motif flag if set
-if [ -n "$MOTIF_FLAG" ]; then
-  CMD+=($MOTIF_FLAG)
-fi
+  --basis "$BASIS" \
+  --psite-offset "$PSITE_OFFSET" \
+  --out-dir "$OUT_DIR")
 
 echo "Running: ${CMD[@]}"
 "${CMD[@]}"

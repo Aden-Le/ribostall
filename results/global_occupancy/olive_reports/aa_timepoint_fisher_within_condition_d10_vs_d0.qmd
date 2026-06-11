@@ -57,7 +57,7 @@ The largest BWM-vs-control divergences concentrate at site A: A:W (BWM `log2_OR`
 
 ## Top hits
 
-The effect column is `log2_OR` (log2 of the Fisher odds ratio for the day-10-vs-day-0 contrast within one condition; positive = day-10-enriched relative to day-0, negative = day-10-depleted). Each row pairs the BWM and control `log2_OR` for one (site, amino acid) cell. The `effect change` column is BWM `log2_OR` minus control `log2_OR`: near zero means both conditions moved together (a shared timecourse drift), large magnitude means the two conditions' day-10-vs-day-0 trajectories diverge — positive when BWM rose relative to control, negative when control rose relative to BWM. The three sections split every cell significant at FDR<0.05 in at least one condition by which condition(s) reach significance: both, BWM only, control only; cells significant in neither are omitted. Because the pooled totals are whole-transcriptome footprint counts almost every cell clears FDR<0.05 and p magnitude is uninformative, so significance is carried by section membership rather than a displayed p column, and ranking is by `|effect change|`, not by p. Within each section rows are grouped by `site` in A / P / E order, then sorted by `effect change` descending (no row cap). Each amino-acid one-letter code is expanded to `<letter> (<full name>)` on first appearance in each section.
+The effect column is `log2_OR` (log2 of the Fisher odds ratio for the day-10-vs-day-0 contrast within one condition; positive = day-10-enriched relative to day-0, negative = day-10-depleted). Each row pairs the BWM and control `log2_OR` for one (site, amino acid) cell. The `effect change` column is BWM `log2_OR` minus control `log2_OR`: near zero means both conditions moved together (a shared timecourse drift), large magnitude means the two conditions' day-10-vs-day-0 trajectories diverge — positive when BWM rose relative to control, negative when control rose relative to BWM. The three sections split every cell significant at FDR<0.05 in at least one condition by which condition(s) reach significance: both, BWM only, control only; cells significant in neither are omitted. Because the pooled totals are whole-transcriptome footprint counts, almost every cell clears FDR<0.05 and p magnitude is uninformative. Significance is therefore carried by section membership rather than a displayed p column, and ranking is by `|effect change|`, not by p. Within each section rows are grouped by `site` in A / P / E order, then sorted by `effect change` descending (no row cap). Each amino-acid one-letter code is expanded to `<letter> (<full name>)` at every appearance.
 
 ```{=latex}
 \needspace{14\baselineskip}
@@ -83,36 +83,36 @@ The effect column is `log2_OR` (log2 of the Fisher odds ratio for the day-10-vs-
 | A | L (leucine) | -0.182 | +0.044 | -0.226 |  |
 | A | Y (tyrosine) | -0.262 | +0.017 | -0.279 |  |
 | A | W (tryptophan) | -0.586 | +0.088 | -0.674 |  |
-| P | L | +0.093 | -0.104 | +0.197 |  |
-| P | M | +0.103 | -0.066 | +0.170 |  |
-| P | W | +0.035 | -0.107 | +0.141 |  |
-| P | E | +0.208 | +0.101 | +0.106 |  |
-| P | V | +0.014 | -0.052 | +0.065 |  |
-| P | I | -0.084 | -0.137 | +0.054 |  |
-| P | K | -0.119 | -0.171 | +0.052 |  |
-| P | S | +0.084 | +0.044 | +0.040 |  |
+| P | L (leucine) | +0.093 | -0.104 | +0.197 |  |
+| P | M (methionine) | +0.103 | -0.066 | +0.170 |  |
+| P | W (tryptophan) | +0.035 | -0.107 | +0.141 |  |
+| P | E (glutamate) | +0.208 | +0.101 | +0.106 |  |
+| P | V (valine) | +0.014 | -0.052 | +0.065 |  |
+| P | I (isoleucine) | -0.084 | -0.137 | +0.054 |  |
+| P | K (lysine) | -0.119 | -0.171 | +0.052 |  |
+| P | S (serine) | +0.084 | +0.044 | +0.040 |  |
 | P | P (proline) | -0.024 | -0.045 | +0.022 |  |
-| P | Q | -0.032 | -0.044 | +0.012 |  |
-| P | H | -0.034 | -0.042 | +0.008 |  |
-| P | Y | -0.067 | -0.026 | -0.042 |  |
-| P | A | -0.014 | +0.034 | -0.048 |  |
-| P | C | +0.112 | +0.175 | -0.064 |  |
+| P | Q (glutamine) | -0.032 | -0.044 | +0.012 |  |
+| P | H (histidine) | -0.034 | -0.042 | +0.008 |  |
+| P | Y (tyrosine) | -0.067 | -0.026 | -0.042 |  |
+| P | A (alanine) | -0.014 | +0.034 | -0.048 |  |
+| P | C (cysteine) | +0.112 | +0.175 | -0.064 |  |
 | P | R (arginine) | -0.034 | +0.055 | -0.090 |  |
 | P | D (aspartate) | +0.061 | +0.223 | -0.162 |  |
-| P | G | -0.225 | -0.052 | -0.173 |  |
-| E | S | +0.246 | +0.118 | +0.128 |  |
-| E | M | +0.134 | +0.053 | +0.082 |  |
-| E | G | -0.069 | -0.133 | +0.064 |  |
-| E | C | +0.110 | +0.052 | +0.058 |  |
-| E | Y | -0.050 | -0.083 | +0.033 |  |
-| E | E | +0.072 | +0.046 | +0.026 |  |
-| E | L | +0.093 | +0.076 | +0.017 |  |
-| E | D | +0.066 | +0.054 | +0.013 |  |
+| P | G (glycine) | -0.225 | -0.052 | -0.173 |  |
+| E | S (serine) | +0.246 | +0.118 | +0.128 |  |
+| E | M (methionine) | +0.134 | +0.053 | +0.082 |  |
+| E | G (glycine) | -0.069 | -0.133 | +0.064 |  |
+| E | C (cysteine) | +0.110 | +0.052 | +0.058 |  |
+| E | Y (tyrosine) | -0.050 | -0.083 | +0.033 |  |
+| E | E (glutamate) | +0.072 | +0.046 | +0.026 |  |
+| E | L (leucine) | +0.093 | +0.076 | +0.017 |  |
+| E | D (aspartate) | +0.066 | +0.054 | +0.013 |  |
 | E | T (threonine) | +0.031 | +0.021 | +0.010 |  |
-| E | V | -0.038 | -0.017 | -0.022 |  |
-| E | I | -0.070 | -0.034 | -0.036 |  |
-| E | K | -0.129 | -0.066 | -0.063 |  |
-| E | P | -0.387 | -0.086 | -0.302 |  |
+| E | V (valine) | -0.038 | -0.017 | -0.022 |  |
+| E | I (isoleucine) | -0.070 | -0.034 | -0.036 |  |
+| E | K (lysine) | -0.129 | -0.066 | -0.063 |  |
+| E | P (proline) | -0.387 | -0.086 | -0.302 |  |
 
 ```{=latex}
 \needspace{14\baselineskip}
@@ -146,7 +146,7 @@ The effect column is `log2_OR` (log2 of the Fisher odds ratio for the day-10-vs-
 
 ### Flag glossary
 
-No rows are flagged at amino-acid resolution: every (condition, site, amino acid) cell has both day-10 and day-0 counts well above the test's stability threshold (the smallest arm is BWM E:W with day-10 = 15966). The `low-count` flag that the codon sister CSV carries (where the in-frame stop TGA trips it) does not fire here.
+No rows are flagged at amino-acid resolution: every (condition, site, amino acid) cell has both day-10 and day-0 counts well above the test's stability threshold (the smallest arm is control P:W with day-10 = 9188). The `low-count` flag that the codon sister CSV carries (where the in-frame stop TGA trips it) does not fire here.
 
 ## Numbers at a glance
 - `n_tests`: 120 (60 per condition; 3 sites x 20 AAs each)
@@ -185,7 +185,7 @@ Fisher's exact (two-sided) is applied to a 2x2 of (aa_count, total - aa_count) a
 
 **Considered and ruled out**
 
-- **rare-aa-low-count.** Every (condition, site, aa) cell has both day_10 and day_0 counts well above the `within_condition_sig_split` thresholds (BWM < 100 / control < 200); the smallest arm is BWM E:W with day_10 = 15966, so no `low-count` flag fires at AA resolution — ruled out here (the codon sister differs, where in-frame stop TGA trips it).
+- **rare-aa-low-count.** Every (condition, site, aa) cell has both day_10 and day_0 counts well above the `within_condition_sig_split` thresholds (BWM < 100 / control < 200); the smallest arm is control P:W with day_10 = 9188, so no `low-count` flag fires at AA resolution — ruled out here (the codon sister differs, where in-frame stop TGA trips it).
 
 ---
 

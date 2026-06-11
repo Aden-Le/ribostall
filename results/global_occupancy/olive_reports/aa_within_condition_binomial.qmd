@@ -47,7 +47,7 @@ Each glyph is one amino acid tested against its transcriptome background frequen
 ### Family-level caveats
 
 - **pseudorep** — replicates within a group are summed before `binomtest`. Standard pseudoreplication; anti-conservative.
-- **iid-violation-binomial** — the binomial test assumes `total_n` iid Bernoulli draws with probability p_bg; ribosome footprints are not iid (one transcript contributes overlapping A/P/E windows, and transcripts vary widely in coverage). Headline-grade tiny p-values (down to ~1e-132) reflect this violation more than a per-feature biological signal. `log2_enrichment` is the primary effect column, not p.
+- **iid-violation-binomial** — the binomial test assumes `total_n` iid Bernoulli draws with probability p_bg; ribosome footprints are not iid (one transcript contributes overlapping A/P/E windows, and transcripts vary widely in coverage). Headline-grade tiny p-values (here `p_adj` underflows to exactly 0.0 for 188 of 360 cells; smallest nonzero 9.39e-323) reflect this violation more than a per-feature biological signal. `log2_enrichment` is the primary effect column, not p.
 - **bh-per-(group,site)** — BH-FDR is per (group,site) family of ~20 (aa) or ~61 (codon) tests. `p_adj` means "corrected within this group at this site", not across the whole CSV.
 - **bg-transcriptome-freq** — the null frequency is the transcriptome codon/AA composition (the `Transcriptome` column), so enrichment means "more occupied than its transcriptomic abundance predicts", not vs a uniform expectation.
 

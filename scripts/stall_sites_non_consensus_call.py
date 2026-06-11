@@ -207,6 +207,7 @@ def main():
         print("  All filtered transcripts resolved to both CDS range and sequence.")
     print(f"{'='*60}\n")
 
+    #-------------------------------------------------------------------
     cov_filt = {}
     for exp, tx_dict in cov.items():
         # Gets the group for this replicate (BWM or Control)

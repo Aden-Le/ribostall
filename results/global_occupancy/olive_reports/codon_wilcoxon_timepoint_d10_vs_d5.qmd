@@ -14,7 +14,7 @@ format:
     include-in-header:
       text: |
         \usepackage{needspace}
-tbl-colwidths: [22, 9, 23, 23, 23]  # Stage-1 (raw-p deferred); Stage-2 widens to 6-col [22, 8, 18, 17, 17, 26]
+tbl-colwidths: [22, 8, 18, 17, 17, 26]  # aa-col-added
 execute:
   echo: false
 ---
@@ -51,11 +51,11 @@ Each panel ranks the codons by signed log2 fold-change at one ribosome site (A, 
 
 ## Headline
 
-0 of 186 day_10-vs-day_5 codon tests are significant at FDR<0.05; minimum adjusted p is 0.9984. No cell reaches even raw p<0.05 (min raw p = 0.0571): this is the flattest file in the family — not a single cell achieves the n=4-vs-n=4 perfect-rank-separation floor (0.02857). It is a coordinated null with no nominally-significant cells. As leads: the largest raw swings are the in-frame stop codon TGA (A-site `log2_FC` -1.2306, E-site -0.8135), which are unstable low-support cells (see caveats); among sense codons the largest cells are A-site GGG (+0.3535) and P-site CGG (+0.3039), all with raw p >= 0.057.
+0 of 186 day_10-vs-day_5 codon tests are significant at FDR<0.05; minimum adjusted p is 0.9984. No cell reaches even raw p<0.05 (min raw p = 0.0571): this is the flattest file in the family — not a single cell achieves the n=4-vs-n=4 perfect-rank-separation floor (0.02857). It is a coordinated null with no nominally-significant cells. As leads: the largest raw swings overall are the in-frame stop codon TGA (P-site `log2_FC` -1.2608, A-site -1.2306, E-site -0.8135), which are unstable low-support cells (see caveats); among sense codons the largest cells are P-site CCC (+0.3614) and A-site GGG (+0.3535), all with raw p >= 0.057.
 
 ## Top hits
 
-Effect column is `log2_FC` = log2(median day_10 / median day_5): positive means day_10-enriched, negative means day_10-depleted. `p_adj` is the Mann-Whitney p after BH correction within each site's family of ~62 codons (the raw Mann-Whitney p per cell is summarised under Numbers at a glance; min raw p = 0.0571, the only file in the family whose smallest raw p sits above the n=4 floor of 0.02857). Each site is split into one sub-table per direction. No row reaches FDR<0.05 and no cell reaches raw p<0.05, so every row below is a non-significant lead; within each sub-table the rows are up to 5 per direction displayed by `|log2_FC|` descending (because nothing reaches even raw p<0.05, there is no raw-p ranking to separate them). The in-frame stop codon TGA carries the file's largest raw swings and is annotated inline where it appears (A-site and E-site Depleted), but is a low-support, unstable cell — see the caveats. The `aa` column is the single-letter amino acid translation of each codon (the in-frame stop codon shows as `*`).
+Effect column is `log2_FC` = log2(median day_10 / median day_5): positive means day_10-enriched, negative means day_10-depleted. Two p-value columns are shown: `p_value` is the raw Mann-Whitney p, and `p_adj` is `p_value` after BH correction within each site's family of ~62 codons (min raw p = 0.0571, the only file in the family whose smallest raw p sits above the n=4 floor of 0.02857). The `aa` column is the single-letter amino acid translation of each codon (the in-frame stop codon shows as `*`). Each site is split into one sub-table per direction. No row reaches FDR<0.05 and no cell reaches raw p<0.05, so every row below is a non-significant lead; within each sub-table the rows are up to 5 per direction ranked by raw `p_value` ascending, with `|log2_FC|` descending as the tiebreaker (since no cell reaches raw p<0.05, the per-direction ranking is mostly carried by the `|log2_FC|` tiebreak). The in-frame stop codon TGA is annotated inline where it ranks into a sub-table (A-site and E-site Depleted); it is a low-support, unstable cell whose large `log2_FC` swings reflect very low footprint support, not a day_10-vs-day_5 effect — see the caveats.
 
 ```{=latex}
 \needspace{14\baselineskip}
@@ -63,13 +63,13 @@ Effect column is `log2_FC` = log2(median day_10 / median day_5): positive means 
 
 ### A site — Enriched (day_10 > day_5)
 
-| codon | aa | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
-| ---   | ---| ---                | ---                  | ---  |
-| GGG   | G  | +0.3535            | 1.0000               |      |
-| CGG   | R  | +0.3436            | 1.0000               |      |
-| GGC   | G  | +0.3001            | 1.0000               |      |
-| TCG   | S  | +0.2491            | 1.0000               |      |
-| CCG   | P  | +0.2255            | 1.0000               |      |
+| codon | aa | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| ---   | ---| ---                | ---               | ---                  | ---  |
+| GGG   | G  | +0.3535            | 0.2000            | 1.0000               |      |
+| CCG   | P  | +0.2255            | 0.2000            | 1.0000               |      |
+| CGG   | R  | +0.3436            | 0.3429            | 1.0000               |      |
+| GGC   | G  | +0.3001            | 0.3429            | 1.0000               |      |
+| TCG   | S  | +0.2491            | 0.3429            | 1.0000               |      |
 
 ```{=latex}
 \needspace{14\baselineskip}
@@ -77,13 +77,13 @@ Effect column is `log2_FC` = log2(median day_10 / median day_5): positive means 
 
 ### A site — Depleted (day_10 < day_5)
 
-| codon | aa | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
-| ---   | ---| ---                | ---                  | ---  |
-| TGA (in-frame stop; unstable) | * | -1.2306 | 1.0000 |      |
-| CAA   | Q  | -0.1101            | 1.0000               |      |
-| AAC   | N  | -0.0786            | 1.0000               |      |
-| GTT   | V  | -0.0295            | 1.0000               |      |
-| AAG   | K  | -0.0173            | 1.0000               |      |
+| codon | aa | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| ---   | ---| ---                | ---               | ---                  | ---  |
+| CAA   | Q  | -0.1101            | 0.3429            | 1.0000               |      |
+| TGA (in-frame stop; unstable) | * | -1.2306 | 0.4857 | 1.0000 |      |
+| AAC   | N  | -0.0786            | 0.6857            | 1.0000               |      |
+| AAG   | K  | -0.0173            | 0.6857            | 1.0000               |      |
+| GTT   | V  | -0.0295            | 0.8857            | 1.0000               |      |
 
 ```{=latex}
 \needspace{14\baselineskip}
@@ -91,13 +91,13 @@ Effect column is `log2_FC` = log2(median day_10 / median day_5): positive means 
 
 ### P site — Enriched (day_10 > day_5)
 
-| codon | aa | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
-| ---   | ---| ---                | ---                  | ---  |
-| CGG   | R  | +0.3039            | 0.9984               |      |
-| AGG   | R  | +0.2967            | 0.9984               |      |
-| GGG   | G  | +0.2902            | 0.9984               |      |
-| CCT   | P  | +0.2760            | 0.9984               |      |
-| GCA   | A  | +0.2267            | 0.9984               |      |
+| codon | aa | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| ---   | ---| ---                | ---               | ---                  | ---  |
+| AGG   | R  | +0.2967            | 0.0571            | 0.9984               |      |
+| GGG   | G  | +0.2902            | 0.1143            | 0.9984               |      |
+| GCA   | A  | +0.2267            | 0.1143            | 0.9984               |      |
+| CGG   | R  | +0.3039            | 0.2000            | 0.9984               |      |
+| CCT   | P  | +0.2760            | 0.2000            | 0.9984               |      |
 
 ```{=latex}
 \needspace{14\baselineskip}
@@ -105,13 +105,13 @@ Effect column is `log2_FC` = log2(median day_10 / median day_5): positive means 
 
 ### P site — Depleted (day_10 < day_5)
 
-| codon | aa | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
-| ---   | ---| ---                | ---                  | ---  |
-| CTT   | L  | -0.1592            | 0.9984               |      |
-| TTG   | L  | -0.1027            | 0.9984               |      |
-| ATG   | M  | -0.0986            | 0.9984               |      |
-| ATC   | I  | -0.0641            | 0.9984               |      |
-| ATA   | I  | -0.0640            | 0.9984               |      |
+| codon | aa | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| ---   | ---| ---                | ---               | ---                  | ---  |
+| CTT   | L  | -0.1592            | 0.3429            | 0.9984               |      |
+| ATC   | I  | -0.0641            | 0.4857            | 0.9984               |      |
+| TTG   | L  | -0.1027            | 0.6857            | 0.9984               |      |
+| ATG   | M  | -0.0986            | 0.6857            | 0.9984               |      |
+| ATA   | I  | -0.0640            | 0.6857            | 0.9984               |      |
 
 ```{=latex}
 \needspace{14\baselineskip}
@@ -119,13 +119,13 @@ Effect column is `log2_FC` = log2(median day_10 / median day_5): positive means 
 
 ### E site — Enriched (day_10 > day_5)
 
-| codon | aa | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
-| ---   | ---| ---                | ---                  | ---  |
-| CCT   | P  | +0.2950            | 1.0000               |      |
-| CTC   | L  | +0.2516            | 1.0000               |      |
-| CCG   | P  | +0.2393            | 1.0000               |      |
-| AGT   | S  | +0.1335            | 1.0000               |      |
-| CCC   | P  | +0.0998            | 1.0000               |      |
+| codon | aa | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| ---   | ---| ---                | ---               | ---                  | ---  |
+| CCC   | P  | +0.0998            | 0.2000            | 1.0000               |      |
+| CTC   | L  | +0.2516            | 0.3429            | 1.0000               |      |
+| CCG   | P  | +0.2393            | 0.3429            | 1.0000               |      |
+| CCT   | P  | +0.2950            | 0.4857            | 1.0000               |      |
+| AGT   | S  | +0.1335            | 0.4857            | 1.0000               |      |
 
 ```{=latex}
 \needspace{14\baselineskip}
@@ -133,13 +133,13 @@ Effect column is `log2_FC` = log2(median day_10 / median day_5): positive means 
 
 ### E site — Depleted (day_10 < day_5)
 
-| codon | aa | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
-| ---   | ---| ---                | ---                  | ---  |
-| TGA (in-frame stop; unstable) | * | -0.8135 | 1.0000 |      |
-| GAG   | E  | -0.1997            | 1.0000               |      |
-| ATT   | I  | -0.0618            | 1.0000               |      |
-| TAT   | Y  | -0.0239            | 1.0000               |      |
-| TTG   | L  | -0.0218            | 1.0000               |      |
+| codon | aa | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| ---   | ---| ---                | ---               | ---                  | ---  |
+| GAG   | E  | -0.1997            | 0.6857            | 1.0000               |      |
+| ATT   | I  | -0.0618            | 0.6857            | 1.0000               |      |
+| TAT   | Y  | -0.0239            | 0.6857            | 1.0000               |      |
+| TTG   | L  | -0.0218            | 0.6857            | 1.0000               |      |
+| TGA (in-frame stop; unstable) | * | -0.8135 | 0.8857 | 1.0000 |      |
 
 ### Flag glossary
 
@@ -159,9 +159,9 @@ No `flag`-column value appears in any sub-table above: no cell reaches raw p<0.0
 
 **There is no detectable day_10-vs-day_5 difference at codon resolution, and the absence is even more clearly structural than in the sister contrasts (concrete).** None of the 186 (site, codon) tests clears BH within its ~62-codon site family; the minimum adjusted p is 0.9984 and the two off-floor sites (A, E) sit at `p_adj` 1.0000. What makes this the flattest file in the family is that no cell reaches even the raw-p floor: the smallest raw p is 0.0571, above the achievable n=4-vs-n=4 two-sided Mann-Whitney minimum of 0.02857. In the other contrasts the FDR null was floor-blocked (cells tied at the floor but the BH family was too wide to clear); here there is not even a floor cell to block, so "0 of 186" reflects an absence of any day_10-vs-day_5 difference at this resolution and N, not a ceiling. This matches the amino-acid sister `aa_wilcoxon_timepoint_d10_vs_d5.csv`, also the flattest contrast at its resolution.
 
-**The largest sense-codon swings are directional only, with a glycine/arginine lean at the A and P sites and a proline lean at the E site (exploratory).** GGG (glycine, +0.3535) and CGG (arginine, +0.3436) lead the A-site enriched cells, and the same two recur near the top of the P-site enriched cells (CGG +0.3039, GGG +0.2902), so a co-directional Gly/Arg enrichment at the two downstream decoding sites is the cleanest pattern in the file. Separately, the E-site enriched cells are proline-heavy (CCT +0.2950, CCG +0.2393, CCC +0.0998). None of these cells reaches even raw p<0.05 (`p_adj` 0.9984-1.0000), so these are directions to look for again, not findings — at n=4 the file cannot distinguish them from sampling scatter. They are worth carrying into the within-condition Fisher contrast for the same time axis, where whole-transcriptome N can resolve whether a Gly/Arg or proline lean is real.
+**The largest sense-codon swings are directional only and split across residue classes (exploratory).** The largest-magnitude sense cell overall is proline P-site CCC (+0.3614, which the raw-p-ranked sub-tables do not display), followed by glycine A-site GGG (+0.3535) and arginine A-site CGG (+0.3436) — the per-direction tables are ordered by raw `p_value`, not magnitude, so the displayed leads are not the largest cells. Among those displayed leads, glycine and arginine codons (GGG, CGG) recur near the top of both the A-site and P-site enriched tables, and the E-site enriched cells are proline-heavy (CCT +0.2950, CCG +0.2393, CCC +0.0998). None of these cells reaches even raw p<0.05 (`p_adj` 0.9984-1.0000), so these are directions to look for again, not findings — at n=4 the file cannot distinguish them from sampling scatter. They are worth carrying into the within-condition Fisher contrast for the same time axis, where whole-transcriptome N can resolve whether any residue-class lean is real.
 
-**The in-frame stop codon TGA is noise, not signal (concrete).** TGA carries the file's largest raw swings (A-site `log2_FC` -1.2306, E-site -0.8135) but its footprint support is very low: the codon counting path retains in-frame stop windows that the amino-acid path drops (hence 186 codon tests vs the sister's 60), and a handful of readthrough/recoding events drive an unstable magnitude. TGA is non-significant at every site (`p_adj` 1.0000) and appears as a large grey depleted bar in every panel of the plots; read those bars as a low-count artefact, not biology.
+**The in-frame stop codon TGA is noise, not signal (concrete).** TGA carries the file's largest raw swings (P-site `log2_FC` -1.2608, A-site -1.2306, E-site -0.8135) but its footprint support is very low: the codon counting path retains in-frame stop windows that the amino-acid path drops (hence 186 codon tests vs the sister's 60), and a handful of readthrough/recoding events drive an unstable magnitude. TGA is non-significant at every site (`p_adj` 1.0000) and appears as a large grey depleted bar in every panel of the plots; read those bars as a low-count artefact, not biology.
 
 **What to carry forward.** Concrete claim to quote: this file shows no signal at FDR<0.05 for day_10-vs-day_5 codon occupancy with conditions pooled, and unlike its sister contrasts the absence is not even floor-blocked — no cell reaches raw p<0.05 (min raw p 0.0571), so it is the flattest file in the family at either resolution. Exploratory patterns worth checking in sister tests: (1) does the A-site + P-site co-enrichment of GGG (glycine) and CGG (arginine) reproduce in the within-condition Fisher `timepoint_fisher_within_condition_d10_vs_d5_codon`, which holds condition fixed at whole-transcriptome N? (2) does the E-site proline lean (CCT/CCG/CCC) reproduce there, or collapse when synonyms are read separately? Noise to ignore: the in-frame stop codon TGA (low-count), and the bulk of cells sitting at `p_adj` 0.998-1.0 with magnitude but no raw-p support.
 
@@ -175,7 +175,11 @@ Columns present: `site`, `codon`, `median_day_10`, `median_day_5`, `log2_FC`, `U
 - **condition-pooled-confound.** Each n=4 arm pools 2 BWM + 2 control replicates; a BWM-specific and a control-specific day_5-to-day_10 response that point in opposite directions cancel inside the same comparison, so cross-check the within-condition Fisher (`timepoint_fisher_within_condition_d10_vs_d5_codon`) before reading any cell as "no day-axis change."
 - **n=4-low-power.** With n=4 vs n=4, a real effect can be missed; treat this no-signal result as weakly informative, not strong evidence that day_10 and day_5 occupancy are equal.
 - **p-floor-aware-headline.** The headline reports min raw p = 0.0571 and flags that this is the only family member whose smallest raw p sits above the achievable floor (0.02857); read the 0 of 186 accordingly.
-- **stop-codon-instability.** The 62 codons per site are 61 sense codons plus the single in-frame stop TGA (the codon counting path retains stop windows, unlike the amino-acid path, which is why this file has 186 tests vs the amino-acid sister's 60); TGA's footprint support is very low, so its large `log2_FC` swings (A-site -1.2306, E-site -0.8135) are unstable noise rather than a day_10-vs-day_5 effect, and both are non-significant (`p_adj` 1.0000).
+- **stop-codon-instability.** The 62 codons per site are 61 sense codons plus the single in-frame stop TGA (the codon counting path retains stop windows, unlike the amino-acid path, which is why this file has 186 tests vs the amino-acid sister's 60); TGA's footprint support is very low, so its large `log2_FC` swings (P-site -1.2608, A-site -1.2306, E-site -0.8135) are unstable noise rather than a day_10-vs-day_5 effect, and all three are non-significant (`p_adj` 1.0000).
+
+### Considered and ruled out
+
+- **asymptotic-with-ties.** Concern that scipy's Mann-Whitney could fall back to the asymptotic Z approximation under tied per-replicate occupancy values, shifting raw p away from the exact discrete bound. Ruled out empirically. For this file directly: the 186 (site, codon) tests collapse to just 8 distinct p-values, every `U_stat` is integer-valued (range 4 to 15), and all 8 distinct p-values fall exactly on the n=4-vs-n=4 exact two-sided Mann-Whitney grid (k/70 for integer k; here 4/70, 8/70, 14/70, 24/70, 34/70, 48/70, 62/70, 70/70) -- the signature of the exact branch with no ties. The identical n=4-vs-n=4 design was also audited directly on the per-replicate sister data (day_10 vs day_5): 2 of 183 tests carry rank ties (both rare codons, both far from raw p<0.05), `method='auto'` selected the exact branch for 181 tests and the asymptotic branch for those 2, recomputed p matches the pipeline to ~=1e-16 (max 8.3e-17), and forcing `method='asymptotic'` for all tests shifts raw p by at most 0.0759 (median 0.0061), flips zero raw-p<0.05 decisions, and leaves the per-site BH conclusion unchanged (0 hits at FDR<0.05 on either branch). The rule-out carries to this whole-transcriptome occupancy file.
 
 ---
 
@@ -183,6 +187,6 @@ Columns present: `site`, `codon`, `median_day_10`, `median_day_5`, `log2_FC`, `U
 
 ![A-site day_10-vs-day_5 codon bar plot. X-axis is the codons ordered by log2 fold-change high to low; y-axis is log2 fold-change, range ~= -1.3 to +0.4; bars coloured by amino-acid class with the in-frame stop codon in grey (see legend). Largest enrichment at GGG (~+0.35), with CGG and GGC just behind; the in-frame stop TGA dominates the depleted tail (~-1.23, grey); sense-codon depletions are shallow (largest at CAA / AAC, ~-0.08 to -0.11).](../plots/between_timepoint/d10_vs_d5/codon/individual/site_A_codon_Day10_vs_Day5_barplot.png)
 
-![P-site day_10-vs-day_5 codon bar plot. X-axis is the codons ordered by log2 fold-change high to low; y-axis is log2 fold-change, range ~= -1.3 to +0.4; bars coloured by amino-acid class with the in-frame stop codon in grey. Largest enrichment at CCC (~+0.35), with CCG, CGG, and AGG behind; the in-frame stop TGA dominates the depleted tail (~-1.27, grey) and is by far the largest swing in this panel; the largest sense depletion (CTT) is shallow (~-0.16).](../plots/between_timepoint/d10_vs_d5/codon/individual/site_P_codon_Day10_vs_Day5_barplot.png)
+![P-site day_10-vs-day_5 codon bar plot. X-axis is the codons ordered by log2 fold-change high to low; y-axis is log2 fold-change, range ~= -1.3 to +0.4; bars coloured by amino-acid class with the in-frame stop codon in grey. Largest enrichment at CCC (~+0.36), with CCG, CGG, and AGG behind; the in-frame stop TGA dominates the depleted tail (~-1.26, grey) and is by far the largest swing in this panel; the largest sense depletion (CTT) is shallow (~-0.16).](../plots/between_timepoint/d10_vs_d5/codon/individual/site_P_codon_Day10_vs_Day5_barplot.png)
 
 ![E-site day_10-vs-day_5 codon bar plot. X-axis is the codons ordered by log2 fold-change high to low; y-axis is log2 fold-change, range ~= -0.9 to +0.3; bars coloured by amino-acid class with the in-frame stop codon in grey. Largest enrichment at CCT (~+0.30), with CTC and CCG behind; the in-frame stop TGA dominates the depleted tail (~-0.81, grey); the largest sense depletion is GAG (~-0.20).](../plots/between_timepoint/d10_vs_d5/codon/individual/site_E_codon_Day10_vs_Day5_barplot.png)

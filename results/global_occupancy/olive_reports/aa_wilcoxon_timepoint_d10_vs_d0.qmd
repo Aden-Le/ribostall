@@ -14,7 +14,7 @@ format:
     include-in-header:
       text: |
         \usepackage{needspace}
-tbl-colwidths: [34, 22, 22, 22]
+tbl-colwidths: [26, 20, 17, 17, 20]
 execute:
   echo: false
 ---
@@ -51,11 +51,11 @@ Each panel ranks the 20 amino acids by signed log2 fold-change at one ribosome s
 
 ## Headline
 
-0 of 60 day_10-vs-day_0 amino-acid tests are significant at FDR<0.05; minimum adjusted p is 0.2857. Four cells reach raw p<0.05, and all four sit exactly at the n=4-vs-n=4 two-sided Mann-Whitney floor (0.02857) — the smallest p the test can return at this N. The absence of FDR hits is therefore a structural floor-blocking outcome, not a biological negative. This is a coordinated floor-limited null. As nominal-only exploratory leads: the largest-magnitude floor cells are P-site C (`log2_FC` +0.1660, enriched in day_10) and P-site I (-0.0955, depleted); the largest-magnitude cell overall, P-site K (-0.2094), sits above the floor (raw p 0.1143).
+0 of 60 day_10-vs-day_0 amino-acid tests are significant at FDR<0.05; minimum adjusted p is 0.2857. Four cells reach raw p<0.05, and all four sit exactly at the n=4-vs-n=4 two-sided Mann-Whitney floor (0.02857) — the smallest p the test can return at this N. The absence of FDR hits is therefore a structural floor-blocking outcome, not a biological negative. This is a coordinated floor-limited null. As nominal-only exploratory leads: the largest-magnitude floor cells are P-site C (`log2_FC` +0.1660, enriched in day_10) and P-site I (-0.0955, depleted); the largest-magnitude cell overall, E-site S (+0.2177, enriched), sits above the floor (raw p 0.0571), as does the largest depletion, P-site K (-0.2094, raw p 0.1143).
 
 ## Top hits
 
-Effect column is `log2_FC` = log2(median day_10 / median day_0): positive means day_10-enriched, negative means day_10-depleted. `p_adj` is the Mann-Whitney p after BH correction within each site's family of 20 amino acids (the raw Mann-Whitney p per cell is summarised under Numbers at a glance; min raw p = 0.0286 = the n=4 floor). Each site is split into one sub-table per direction. No row reaches FDR<0.05, so every row below is a non-significant lead; within each sub-table the rows are the up-to-5-per-direction amino acids selected by smallest raw p, displayed by `|log2_FC|` descending. Rows flagged `nominal-only` have raw p < 0.05, and all four of them sit exactly at the n=4-vs-n=4 two-sided Mann-Whitney floor (0.02857), so their raw significance is the maximum the test can produce at this N, not evidence of a strong effect.
+Effect column is `log2_FC` = log2(median day_10 / median day_0): positive means day_10-enriched, negative means day_10-depleted. Two p-value columns are shown: `p_value` is the raw Mann-Whitney p, and `p_adj` is `p_value` after BH correction within each site's family of 20 amino acids (min raw p = 0.0286 = the n=4 floor). Each site is split into one sub-table per direction. No row reaches FDR<0.05, so every row below is a non-significant lead; within each sub-table the rows are up to 5 per direction ranked by raw `p_value` ascending, with `|log2_FC|` descending as the tiebreaker. Rows flagged `nominal-only` have raw p < 0.05, and all four of them sit exactly at the n=4-vs-n=4 two-sided Mann-Whitney floor (0.02857), so their raw significance is the maximum the test can produce at this N, not evidence of a strong effect.
 
 ```{=latex}
 \needspace{14\baselineskip}
@@ -63,13 +63,13 @@ Effect column is `log2_FC` = log2(median day_10 / median day_0): positive means 
 
 ### A site — Enriched (day_10 > day_0)
 
-| amino acid     | effect (`log2_FC`) | adjusted p (`p_adj`) | flag         |
-| ---            | ---                | ---                  | ---          |
-| M (methionine) | +0.1381            | 0.2857               |              |
-| F (phenylalanine) | +0.1290         | 0.3810               |              |
-| E (glutamate)  | +0.0782            | 0.2857               | nominal-only |
-| S (serine)     | +0.0749            | 0.2857               | nominal-only |
-| R (arginine)   | +0.0694            | 0.3810               |              |
+| amino acid        | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag         |
+| ---               | ---                | ---               | ---                  | ---          |
+| E (glutamate)     | +0.0782            | 0.0286            | 0.2857               | nominal-only |
+| S (serine)        | +0.0749            | 0.0286            | 0.2857               | nominal-only |
+| M (methionine)    | +0.1381            | 0.0571            | 0.2857               |              |
+| F (phenylalanine) | +0.1290            | 0.1143            | 0.3810               |              |
+| R (arginine)      | +0.0694            | 0.1143            | 0.3810               |              |
 
 ```{=latex}
 \needspace{14\baselineskip}
@@ -77,13 +77,13 @@ Effect column is `log2_FC` = log2(median day_10 / median day_0): positive means 
 
 ### A site — Depleted (day_10 < day_0)
 
-| amino acid     | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
-| ---            | ---                | ---                  | ---  |
-| W (tryptophan) | -0.1350            | 0.7473               |      |
-| P (proline)    | -0.1266            | 0.7473               |      |
-| Q (glutamine)  | -0.0978            | 0.7473               |      |
-| K (lysine)     | -0.0929            | 0.2857               |      |
-| G (glycine)    | -0.0472            | 0.5714               |      |
+| amino acid     | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| ---            | ---                | ---               | ---                  | ---  |
+| K (lysine)     | -0.0929            | 0.0571            | 0.2857               |      |
+| G (glycine)    | -0.0472            | 0.2000            | 0.5714               |      |
+| P (proline)    | -0.1266            | 0.3429            | 0.7473               |      |
+| Q (glutamine)  | -0.0978            | 0.3429            | 0.7473               |      |
+| W (tryptophan) | -0.1350            | 0.4857            | 0.7473               |      |
 
 ```{=latex}
 \needspace{14\baselineskip}
@@ -91,13 +91,13 @@ Effect column is `log2_FC` = log2(median day_10 / median day_0): positive means 
 
 ### P site — Enriched (day_10 > day_0)
 
-| amino acid     | effect (`log2_FC`) | adjusted p (`p_adj`) | flag         |
-| ---            | ---                | ---                  | ---          |
-| E (glutamate)  | +0.1775            | 0.4571               |              |
-| C (cysteine)   | +0.1660            | 0.2857               | nominal-only |
-| D (aspartate)  | +0.1547            | 0.9714               |              |
-| S (serine)     | +0.0409            | 0.3810               |              |
-| N (asparagine) | +0.0356            | 0.9714               |              |
+| amino acid     | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag         |
+| ---            | ---                | ---               | ---                  | ---          |
+| C (cysteine)   | +0.1660            | 0.0286            | 0.2857               | nominal-only |
+| S (serine)     | +0.0409            | 0.0571            | 0.3810               |              |
+| E (glutamate)  | +0.1775            | 0.1143            | 0.4571               |              |
+| D (aspartate)  | +0.1547            | 0.3429            | 0.9714               |              |
+| N (asparagine) | +0.0356            | 0.4857            | 0.9714               |              |
 
 ```{=latex}
 \needspace{14\baselineskip}
@@ -105,13 +105,13 @@ Effect column is `log2_FC` = log2(median day_10 / median day_0): positive means 
 
 ### P site — Depleted (day_10 < day_0)
 
-| amino acid     | effect (`log2_FC`) | adjusted p (`p_adj`) | flag         |
-| ---            | ---                | ---                  | ---          |
-| K (lysine)     | -0.2094            | 0.4571               |              |
-| I (isoleucine) | -0.0955            | 0.2857               | nominal-only |
-| G (glycine)    | -0.0505            | 0.9714               |              |
-| H (histidine)  | -0.0392            | 0.6667               |              |
-| Q (glutamine)  | -0.0303            | 0.9714               |              |
+| amino acid     | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag         |
+| ---            | ---                | ---               | ---                  | ---          |
+| I (isoleucine) | -0.0955            | 0.0286            | 0.2857               | nominal-only |
+| K (lysine)     | -0.2094            | 0.1143            | 0.4571               |              |
+| H (histidine)  | -0.0392            | 0.2000            | 0.6667               |              |
+| G (glycine)    | -0.0505            | 0.4857            | 0.9714               |              |
+| Q (glutamine)  | -0.0303            | 0.4857            | 0.9714               |              |
 
 ```{=latex}
 \needspace{14\baselineskip}
@@ -119,13 +119,13 @@ Effect column is `log2_FC` = log2(median day_10 / median day_0): positive means 
 
 ### E site — Enriched (day_10 > day_0)
 
-| amino acid     | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
-| ---            | ---                | ---                  | ---  |
-| S (serine)     | +0.2177            | 0.5714               |      |
-| L (leucine)    | +0.1148            | 0.6667               |      |
-| M (methionine) | +0.0968            | 0.6667               |      |
-| C (cysteine)   | +0.0803            | 0.6667               |      |
-| T (threonine)  | +0.0334            | 0.6667               |      |
+| amino acid     | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| ---            | ---                | ---               | ---                  | ---  |
+| S (serine)     | +0.2177            | 0.0571            | 0.5714               |      |
+| M (methionine) | +0.0968            | 0.1143            | 0.6667               |      |
+| L (leucine)    | +0.1148            | 0.2000            | 0.6667               |      |
+| C (cysteine)   | +0.0803            | 0.2000            | 0.6667               |      |
+| T (threonine)  | +0.0334            | 0.2000            | 0.6667               |      |
 
 ```{=latex}
 \needspace{14\baselineskip}
@@ -133,13 +133,13 @@ Effect column is `log2_FC` = log2(median day_10 / median day_0): positive means 
 
 ### E site — Depleted (day_10 < day_0)
 
-| amino acid     | effect (`log2_FC`) | adjusted p (`p_adj`) | flag |
-| ---            | ---                | ---                  | ---  |
-| P (proline)    | -0.1301            | 0.8571               |      |
-| K (lysine)     | -0.0864            | 0.5714               |      |
-| G (glycine)    | -0.0846            | 0.8831               |      |
-| I (isoleucine) | -0.0548            | 0.8831               |      |
-| V (valine)     | -0.0476            | 0.9143               |      |
+| amino acid     | effect (`log2_FC`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| ---            | ---                | ---               | ---                  | ---  |
+| K (lysine)     | -0.0864            | 0.0571            | 0.5714               |      |
+| P (proline)    | -0.1301            | 0.3429            | 0.8571               |      |
+| G (glycine)    | -0.0846            | 0.4857            | 0.8831               |      |
+| I (isoleucine) | -0.0548            | 0.4857            | 0.8831               |      |
+| V (valine)     | -0.0476            | 0.6857            | 0.9143               |      |
 
 ### Flag glossary
 
@@ -159,9 +159,9 @@ Effect column is `log2_FC` = log2(median day_10 / median day_0): positive means 
 
 **No day_10-vs-day_0 difference is detectable at amino-acid resolution, and the null is structural rather than biological (concrete).** None of the 60 (site, amino acid) tests clears BH within its 20-amino-acid site family; the minimum adjusted p is 0.2857. The reason is the test's own arithmetic: at n=4 vs n=4 the two-sided Mann-Whitney floor is 0.02857, and even the four cells that reach that floor BH-correct to `p_adj` 0.2857 — clearing FDR<0.05 would require roughly a dozen amino acids at one site to tie at the floor simultaneously. So 0 of 60 is the design's ceiling, not evidence that day_10 and day_0 occupancy are equal. Pooling further limits what the test can see: each n=4 arm mixes 2 BWM + 2 control replicates, so a day-axis shift that points in opposite directions in the two conditions cancels inside the same comparison.
 
-**The only sub-0.05 raw-p cells are four floor ties, split symmetrically across enrichment and depletion (exploratory).** The four `nominal-only` cells are A-site E (+0.0782) and A-site S (+0.0749) enriched, P-site C (+0.1660) enriched, and P-site I (-0.0955) depleted; all sit exactly at the 0.02857 floor, so their raw significance is the maximum the test can return at this N, not a measure of effect strength. They are directional leads to carry into a higher-powered test, not hits. There is no obvious mechanistic anchor tying a cysteine increase and an isoleucine decrease at the P site together, so these are most consistent with the discrete-floor noise the caveats describe; the value of recording them is purely as cells to look for again where N is larger.
+**The only sub-0.05 raw-p cells are four floor ties — three enriched, one depleted (exploratory).** The four `nominal-only` cells are A-site E (+0.0782) and A-site S (+0.0749) enriched, P-site C (+0.1660) enriched, and P-site I (-0.0955) depleted; all sit exactly at the 0.02857 floor, so their raw significance is the maximum the test can return at this N, not a measure of effect strength. They are directional leads to carry into a higher-powered test, not hits. There is no obvious mechanistic anchor tying a cysteine increase and an isoleucine decrease at the P site together, so these are most consistent with the discrete-floor noise the caveats describe; the value of recording them is purely as cells to look for again where N is larger.
 
-**The largest-magnitude cells sit above the floor and are directional only (exploratory).** The file's single largest cell is a P-site lysine depletion at day_10 (`log2_FC` -0.2094), with an E-site serine enrichment (+0.2177) the largest in the other direction; their adjusted p values are 0.4571 and 0.5714 and neither reaches even the raw-p floor. At |log2_FC| ~= 0.2 with n=4, these are the kind of cells that swing on one or two replicates, and neither has a clean amino-acid-level mechanism to lean on here, so they should not be read as findings.
+**The largest-magnitude cells sit above the floor and are directional only (exploratory).** The file's single largest cell is an E-site serine enrichment at day_10 (`log2_FC` +0.2177), with a P-site lysine depletion (-0.2094) the largest in the other direction (essentially tied with an undisplayed A-site tyrosine depletion, also -0.2094); their adjusted p values are 0.5714 (E-site S) and 0.4571 (P-site K) and neither reaches even the raw-p floor. At |log2_FC| ~= 0.2 with n=4, these are the kind of cells that swing on one or two replicates, and neither has a clean amino-acid-level mechanism to lean on here, so they should not be read as findings.
 
 **Site E is flatter than sites A and P (exploratory).** The minimum adjusted p is 0.2857 at both A and P but 0.5714 at E, and E contributes none of the four floor cells. Whatever modest day_10-vs-day_0 modulation the pooled design can register concentrates at the A and P sites. Whether this A/P-over-E pattern is real or an artefact of the floor structure is a question for a higher-powered test on the same time axis, not something this file can settle.
 
@@ -173,10 +173,14 @@ Columns present: `site`, `amino_acid`, `median_day_10`, `median_day_0`, `log2_FC
 
 ## What the caveats mean for reading this file
 
-- **mw-floor-blocking.** The n=4-vs-n=4 two-sided Mann-Whitney floor is 0.02857; even four cells tied at the floor BH-correct to `p_adj` 0.2857 in a 20-amino-acid per-site family, so "0 of 60 at FDR<0.05" is the design's structural ceiling — do not read it as evidence that day_10 ~= day_0.
+- **mw-floor-blocking.** The n=4-vs-n=4 two-sided Mann-Whitney floor is 0.02857; even the four cells that reach the floor BH-correct to `p_adj` 0.2857 within their 20-amino-acid per-site families, so "0 of 60 at FDR<0.05" is the design's structural ceiling — do not read it as evidence that day_10 ~= day_0.
 - **condition-pooled-confound.** Each n=4 arm pools 2 BWM + 2 control replicates; a BWM-specific and a control-specific time response that point in opposite directions cancel inside the same comparison, so cross-check the within-condition Fisher (`timepoint_fisher_within_condition_d10_vs_d0`) before reading any null cell as "no day-axis change."
 - **n=4-low-power.** With n=4 vs n=4, a real effect can be missed; treat this null as weakly informative, not strong evidence of equivalence.
 - **p-floor-aware-headline.** The headline reports min raw p ~= 0.0286 (the achievable floor) and explains why the FDR null is structural; read the 0 of 60 as "by design," not as a biological negative.
+
+### Considered and ruled out
+
+- **asymptotic-with-ties.** Concern that scipy's Mann-Whitney could fall back to the asymptotic Z approximation under tied per-replicate occupancy values, shifting raw p away from the exact discrete bound. Ruled out empirically. For this file directly: the 60 (site, amino acid) tests collapse to just 9 distinct p-values, every `U_stat` is integer-valued (range 0 to 16), and all 9 distinct p-values fall exactly on the n=4-vs-n=4 exact two-sided Mann-Whitney grid (k/70 for integer k) -- the signature of the exact branch with no ties. The identical n=4-vs-n=4 design was also audited directly on the per-replicate sister data (day_10 vs day_0): 0 of 60 tests carry rank ties, `method='auto'` selected the exact branch for all 60, recomputed p matches the pipeline to ~=1e-16 (max 8.3e-17), and forcing `method='asymptotic'` shifts raw p by at most 0.0305 (median 0.0061), flips zero raw-p<0.05 decisions, and leaves the per-site BH conclusion unchanged (0 hits at FDR<0.05 on either branch). The rule-out carries to this whole-transcriptome occupancy file.
 
 ---
 

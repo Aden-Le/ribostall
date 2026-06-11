@@ -9,6 +9,7 @@ n_significant_fdr10: 107
 min_p_adj: 0.0
 p_floor: null
 pseudoreplicated: true
+synced_from_olive_qmd: 2026-06-10
 caveats:
   - {label: "pseudorep", proposed_by: family, status: confirmed, why: "Inherited from family `timepoint_fisher_within_condition` (see _INDEX.md)."}
   - {label: "large-N-Fisher-anticonservative", proposed_by: family, status: confirmed, why: "Inherited from family `timepoint_fisher_within_condition` (see _INDEX.md)."}
@@ -24,6 +25,7 @@ user_directives:
   - "(per-CSV triage) 'Per-CSV caveats beyond the 4 locked family caveats?' -> confirmed control-vs-BWM-divergent-direction and near-universal-sig-large-N; rare-aa-low-count declined for AA files."
   - "(per-CSV triage) 'How firmly should this family read?' -> 'Firm' (significant cells read as established; still rank by |Effect change|, not p)."
   - "(per-CSV triage) Top-hits table source -> user authorised running `scripts/within_condition_sig_split.py` to generate the three-section paired tables transcribed below."
+  - "(readback) Reconciled shared content from the corrected .qmd on 2026-06-10 -> no shared-number changes (Stages 3-6 found zero corrections); three-section tables already match Olive's layout; AA full-name expansion + Top-hits intro run-on split are Olive-only, not pulled in; Dylan keeps three-letter abbreviations and the <details> both-section wrapper; no asymptotic entry (Fisher)."
 ---
 
 # Interpretation — aa_timepoint_fisher_within_condition_d10_vs_d5
@@ -37,6 +39,7 @@ user_directives:
 - (per-CSV triage) "Per-CSV caveats beyond the 4 locked family caveats?" → confirmed `control-vs-BWM-divergent-direction` and `near-universal-sig-large-N`; `rare-aa-low-count` declined for AA files and recorded considered-not-applicable.
 - (per-CSV triage) "How firmly should this family read?" → "Firm". Significant cells read as established; the A.2.x large-N discipline still applies — rank by `|Effect change|`, not p.
 - (per-CSV triage) Top-hits table source → user authorised running `scripts/within_condition_sig_split.py` (a display-only reshape of the existing `odds_ratio`/`p_adj` columns — no statistics re-run) to generate the three-section paired tables below.
+- (readback) "Reconciled shared content from the corrected .qmd on 2026-06-10" → "No shared-number changes — Olive Stages 3-6 found zero corrections, so every shared value already agreed. The three-section paired tables already match Olive's layout (no table adoption owed). The AA full-name expansion (every appearance) and the Top-hits intro run-on split applied at Olive Stage 5 are Olive-only; Dylan keeps the bare three-letter abbreviations and the `<details>` both-section wrapper. No asymptotic-with-ties entry (Fisher family). Numbers audit: all shared numbers reconciled to the `.qmd`, the `For Chumeng` control-arm values verified against the raw CSV, none flagged un-verifiable."
 
 ## Headline
 At AA-level within-condition Fisher d10 vs d5, 107/120 tests clear FDR<0.05 (BWM 51/60, control 56/60): 48 site x aa cells significant in both conditions, 3 BWM-only, 8 control-only. Minimum adjusted p underflows to 0.0 (5 cells) at whole-transcriptome pooled N (totals 1.3M-2.4M), so the informative axis is `Effect change`, not p; effects are small.

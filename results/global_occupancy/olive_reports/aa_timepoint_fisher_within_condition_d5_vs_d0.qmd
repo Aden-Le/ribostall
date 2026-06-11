@@ -57,7 +57,7 @@ This contrast is shared-direction-dominant — BWM and control move the same way
 
 ## Top hits
 
-The effect column is `log2_OR` (log2 of the Fisher odds ratio for the day-5-vs-day-0 contrast within one condition; positive = day-5-enriched relative to day-0, negative = day-5-depleted). Each row pairs the BWM and control `log2_OR` for one (site, amino acid) cell. The `effect change` column is BWM `log2_OR` minus control `log2_OR`: near zero means both conditions moved together (a shared timecourse drift), large magnitude means the two conditions' day-5-vs-day-0 trajectories diverge — positive when BWM rose relative to control, negative when control rose relative to BWM. The three sections split every cell significant at FDR<0.05 in at least one condition by which condition(s) reach significance: both, BWM only, control only; cells significant in neither are omitted. Because the pooled totals are whole-transcriptome footprint counts almost every cell clears FDR<0.05 and p magnitude is uninformative, so significance is carried by section membership rather than a displayed p column, and ranking is by `|effect change|`, not by p. Within each section rows are grouped by `site` in A / P / E order, then sorted by `effect change` descending (no row cap). Each amino-acid one-letter code is expanded to `<letter> (<full name>)` on first appearance in each section.
+The effect column is `log2_OR` (log2 of the Fisher odds ratio for the day-5-vs-day-0 contrast within one condition; positive = day-5-enriched relative to day-0, negative = day-5-depleted). Each row pairs the BWM and control `log2_OR` for one (site, amino acid) cell. The `effect change` column is BWM `log2_OR` minus control `log2_OR`: near zero means both conditions moved together (a shared timecourse drift), large magnitude means the two conditions' day-5-vs-day-0 trajectories diverge — positive when BWM rose relative to control, negative when control rose relative to BWM. The three sections split every cell significant at FDR<0.05 in at least one condition by which condition(s) reach significance: both, BWM only, control only; cells significant in neither are omitted. Because the pooled totals are whole-transcriptome footprint counts, almost every cell clears FDR<0.05 and p magnitude is uninformative. Significance is therefore carried by section membership rather than a displayed p column, and ranking is by `|effect change|`, not by p. Within each section rows are grouped by `site` in A / P / E order, then sorted by `effect change` descending (no row cap). Each amino-acid one-letter code is expanded to `<letter> (<full name>)` at every appearance.
 
 ```{=latex}
 \needspace{14\baselineskip}
@@ -85,43 +85,43 @@ The effect column is `log2_OR` (log2 of the Fisher odds ratio for the day-5-vs-d
 | A | K (lysine) | -0.045 | +0.114 | -0.159 |  |
 | A | C (cysteine) | -0.113 | +0.095 | -0.208 |  |
 | A | W (tryptophan) | -0.538 | -0.255 | -0.284 |  |
-| P | H | +0.084 | -0.112 | +0.196 |  |
-| P | M | +0.154 | -0.041 | +0.195 |  |
-| P | K | -0.021 | -0.201 | +0.181 |  |
-| P | P | -0.072 | -0.243 | +0.171 |  |
-| P | L | +0.170 | +0.059 | +0.111 |  |
+| P | H (histidine) | +0.084 | -0.112 | +0.196 |  |
+| P | M (methionine) | +0.154 | -0.041 | +0.195 |  |
+| P | K (lysine) | -0.021 | -0.201 | +0.181 |  |
+| P | P (proline) | -0.072 | -0.243 | +0.171 |  |
+| P | L (leucine) | +0.170 | +0.059 | +0.111 |  |
 | P | Y (tyrosine) | +0.069 | -0.031 | +0.100 |  |
-| P | T | +0.060 | -0.031 | +0.091 |  |
-| P | R | -0.048 | -0.091 | +0.043 |  |
+| P | T (threonine) | +0.060 | -0.031 | +0.091 |  |
+| P | R (arginine) | -0.048 | -0.091 | +0.043 |  |
 | P | E (glutamate) | +0.058 | +0.058 | +0.001 |  |
-| P | S | +0.094 | +0.102 | -0.008 |  |
-| P | C | +0.072 | +0.115 | -0.043 |  |
-| P | A | -0.088 | -0.043 | -0.045 |  |
-| P | I | +0.070 | +0.121 | -0.051 |  |
-| P | N | +0.082 | +0.137 | -0.055 |  |
-| P | G | -0.377 | -0.229 | -0.149 |  |
-| P | V | -0.015 | +0.134 | -0.149 |  |
-| P | F | +0.037 | +0.210 | -0.173 |  |
-| P | D | -0.061 | +0.154 | -0.216 |  |
-| E | Y | +0.099 | -0.131 | +0.230 |  |
-| E | H | +0.132 | -0.049 | +0.181 |  |
-| E | T | +0.070 | -0.111 | +0.180 |  |
-| E | A | -0.052 | -0.199 | +0.147 |  |
-| E | F | +0.062 | -0.071 | +0.133 |  |
-| E | S | +0.198 | +0.082 | +0.117 |  |
-| E | V | -0.024 | -0.064 | +0.039 |  |
-| E | P | -0.327 | -0.340 | +0.013 |  |
-| E | L | +0.069 | +0.057 | +0.012 |  |
-| E | Q | +0.065 | +0.058 | +0.007 |  |
-| E | D | +0.035 | +0.056 | -0.022 |  |
-| E | C | +0.064 | +0.094 | -0.030 |  |
-| E | E | +0.057 | +0.106 | -0.049 |  |
-| E | N | +0.059 | +0.118 | -0.059 |  |
-| E | G | -0.204 | -0.112 | -0.092 |  |
-| E | R | -0.051 | +0.080 | -0.130 |  |
-| E | M | +0.083 | +0.235 | -0.152 |  |
-| E | K | -0.080 | +0.101 | -0.181 |  |
-| E | W | -0.058 | +0.151 | -0.209 |  |
+| P | S (serine) | +0.094 | +0.102 | -0.008 |  |
+| P | C (cysteine) | +0.072 | +0.115 | -0.043 |  |
+| P | A (alanine) | -0.088 | -0.043 | -0.045 |  |
+| P | I (isoleucine) | +0.070 | +0.121 | -0.051 |  |
+| P | N (asparagine) | +0.082 | +0.137 | -0.055 |  |
+| P | G (glycine) | -0.377 | -0.229 | -0.149 |  |
+| P | V (valine) | -0.015 | +0.134 | -0.149 |  |
+| P | F (phenylalanine) | +0.037 | +0.210 | -0.173 |  |
+| P | D (aspartate) | -0.061 | +0.154 | -0.216 |  |
+| E | Y (tyrosine) | +0.099 | -0.131 | +0.230 |  |
+| E | H (histidine) | +0.132 | -0.049 | +0.181 |  |
+| E | T (threonine) | +0.070 | -0.111 | +0.180 |  |
+| E | A (alanine) | -0.052 | -0.199 | +0.147 |  |
+| E | F (phenylalanine) | +0.062 | -0.071 | +0.133 |  |
+| E | S (serine) | +0.198 | +0.082 | +0.117 |  |
+| E | V (valine) | -0.024 | -0.064 | +0.039 |  |
+| E | P (proline) | -0.327 | -0.340 | +0.013 |  |
+| E | L (leucine) | +0.069 | +0.057 | +0.012 |  |
+| E | Q (glutamine) | +0.065 | +0.058 | +0.007 |  |
+| E | D (aspartate) | +0.035 | +0.056 | -0.022 |  |
+| E | C (cysteine) | +0.064 | +0.094 | -0.030 |  |
+| E | E (glutamate) | +0.057 | +0.106 | -0.049 |  |
+| E | N (asparagine) | +0.059 | +0.118 | -0.059 |  |
+| E | G (glycine) | -0.204 | -0.112 | -0.092 |  |
+| E | R (arginine) | -0.051 | +0.080 | -0.130 |  |
+| E | M (methionine) | +0.083 | +0.235 | -0.152 |  |
+| E | K (lysine) | -0.080 | +0.101 | -0.181 |  |
+| E | W (tryptophan) | -0.058 | +0.151 | -0.209 |  |
 
 ```{=latex}
 \needspace{14\baselineskip}
@@ -165,7 +165,7 @@ No rows are flagged at amino-acid resolution: every (condition, site, amino acid
 
 **This is the most coordinated contrast in the family: both conditions move the same way on nearly all the large cells (concrete).** Unlike the two day-10 contrasts, where the largest cells were genuine BWM-vs-control direction splits, the d5-vs-d0 step is shared-direction-dominant. Glycine is depleted at all three sites in both arms (A -0.253 / -0.226, P -0.377 / -0.229, E -0.204 / -0.112), tryptophan is depleted at the A site in both (-0.538 / -0.255), proline is depleted at the E site in both (-0.327 / -0.340), and asparagine, methionine, aspartate and isoleucine are all enriched at the A site in both (N +0.251 / +0.227, M +0.186 / +0.230, D +0.273 / +0.074, I +0.200 / +0.184). Because each arm is tested only against its own day-0 baseline, co-directional cells are the least-confounded reading of a within-condition contrast: both lines move their occupancy the same way from day 0 to day 5, so the BWM perturbation is unlikely to be what drives them. Read together, these cells describe a shared early-timecourse drift — most prominently a coordinated loss of glycine and tryptophan occupancy and a coordinated gain of the A-site N/D/M/I set — that is common to perturbed and unperturbed lines.
 
-**The genuine BWM-vs-control divergences are present but small and scattered, the muted version of the day-10 design-target signal (concrete).** The largest direction-split cells are E:Y (BWM +0.099 vs control -0.131), A:C (BWM -0.113 vs control +0.095), E:K (BWM -0.080 vs control +0.101), P:M (BWM +0.154 vs control -0.041), E:H (BWM +0.132 vs control -0.049) and E:T (BWM +0.070 vs control -0.111). These are the cells where the two lines' day-5-vs-day-0 trajectories actually part ways, and they are the design-target reading of a within-condition contrast — but their `effect change` magnitudes (the largest is E:Y at +0.230) are well below the divergences seen at day 10, and several cluster at the E site rather than the A site. The single BWM-only cell (A:Y, BWM depleted while control is flat) and the four control-only cells (A:E, P:W, P:Q enriched in control only; E:I) are likewise low-magnitude, consistent with section membership being barely discriminating in this file. The basic and charged residues that anchor exit-tunnel and decoding biology (E:K, E:H at the E site; A:C at the A site) are where the small BWM-specific signal concentrates, but at this contrast it is a directional hint, not a strong effect.
+**The genuine BWM-vs-control divergences are present but small and scattered, the muted version of the day-10 design-target signal (concrete).** The largest direction-split cells are E:Y (BWM +0.099 vs control -0.131), A:C (BWM -0.113 vs control +0.095), E:K (BWM -0.080 vs control +0.101), P:M (BWM +0.154 vs control -0.041), E:H (BWM +0.132 vs control -0.049) and E:T (BWM +0.070 vs control -0.111). These are the cells where the two lines' day-5-vs-day-0 trajectories actually part ways, and they are the design-target reading of a within-condition contrast — but their `effect change` magnitudes (the largest is E:Y at +0.230) are well below the divergences seen at day 10, and several cluster at the E site rather than the A site. The single BWM-only cell (A:Y, BWM depleted while control is flat) and the four control-only cells (A:E enriched in control; P:W, P:Q and E:I depleted in control, all near-flat in BWM) are likewise low-magnitude, consistent with section membership being barely discriminating in this file. The basic and charged residues that anchor exit-tunnel and decoding biology (E:K, E:H at the E site; A:C at the A site) are where the small BWM-specific signal concentrates, but at this contrast it is a directional hint, not a strong effect.
 
 **Whether the shared depletions and the small divergences are amino-acid-level or driven by single synonymous codons is the open question for the codon sister (exploratory).** The shared glycine and tryptophan depletions, the A-site N/D/M/I enrichments, and the scattered E-site splits are reported here at amino-acid resolution, which aggregates each residue's synonymous codons. A shared depletion or a divergence that is genuine at the residue level should persist when the same contrast is read at codon resolution; one that collapses onto a single synonym points instead to a codon-usage signature. Glycine is the natural cell to take first — it has the most flexible backbone of the 20 residues and decodes through four synonymous codons, so its coordinated depletion at all three sites could be carried by one synonym or spread across all four. This is a hypothesis to test against `codon_timepoint_fisher_within_condition_d5_vs_d0`, not a finding from this file — directional, not established here.
 

@@ -9,6 +9,7 @@ n_significant_fdr10: 108
 min_p_adj: 0.0
 p_floor: null
 pseudoreplicated: true
+synced_from_olive_qmd: 2026-06-08
 caveats:
   - {label: "pseudorep", proposed_by: family, status: confirmed, why: "Inherited from family `timepoint_fisher_within_condition` (see _INDEX.md)."}
   - {label: "large-N-Fisher-anticonservative", proposed_by: family, status: confirmed, why: "Inherited from family `timepoint_fisher_within_condition` (see _INDEX.md)."}
@@ -17,13 +18,14 @@ caveats:
   - {label: "control-vs-BWM-divergent-direction", proposed_by: dylan, status: confirmed, why: "Several site x aa cells have BWM and control moving opposite ways (or one moving while the other is flat) in the day_10-vs-day_0 contrast, e.g. A:N (BWM log2_OR=+0.250 vs control -0.129), A:W (BWM -0.586 vs control +0.088), A:Y (BWM -0.262 vs control +0.017). The within-condition design isolates the two conditions' trajectories; divergent cells are the design-target reading and are reported alongside shared-direction cells per A.2.2. User-confirmed."}
   - {label: "near-universal-sig-large-N", proposed_by: dylan, status: confirmed, why: "104/120 tests clear FDR<0.05 and min p_adj underflows to 0.0 (4 cells) at whole-transcriptome pooled N (totals 1.3M-3.4M). 'Significant in both / BWM-only / control-only' section membership is therefore weakly discriminating; rank by |Effect change| magnitude, not by which section a cell lands in or by p. User-confirmed."}
 caveats_considered:
-  - {label: "rare-aa-low-count", proposed_by: dylan, status: denied, why: "Every (condition, site, aa) cell has both day_10 and day_0 counts in the thousands-to-hundreds-of-thousands (smallest arm here, BWM E:W day_10=15966); none falls below the within_condition_sig_split thresholds (BWM<100 / control<200), so no low-count flag fires.", user_note: "Recorded not-applicable at AA resolution (unlike the codon sister, where in-frame stop TGA cells trip the low-count flag)."}
+  - {label: "rare-aa-low-count", proposed_by: dylan, status: denied, why: "Every (condition, site, aa) cell has both day_10 and day_0 counts in the thousands-to-hundreds-of-thousands (smallest arm here, control P:W day_10=9188); none falls below the within_condition_sig_split thresholds (BWM<100 / control<200), so no low-count flag fires.", user_note: "Recorded not-applicable at AA resolution (unlike the codon sister, where in-frame stop TGA cells trip the low-count flag)."}
 headline: "104/120 within-condition Fisher tests sig at FDR<0.05 (BWM 54/60, control 50/60; 46 cells sig in both, 8 BWM-only, 4 control-only); min p_adj underflows to 0.0 (4 cells) at whole-transcriptome N so effects, not p, rank. Largest BWM-vs-control divergences sit at site A: A:W (BWM log2_OR=-0.586 vs control +0.088), A:N (+0.250 vs -0.129), A:Y (-0.262 vs +0.017). Largest shared-direction cells: E:P both depleted (BWM -0.387 / control -0.086), E:S both enriched (+0.246 / +0.118), P:E both enriched (+0.208 / +0.101)."
 user_directives:
   - "(per-CSV triage) 'Confirm test type for the family?' -> 'Fisher's exact, BH per (condition, site)' (applies to all 6 files)."
   - "(per-CSV triage) 'Per-CSV caveats beyond the 4 locked family caveats?' -> confirmed control-vs-BWM-divergent-direction and near-universal-sig-large-N; rare-aa-low-count declined for AA files (counts huge) and recorded considered-not-applicable."
   - "(per-CSV triage) 'How firmly should this family read?' -> 'Firm' (read significant cells as established; still honour the large-N discipline -- rank by |Effect change|, not p)."
   - "(per-CSV triage) Top-hits table source -> user authorised running `scripts/within_condition_sig_split.py` (a display-only reshape of existing odds_ratio/p_adj columns; no stats re-run) to generate the three-section paired tables transcribed below."
+  - "(readback) Reconciled shared content from the corrected .qmd on 2026-06-08 -> tables already aligned (three-section 46/8/4, no raw-p); corrected the rare-aa-low-count smallest-arm cite BWM E:W day_10=15966 -> control P:W day_10=9188 (front-matter + Caveats body); no asymptotic entry (Fisher); Olive-only sections not imported."
 ---
 
 # Interpretation — aa_timepoint_fisher_within_condition_d10_vs_d0
@@ -37,6 +39,7 @@ user_directives:
 - (per-CSV triage) "Per-CSV caveats beyond the 4 locked family caveats?" → confirmed `control-vs-BWM-divergent-direction` and `near-universal-sig-large-N`; `rare-aa-low-count` declined for AA files (counts in the thousands+) and recorded considered-not-applicable.
 - (per-CSV triage) "How firmly should this family read?" → "Firm". Significant cells read as established; the A.2.x large-N discipline still applies — rank by `|Effect change|`, not by p magnitude.
 - (per-CSV triage) Top-hits table source → user authorised running `scripts/within_condition_sig_split.py` (a display-only reshape of the existing `odds_ratio`/`p_adj` columns — no statistics are re-run) to generate the three-section paired tables transcribed below.
+- (readback) "Reconciled shared content from the corrected .qmd on 2026-06-08" → "Tables already aligned (three-section 46/8/4, no raw-p column); corrected the `rare-aa-low-count` smallest-arm cite BWM E:W day_10=15966 → control P:W day_10=9188 (front-matter + Caveats body); no asymptotic-with-ties entry (Fisher family); Olive-only Biological interpretation / composite / plots not imported; Dylan-only sections kept."
 
 ## Headline
 At AA-level within-condition Fisher d10 vs d0, 104/120 tests clear FDR<0.05 (BWM 54/60, control 50/60): 46 site x aa cells are significant in both conditions, 8 in BWM only, 4 in control only. Minimum adjusted p underflows to 0.0 (4 cells) at whole-transcriptome pooled N (totals 1.3M-3.4M), so p magnitude is uninformative here and the informative axis is `Effect change` (BWM `log2_OR` − control `log2_OR`); effects are small-to-moderate.
@@ -149,7 +152,7 @@ Dylan proposed Fisher's exact (two-sided) on a 2x2 of (aa_count, total − aa_co
 - **near-universal-sig-large-N** *(per-CSV)* — 104/120 tests clear FDR<0.05, so "both / BWM-only / control-only" section membership is weakly discriminating; the real ranking axis is `|Effect change|`. Sharpens the family-wide large-N caveat for this design.
 
 ### Considered but not applicable
-- **rare-aa-low-count** — every (condition, site, aa) cell has both day_10 and day_0 counts well above the `within_condition_sig_split` thresholds (BWM<100 / control<200); the smallest arm is BWM E:W day_10=15966. No low-count flag fires at AA resolution (the codon sister differs — in-frame stop TGA trips it).
+- **rare-aa-low-count** — every (condition, site, aa) cell has both day_10 and day_0 counts well above the `within_condition_sig_split` thresholds (BWM<100 / control<200); the smallest arm is control P:W day_10=9188. No low-count flag fires at AA resolution (the codon sister differs — in-frame stop TGA trips it).
 
 ## For Chumeng (joint-reading hooks)
 - Family: `timepoint_fisher_within_condition` — sister CSVs to reconcile this file against: `codon_timepoint_fisher_within_condition_d10_vs_d0` (codon refinement of the same contrast), and the d10_vs_d5 + d5_vs_d0 contrasts at the same AA resolution (for monotonicity / biphasic checks). See the `## Joint-reading suggestions` block in [`_INDEX.md`](_INDEX.md).

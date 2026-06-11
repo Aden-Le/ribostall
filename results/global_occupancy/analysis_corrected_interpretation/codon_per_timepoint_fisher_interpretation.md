@@ -9,6 +9,7 @@ n_significant_fdr10: 466
 min_p_adj: 0.0
 p_floor: null
 pseudoreplicated: true
+synced_from_olive_qmd: 2026-06-10
 caveats:
   - {label: "pseudorep", proposed_by: family, status: confirmed, why: "Inherited from family `per_timepoint_fisher` (see _INDEX.md)."}
   - {label: "large-N-Fisher-anticonservative", proposed_by: family, status: confirmed, why: "Inherited from family `per_timepoint_fisher` (see _INDEX.md)."}
@@ -22,13 +23,14 @@ caveats:
 caveats_considered:
   - {label: "OR-direction-anchor", proposed_by: dylan, status: not-adopted, why: "Proposed stating the OR>1=BWM-enriched / OR<1=BWM-depleted convention as a formal caveat.", user_note: "Folded into the log2_OR display directive (sign encodes direction); stated in Methods/Top-hits rather than carried as a standalone caveat."}
   - {label: "small-bh-family-discreteness", proposed_by: dylan, status: denied, why: "Sense codons have per-cell k in the thousands so Fisher p-values are effectively continuous; no coarse BH clustering. The only low-count codon (TGA) is covered by rare-codon-low-count / stop-codon-instability.", user_note: "Recorded as not applicable for the sense codons."}
-headline: "558 BWM-vs-control Fisher tests (3 timepoints x 3 sites x 62 codons = 61 sense + the in-frame stop TGA): 445/558 clear FDR<0.05 (79.7%), 466/558 FDR<0.10; min p_adj underflows to 0.0 (3 cells), 253/558 cells at p_adj<1e-10. As in the aa sister, at whole-transcriptome N FDR significance is near-universal and p magnitude is uninformative; rank by |log2_OR|, which for sense codons is small-to-moderate (largest sense enrichment day_0 A:CGG +0.5100 ~1.42x; largest sense depletion day_5 E:CGG -0.3649). Per-(timepoint,site) n_sig is high at all timepoints (38/62 day_10 P to 57/62 day_0 A), no day_0 gradient (totals near-balanced 1.59/1.20/0.81). The in-frame stop TGA is the single largest |log2_OR| at day_10 in all 3 sites (A +2.1403, E +2.1611, P +1.6835) but is the only low-count codon (k_BWM 79-103, k_ctrl 16-20) — flagged rare-codon + stop, not a sense-codon signal. Largest sense divergences: day_0 A:CGG +0.5100, day_0 A:CCC +0.4797, day_0 A:TGG +0.4526, day_0 A:GGC +0.4348, day_5 A:CCC +0.4008, day_5 E:CGG -0.3649, day_0 A:ACC -0.3333. Largest cross-timepoint concordant cells: enriched A:GGG +0.178, P:CGG +0.166, A:GGT +0.161; depleted E:AAG -0.165, E:GAG -0.125, P:TAT -0.078. Of 186 (site,codon) cells, 36 are direction-concordant across 3 tp (25 enriched, 11 depleted), 150 show >=1 sign change; 114 of 150 register sig on both opposite-sign rows (N-driven; see flip-sig-large-N-artifact)."
+headline: "558 BWM-vs-control Fisher tests (3 timepoints x 3 sites x 62 codons = 61 sense + the in-frame stop TGA): 445/558 clear FDR<0.05 (79.7%), 466/558 FDR<0.10; min p_adj underflows to 0.0 (3 cells), 253/558 cells at p_adj<1e-10. As in the aa sister, at whole-transcriptome N FDR significance is near-universal and p magnitude is uninformative; rank by |log2_OR|, which for sense codons is small-to-moderate (largest sense enrichment day_0 A:CGG +0.5100 ~1.42x; largest sense depletion day_5 E:CGG -0.3649). Per-(timepoint,site) n_sig is high at all timepoints (38/62 day_10 P to 57/62 day_0 A), no day_0 gradient (totals near-balanced 1.59/1.20/0.81). The in-frame stop TGA is the single largest |log2_OR| at day_10 in all 3 sites (A +2.1403, E +2.1611, P +1.6835) but is the only low-count codon (k_BWM 79-103, k_ctrl 16-20) — flagged rare-codon + stop, not a sense-codon signal. Largest sense divergences by |log2_OR| (all enrichments at codon resolution): day_0 A:CGG +0.5100, day_0 A:CCC +0.4797, day_0 A:TGG +0.4526, day_0 A:GGC +0.4348, day_0 P:CGA +0.4252; largest depletions smaller (day_5 E:CGG -0.3649, day_0 A:ACC -0.3333). Largest cross-timepoint concordant cells: enriched A:GGG +0.178, P:CGG +0.166, A:GGT +0.161; depleted E:AAG -0.165, E:GAG -0.125, P:TAT -0.078. Of 186 (site,codon) cells, 36 are direction-concordant across 3 tp (25 enriched, 11 depleted), 150 show >=1 sign change; 114 of 150 register sig on both opposite-sign rows (N-driven; see flip-sig-large-N-artifact)."
 user_directives:
   - "(per-CSV triage) 'Confirm test type? Feature=codon, 62 codons per (timepoint,site) family (61 sense + in-frame stop TGA; 558 = 62 x 3 sites x 3 tp); my read Fisher's exact 2x2 BWM vs control, BH within each (timepoint,site) family of 62 codons.' -> 'Confirm Fisher's exact 2x2'"
   - "(per-CSV triage) 'Which CSV-specific caveats?' -> confirmed all four: 'larger-bh-family', 'n-asymmetry-mild', 'flip-sig-large-N-artifact', and 'stop-codon-instability + rare-codon' (recorded as two caveats that coincide on TGA); declined small-bh-discreteness for sense codons (considered-not-applicable)."
   - "(per-CSV triage) Effect-display directive (carried from the aa pass) -> 'The data should be log2OR as dylan's table should return': effect column displayed as log2_OR (log2 of the CSV odds_ratio column), not bare odds_ratio."
   - "(per-CSV triage) 'How firmly should this read?' -> 'Mixed' (firm structural read; sense cells exploratory; TGA day_10 spike exploratory/unstable)."
   - "(per-CSV triage) 'Spotlight any site/codon/timepoint?' -> 'No spotlight' (rank by data alone)."
+  - "(readback) 'Reconciled shared content from the corrected .qmd on 2026-06-10' -> 'Adopted Olive's 6 per-(timepoint, direction) Top-hits tables (added site + bare one-letter aa columns, A->P->E grouping, |log2_OR|-sorted within site) in place of the prior 9 per-(timepoint, site) tables; values unchanged (re-grouping only). Propagated the Stage-4 Headline correction: divergence list -> genuine top-10 sense codons by |log2_OR| over all 558 rows (added day_0 P:CGA +0.4252, day_0 A:AGG +0.3983, day_0 A:CGA +0.3893; all enrichments at codon resolution, largest depletions moved to a trailing clause) + matching front-matter headline. Clarified the concordant lead-in to 'shown in the ... tables below' (members unchanged). NO asymptotic entry (Fisher family). Olive-only sections (Biological interpretation, composite, plots) not imported; User directives + For Chumeng kept.'"
 ---
 
 # Interpretation — codon_per_timepoint_fisher
@@ -43,155 +45,141 @@ user_directives:
 - (per-CSV triage) Effect-display directive (carried from the aa pass) → "The data should be log2OR as dylan's table should return." Effect shown as `log2_OR` (log2 of the CSV `odds_ratio` column), not bare `odds_ratio`. Direction convention stated in Methods.
 - (per-CSV triage) "How firmly should this read?" → "Mixed."
 - (per-CSV triage) "Spotlight any site/codon/timepoint?" → "No spotlight." Headline ranks by data alone (A.2.3).
+- (readback) "Reconciled shared content from the corrected `.qmd` on 2026-06-10." → Adopted Olive's 6 per-(timepoint, direction) Top-hits tables (added a `site` column + a bare one-letter `aa` column, A→P→E grouping, `|log2_OR|`-sorted within site) in place of the prior 9 per-(timepoint, site) tables — re-grouping only, no value changed. Propagated the Stage-4 Headline correction (divergence list → the genuine top-10 sense codons by `|log2_OR|`, all enrichments at codon resolution, largest depletions in a trailing clause) into the body Headline + front-matter `headline:`. Clarified the concordant lead-in to "shown in the ... tables below" (members unchanged). No asymptotic-with-ties entry (Fisher family). Olive-only sections (Biological interpretation, composite, plots) not imported; this section and For Chumeng kept.
 
 ## Headline
 558 tests (3 timepoints x 3 sites x 62 codons; the 62 are 61 sense codons + the single in-frame stop TGA). 445 clear FDR<0.05 (79.7%) and 466 clear FDR<0.10; the minimum adjusted p underflows to 0.0 (3 cells) and 253 of 558 cells sit at p_adj<1e-10. As in the aa sister, at whole-transcriptome pooled N (BWM/control totals 1.3M-3.4M per timepoint) FDR significance is near-universal and p magnitude is uninformative; rank by `|log2_OR|`, which for sense codons is small-to-moderate (largest sense enrichment day_0 A:CGG +0.5100, ~1.42x odds ratio; largest sense depletion day_5 E:CGG -0.3649). Per-(timepoint, site) n_sig is high at every timepoint, ranging from 38/62 (day_10 P) to 57/62 (day_0 A), with no day_0-dominated gradient (totals near-balanced, ctrl:BWM 1.59 / 1.20 / 0.81).
 
-The in-frame stop TGA carries the single largest `|log2_OR|` at day_10 in all three sites (A +2.1403, E +2.1611, P +1.6835) but is the only codon below the count threshold (k_BWM 79-103, k_ctrl 16-20); it is flagged `rare-codon` + `stop` and is a low-count instability, not a sense-codon biological signal. Largest-magnitude sense-codon divergences, by `|log2_OR|`, mixing directions: day_0 A:CGG +0.5100, day_0 A:CCC +0.4797, day_0 A:TGG +0.4526, day_0 A:GGC +0.4348, day_0 A:CTA +0.4118, day_5 A:CCC +0.4008, day_5 A:CCG +0.3941, day_5 E:CGG -0.3649, day_0 A:ACC -0.3333, day_10 A:CCC -0.3267. Largest-magnitude cells in the cross-timepoint concordant set (same OR direction at all three timepoints; equal billing per A.2.2): enriched A:GGG +0.178 (mean log2OR), P:CGG +0.166, A:GGT +0.161, E:CTT +0.122, E:TTT +0.120; depleted E:AAG -0.165, E:GAG -0.125, P:TAT -0.078, E:AGA -0.077, E:AAC -0.068. Of the 186 (site, codon) cells, 36 are direction-concordant across all three timepoints (25 enriched, 11 depleted) and 150 show at least one sign change; 114 of those 150 register the change at p_adj<0.05 on both opposite-sign rows, which at this N is N-driven (see `flip-sig-large-N-artifact`), not 114 biological reversals.
+The in-frame stop TGA carries the single largest `|log2_OR|` at day_10 in all three sites (A +2.1403, E +2.1611, P +1.6835) but is the only codon below the count threshold (k_BWM 79-103, k_ctrl 16-20); it is flagged `rare-codon` + `stop` and is a low-count instability, not a sense-codon biological signal. Largest-magnitude sense-codon divergences, by `|log2_OR|` (all enrichments at codon resolution): day_0 A:CGG +0.5100, day_0 A:CCC +0.4797, day_0 A:TGG +0.4526, day_0 A:GGC +0.4348, day_0 P:CGA +0.4252, day_0 A:CTA +0.4118, day_5 A:CCC +0.4008, day_0 A:AGG +0.3983, day_5 A:CCG +0.3941, day_0 A:CGA +0.3893; the largest depletions are smaller (day_5 E:CGG -0.3649, day_0 A:ACC -0.3333, day_10 A:CCC -0.3267). Largest-magnitude cells shown in the cross-timepoint concordant tables below (same OR direction at all three timepoints; equal billing per A.2.2): enriched A:GGG +0.178 (mean log2OR), P:CGG +0.166, A:GGT +0.161, E:CTT +0.122, E:TTT +0.120; depleted E:AAG -0.165, E:GAG -0.125, P:TAT -0.078, E:AGA -0.077, E:AAC -0.068. Of the 186 (site, codon) cells, 36 are direction-concordant across all three timepoints (25 enriched, 11 depleted) and 150 show at least one sign change; 114 of those 150 register the change at p_adj<0.05 on both opposite-sign rows, which at this N is N-driven (see `flip-sig-large-N-artifact`), not 114 biological reversals.
 
 ## Top hits
 
 The effect column is `log2_OR` (the log2 of the `odds_ratio` column), per the triage directive. Direction is fixed by the BWM-vs-control contingency layout: positive `log2_OR` = BWM-enriched at that (timepoint, site, codon); negative = BWM-depleted. `p_value` is the raw two-sided Fisher's exact p; `p_adj` is BH-corrected within each (timepoint, site) family of 62 codons.
 
-Selection is the standard top-5 enriched + top-5 depleted by `|log2_OR|` within each (timepoint, site) group (every sense row shown clears FDR<0.05). The `large-N` flag marks every row with p_adj<1e-10 (most rows; rank by `|log2_OR|`, not p). `rare-codon` marks the in-frame stop TGA (the only sub-threshold codon); TGA is annotated inline. The first (timepoint, site) group (day_0, site A) is shown; the remaining eight are collapsed below. A cross-timepoint summary follows.
+Selection is the standard top-5 enriched + top-5 depleted by `|log2_OR|` within each (timepoint, site) group (every sense row shown clears FDR<0.05), regrouped into 6 per-(timepoint, direction) tables with a `site` column: rows are grouped by `site` in A -> P -> E order, then `|log2_OR|` descending within site (15 rows per table). NOT re-sorted by either p column (at whole-transcriptome N p is uninformative). The `aa` column is the single-letter amino acid translation of each codon. The `large-N` flag marks every row with p_adj<1e-10 (most rows; rank by `|log2_OR|`, not p). `rare-codon` + `stop` mark the in-frame stop TGA (the only sub-threshold codon), annotated inline. day_0 Enriched + Depleted are shown; day_5 and day_10 are collapsed below. A cross-timepoint summary follows.
 
-### day_0, site A
+### day_0 — Enriched (BWM > control)
 
-| direction | codon | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- | --- |
-| enriched | CGG | +0.5100 | 5.33e-111 | 2.36e-110 | large-N |
-| enriched | CCC | +0.4797 | 2.69e-94 | 8.34e-94 | large-N |
-| enriched | TGG | +0.4526 | 0.00e+00 | 0.00e+00 | large-N |
-| enriched | GGC | +0.4348 | 3.94e-129 | 2.22e-128 | large-N |
-| enriched | CTA | +0.4118 | 6.11e-102 | 2.23e-101 | large-N |
-| depleted | ACC | -0.3333 | 2.26e-198 | 4.68e-197 | large-N |
-| depleted | GTC | -0.2571 | 4.60e-165 | 3.57e-164 | large-N |
-| depleted | GTT | -0.2533 | 7.93e-187 | 1.23e-185 | large-N |
-| depleted | GCC | -0.2324 | 3.57e-119 | 1.70e-118 | large-N |
-| depleted | ATC | -0.2243 | 4.96e-166 | 4.39e-165 | large-N |
+| site | codon | aa | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| A | CGG | R | +0.5100 | 5.33e-111 | 2.36e-110 | large-N |
+| A | CCC | P | +0.4797 | 2.69e-94 | 8.34e-94 | large-N |
+| A | TGG | W | +0.4526 | 0.00e+00 | 0.00e+00 | large-N |
+| A | GGC | G | +0.4348 | 3.94e-129 | 2.22e-128 | large-N |
+| A | CTA | L | +0.4118 | 6.11e-102 | 2.23e-101 | large-N |
+| P | CGA | R | +0.4252 | 3.38e-199 | 2.10e-197 | large-N |
+| P | CGG | R | +0.2271 | 4.85e-16 | 1.43e-15 | large-N |
+| P | GGT | G | +0.2269 | 5.02e-94 | 6.23e-93 | large-N |
+| P | GGC | G | +0.2032 | 7.72e-28 | 2.82e-27 | large-N |
+| P | GGG | G | +0.2000 | 3.32e-13 | 7.92e-13 | large-N |
+| E | CCT | P | +0.3438 | 6.19e-88 | 1.28e-86 | large-N |
+| E | AGG | R | +0.2380 | 4.13e-16 | 9.86e-16 | large-N |
+| E | TGT | C | +0.1880 | 4.57e-29 | 1.42e-28 | large-N |
+| E | CCA | P | +0.1814 | 5.10e-170 | 3.16e-168 | large-N |
+| E | GTG | V | +0.1784 | 1.06e-49 | 9.39e-49 | large-N |
+
+### day_0 — Depleted (BWM < control)
+
+| site | codon | aa | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| A | ACC | T | -0.3333 | 2.26e-198 | 4.68e-197 | large-N |
+| A | GTC | V | -0.2571 | 4.60e-165 | 3.57e-164 | large-N |
+| A | GTT | V | -0.2533 | 7.93e-187 | 1.23e-185 | large-N |
+| A | GCC | A | -0.2324 | 3.57e-119 | 1.70e-118 | large-N |
+| A | ATC | I | -0.2243 | 4.96e-166 | 4.39e-165 | large-N |
+| P | ACC | T | -0.2365 | 1.71e-109 | 2.65e-108 | large-N |
+| P | GAG | E | -0.1843 | 2.69e-156 | 8.34e-155 | large-N |
+| P | TTG | L | -0.1523 | 2.90e-53 | 2.00e-52 | large-N |
+| P | TTA | L | -0.1480 | 3.32e-13 | 7.92e-13 | large-N |
+| P | ATG | M | -0.1279 | 3.08e-46 | 1.91e-45 | large-N |
+| E | ACC | T | -0.1992 | 2.52e-84 | 3.91e-83 | large-N |
+| E | CAC | H | -0.1663 | 7.73e-41 | 3.42e-40 | large-N |
+| E | TCC | S | -0.1557 | 6.50e-36 | 2.52e-35 | large-N |
+| E | GTC | V | -0.1510 | 6.37e-68 | 6.59e-67 | large-N |
+| E | GAG | E | -0.1440 | 1.23e-103 | 3.82e-102 | large-N |
 
 <details>
-<summary>Remaining (timepoint, site) groups: day_0 P/E, day_5 A/P/E, day_10 A/P/E</summary>
+<summary>Remaining (timepoint, direction) tables: day_5 Enriched/Depleted, day_10 Enriched/Depleted</summary>
 
-### day_0, site P
+### day_5 — Enriched (BWM > control)
 
-| direction | codon | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- | --- |
-| enriched | CGA | +0.4252 | 3.38e-199 | 2.10e-197 | large-N |
-| enriched | CGG | +0.2271 | 4.85e-16 | 1.43e-15 | large-N |
-| enriched | GGT | +0.2269 | 5.02e-94 | 6.23e-93 | large-N |
-| enriched | GGC | +0.2032 | 7.72e-28 | 2.82e-27 | large-N |
-| enriched | GGG | +0.2000 | 3.32e-13 | 7.92e-13 | large-N |
-| depleted | ACC | -0.2365 | 1.71e-109 | 2.65e-108 | large-N |
-| depleted | GAG | -0.1843 | 2.69e-156 | 8.34e-155 | large-N |
-| depleted | TTG | -0.1523 | 2.90e-53 | 2.00e-52 | large-N |
-| depleted | TTA | -0.1480 | 3.32e-13 | 7.92e-13 | large-N |
-| depleted | ATG | -0.1279 | 3.08e-46 | 1.91e-45 | large-N |
+| site | codon | aa | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| A | CCC | P | +0.4008 | 1.16e-45 | 4.22e-45 | large-N |
+| A | CCG | P | +0.3941 | 2.68e-109 | 2.07e-108 | large-N |
+| A | CTC | L | +0.3340 | 4.59e-195 | 7.11e-194 | large-N |
+| A | CCT | P | +0.3269 | 2.09e-63 | 9.25e-63 | large-N |
+| A | CCA | P | +0.2984 | 4.92e-264 | 1.52e-262 | large-N |
+| P | CAC | H | +0.2550 | 9.46e-71 | 8.38e-70 | large-N |
+| P | CAA | Q | +0.2213 | 1.03e-128 | 3.19e-127 | large-N |
+| P | TGG | W | +0.2206 | 1.52e-42 | 7.85e-42 | large-N |
+| P | TCC | S | +0.2015 | 3.23e-43 | 2.00e-42 | large-N |
+| P | AAG | K | +0.1947 | 6.18e-177 | 3.83e-175 | large-N |
+| E | TCC | S | +0.3522 | 2.12e-146 | 2.19e-145 | large-N |
+| E | TAC | Y | +0.3173 | 4.39e-177 | 6.80e-176 | large-N |
+| E | GCC | A | +0.3088 | 4.26e-156 | 5.28e-155 | large-N |
+| E | CCA | P | +0.2854 | 2.30e-265 | 7.13e-264 | large-N |
+| E | ACC | T | +0.2802 | 7.78e-122 | 4.83e-121 | large-N |
 
-### day_0, site E
+### day_5 — Depleted (BWM < control)
 
-| direction | codon | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- | --- |
-| enriched | CCT | +0.3438 | 6.19e-88 | 1.28e-86 | large-N |
-| enriched | AGG | +0.2380 | 4.13e-16 | 9.86e-16 | large-N |
-| enriched | TGT | +0.1880 | 4.57e-29 | 1.42e-28 | large-N |
-| enriched | CCA | +0.1814 | 5.10e-170 | 3.16e-168 | large-N |
-| enriched | GTG | +0.1784 | 1.06e-49 | 9.39e-49 | large-N |
-| depleted | ACC | -0.1992 | 2.52e-84 | 3.91e-83 | large-N |
-| depleted | CAC | -0.1663 | 7.73e-41 | 3.42e-40 | large-N |
-| depleted | TCC | -0.1557 | 6.50e-36 | 2.52e-35 | large-N |
-| depleted | GTC | -0.1510 | 6.37e-68 | 6.59e-67 | large-N |
-| depleted | GAG | -0.1440 | 1.23e-103 | 3.82e-102 | large-N |
+| site | codon | aa | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| A | GAA | E | -0.2613 | 0.00e+00 | 0.00e+00 | large-N |
+| A | AAA | K | -0.2530 | 3.77e-217 | 7.78e-216 | large-N |
+| A | ATT | I | -0.2094 | 6.34e-145 | 6.55e-144 | large-N |
+| A | AAT | N | -0.1724 | 6.68e-94 | 4.14e-93 | large-N |
+| A | AGA | R | -0.1687 | 2.34e-57 | 9.08e-57 | large-N |
+| P | TTT | F | -0.2030 | 1.87e-81 | 2.32e-80 | large-N |
+| P | GTT | V | -0.1599 | 3.57e-90 | 5.54e-89 | large-N |
+| P | TTA | L | -0.1508 | 1.80e-14 | 4.46e-14 | large-N |
+| P | GAT | D | -0.1329 | 7.61e-111 | 1.57e-109 | large-N |
+| P | GTA | V | -0.1272 | 2.02e-13 | 4.64e-13 | large-N |
+| E | CGG | R | -0.3649 | 1.26e-42 | 3.13e-42 | large-N |
+| E | AGG | R | -0.2928 | 1.04e-21 | 1.84e-21 | large-N |
+| E | AAG | K | -0.2926 | 0.00e+00 | 0.00e+00 | large-N |
+| E | GGG | G | -0.2767 | 1.65e-20 | 2.76e-20 | large-N |
+| E | AGT | S | -0.2521 | 3.69e-52 | 1.09e-51 | large-N |
 
-### day_5, site A
+### day_10 — Enriched (BWM > control)
 
-| direction | codon | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- | --- |
-| enriched | CCC | +0.4008 | 1.16e-45 | 4.22e-45 | large-N |
-| enriched | CCG | +0.3941 | 2.68e-109 | 2.07e-108 | large-N |
-| enriched | CTC | +0.3340 | 4.59e-195 | 7.11e-194 | large-N |
-| enriched | CCT | +0.3269 | 2.09e-63 | 9.25e-63 | large-N |
-| enriched | CCA | +0.2984 | 4.92e-264 | 1.52e-262 | large-N |
-| depleted | GAA | -0.2613 | 0.00e+00 | 0.00e+00 | large-N |
-| depleted | AAA | -0.2530 | 3.77e-217 | 7.78e-216 | large-N |
-| depleted | ATT | -0.2094 | 6.34e-145 | 6.55e-144 | large-N |
-| depleted | AAT | -0.1724 | 6.68e-94 | 4.14e-93 | large-N |
-| depleted | AGA | -0.1687 | 2.34e-57 | 9.08e-57 | large-N |
+| site | codon | aa | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| A | TGA (in-frame stop; unstable) | * | +2.1403 | 7.78e-12 | 2.41e-11 | rare-codon; stop |
+| A | AAC | N | +0.2019 | 1.80e-57 | 3.72e-56 | large-N |
+| A | AAT | N | +0.1990 | 4.80e-71 | 1.49e-69 | large-N |
+| A | GGT | G | +0.1788 | 6.12e-21 | 3.45e-20 | large-N |
+| A | CAA | Q | +0.1347 | 1.09e-32 | 1.13e-31 | large-N |
+| P | TGA (in-frame stop; unstable) | * | +1.6835 | 4.29e-07 | 1.27e-06 | rare-codon; stop |
+| P | TTA | L | +0.3136 | 6.28e-33 | 1.95e-31 | large-N |
+| P | GTC | V | +0.1625 | 4.52e-37 | 2.80e-35 | large-N |
+| P | CTG | L | +0.1600 | 1.57e-13 | 1.39e-12 | large-N |
+| P | TGG | W | +0.1428 | 6.86e-13 | 4.72e-12 | large-N |
+| E | TGA (in-frame stop; unstable) | * | +2.1611 | 2.69e-10 | 1.27e-09 | rare-codon; stop |
+| E | TGT | C | +0.1782 | 7.00e-16 | 5.42e-15 | large-N |
+| E | TCT | S | +0.1354 | 1.28e-19 | 1.59e-18 | large-N |
+| E | GGT | G | +0.1326 | 6.44e-14 | 3.99e-13 | large-N |
+| E | TGC | C | +0.1314 | 2.31e-09 | 9.53e-09 |  |
 
-### day_5, site P
+### day_10 — Depleted (BWM < control)
 
-| direction | codon | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- | --- |
-| enriched | CAC | +0.2550 | 9.46e-71 | 8.38e-70 | large-N |
-| enriched | CAA | +0.2213 | 1.03e-128 | 3.19e-127 | large-N |
-| enriched | TGG | +0.2206 | 1.52e-42 | 7.85e-42 | large-N |
-| enriched | TCC | +0.2015 | 3.23e-43 | 2.00e-42 | large-N |
-| enriched | AAG | +0.1947 | 6.18e-177 | 3.83e-175 | large-N |
-| depleted | TTT | -0.2030 | 1.87e-81 | 2.32e-80 | large-N |
-| depleted | GTT | -0.1599 | 3.57e-90 | 5.54e-89 | large-N |
-| depleted | TTA | -0.1508 | 1.80e-14 | 4.46e-14 | large-N |
-| depleted | GAT | -0.1329 | 7.61e-111 | 1.57e-109 | large-N |
-| depleted | GTA | -0.1272 | 2.02e-13 | 4.64e-13 | large-N |
-
-### day_5, site E
-
-| direction | codon | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- | --- |
-| enriched | TCC | +0.3522 | 2.12e-146 | 2.19e-145 | large-N |
-| enriched | TAC | +0.3173 | 4.39e-177 | 6.80e-176 | large-N |
-| enriched | GCC | +0.3088 | 4.26e-156 | 5.28e-155 | large-N |
-| enriched | CCA | +0.2854 | 2.30e-265 | 7.13e-264 | large-N |
-| enriched | ACC | +0.2802 | 7.78e-122 | 4.83e-121 | large-N |
-| depleted | CGG | -0.3649 | 1.26e-42 | 3.13e-42 | large-N |
-| depleted | AGG | -0.2928 | 1.04e-21 | 1.84e-21 | large-N |
-| depleted | AAG | -0.2926 | 0.00e+00 | 0.00e+00 | large-N |
-| depleted | GGG | -0.2767 | 1.65e-20 | 2.76e-20 | large-N |
-| depleted | AGT | -0.2521 | 3.69e-52 | 1.09e-51 | large-N |
-
-### day_10, site A
-
-| direction | codon | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- | --- |
-| enriched | TGA (in-frame stop; unstable) | +2.1403 | 7.78e-12 | 2.41e-11 | rare-codon; stop |
-| enriched | AAC | +0.2019 | 1.80e-57 | 3.72e-56 | large-N |
-| enriched | AAT | +0.1990 | 4.80e-71 | 1.49e-69 | large-N |
-| enriched | GGT | +0.1788 | 6.12e-21 | 3.45e-20 | large-N |
-| enriched | CAA | +0.1347 | 1.09e-32 | 1.13e-31 | large-N |
-| depleted | CCC | -0.3267 | 1.70e-22 | 1.05e-21 | large-N |
-| depleted | TAC | -0.2675 | 9.60e-104 | 5.95e-102 | large-N |
-| depleted | TGG | -0.2209 | 3.76e-44 | 5.83e-43 | large-N |
-| depleted | GTG | -0.1611 | 1.13e-23 | 7.80e-23 | large-N |
-| depleted | TTG | -0.1577 | 2.68e-39 | 3.32e-38 | large-N |
-
-### day_10, site P
-
-| direction | codon | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- | --- |
-| enriched | TGA (in-frame stop; unstable) | +1.6835 | 4.29e-07 | 1.27e-06 | rare-codon; stop |
-| enriched | TTA | +0.3136 | 6.28e-33 | 1.95e-31 | large-N |
-| enriched | GTC | +0.1625 | 4.52e-37 | 2.80e-35 | large-N |
-| enriched | CTG | +0.1600 | 1.57e-13 | 1.39e-12 | large-N |
-| enriched | TGG | +0.1428 | 6.86e-13 | 4.72e-12 | large-N |
-| depleted | TAT | -0.1405 | 8.07e-28 | 1.67e-26 | large-N |
-| depleted | AAT | -0.0921 | 1.59e-21 | 1.97e-20 | large-N |
-| depleted | AGA | -0.0843 | 3.61e-09 | 1.32e-08 |  |
-| depleted | TAC | -0.0841 | 7.96e-10 | 3.29e-09 |  |
-| depleted | ACC | -0.0751 | 7.20e-07 | 2.03e-06 |  |
-
-### day_10, site E
-
-| direction | codon | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
-| --- | --- | --- | --- | --- | --- |
-| enriched | TGA (in-frame stop; unstable) | +2.1611 | 2.69e-10 | 1.27e-09 | rare-codon; stop |
-| enriched | TGT | +0.1782 | 7.00e-16 | 5.42e-15 | large-N |
-| enriched | TCT | +0.1354 | 1.28e-19 | 1.59e-18 | large-N |
-| enriched | GGT | +0.1326 | 6.44e-14 | 3.99e-13 | large-N |
-| enriched | TGC | +0.1314 | 2.31e-09 | 9.53e-09 |  |
-| depleted | ACC | -0.1233 | 3.34e-17 | 3.45e-16 | large-N |
-| depleted | CCC | -0.1230 | 4.17e-04 | 8.34e-04 |  |
-| depleted | CCA | -0.1146 | 8.38e-30 | 2.60e-28 | large-N |
-| depleted | AAG | -0.1079 | 1.91e-46 | 1.19e-44 | large-N |
-| depleted | AAA | -0.0966 | 1.45e-27 | 3.00e-26 | large-N |
+| site | codon | aa | effect (`log2_OR`) | raw p (`p_value`) | adjusted p (`p_adj`) | flag |
+| --- | --- | --- | --- | --- | --- | --- |
+| A | CCC | P | -0.3267 | 1.70e-22 | 1.05e-21 | large-N |
+| A | TAC | Y | -0.2675 | 9.60e-104 | 5.95e-102 | large-N |
+| A | TGG | W | -0.2209 | 3.76e-44 | 5.83e-43 | large-N |
+| A | GTG | V | -0.1611 | 1.13e-23 | 7.80e-23 | large-N |
+| A | TTG | L | -0.1577 | 2.68e-39 | 3.32e-38 | large-N |
+| P | TAT | Y | -0.1405 | 8.07e-28 | 1.67e-26 | large-N |
+| P | AAT | N | -0.0921 | 1.59e-21 | 1.97e-20 | large-N |
+| P | AGA | R | -0.0843 | 3.61e-09 | 1.32e-08 |  |
+| P | TAC | Y | -0.0841 | 7.96e-10 | 3.29e-09 |  |
+| P | ACC | T | -0.0751 | 7.20e-07 | 2.03e-06 |  |
+| E | ACC | T | -0.1233 | 3.34e-17 | 3.45e-16 | large-N |
+| E | CCC | P | -0.1230 | 4.17e-04 | 8.34e-04 |  |
+| E | CCA | P | -0.1146 | 8.38e-30 | 2.60e-28 | large-N |
+| E | AAG | K | -0.1079 | 1.91e-46 | 1.19e-44 | large-N |
+| E | AAA | K | -0.0966 | 1.45e-27 | 3.00e-26 | large-N |
 
 </details>
 

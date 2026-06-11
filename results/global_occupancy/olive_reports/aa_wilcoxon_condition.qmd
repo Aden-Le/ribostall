@@ -47,7 +47,7 @@ Each panel ranks the 20 amino acids by signed log2 fold-change at one ribosome s
 
 ## Headline
 
-No amino-acid test is significant at FDR<0.05 (0 of 60), and none clears raw p<0.05 either (min raw p = 0.1797); the minimum adjusted p is 0.9372 (E-site, amino acid A). There is no detectable BWM-vs-control signal at amino-acid resolution. As non-significant leads only: the largest-magnitude depleted cell is A-site Y (`log2_FC` -0.2237, `p_adj` 1.0000) and the largest-magnitude enriched cell is A-site Q (`log2_FC` +0.1046, `p_adj` 1.0000); the cell with the smallest adjusted p sits at the E-site (`p_adj` 0.9372).
+No amino-acid test is significant at FDR<0.05 (0 of 60), and none clears raw p<0.05 either (min raw p = 0.1797); the minimum adjusted p is 0.9372 (E-site). There is no detectable BWM-vs-control signal at amino-acid resolution. As non-significant leads only: the largest-magnitude depleted cell is A-site Y (`log2_FC` -0.2237, `p_adj` 1.0000) and the largest-magnitude enriched cell is A-site Q (`log2_FC` +0.1046, `p_adj` 1.0000); the E-site carries the smallest adjusted p, with all 20 amino acids tied at `p_adj` 0.9372.
 
 ## Top hits
 
@@ -142,10 +142,10 @@ Effect column is `log2_FC` = log2(median BWM / median control): positive means B
 - `n_tests`: 60 (20 per site, A/P/E)
 - `n_significant` (adjusted-p < 0.05): 0
 - `n_significant` (adjusted-p < 0.10): 0
-- `min adjusted-p`: 0.9372 (E-site, A)
+- `min adjusted-p`: 0.9372 (E-site; all 20 amino acids tied at this value)
 - `min raw p`: 0.1797
 - `p_floor`: 0.00216 (theoretical two-sided Mann-Whitney floor for n=6 vs n=6). Observed min raw p (0.1797) sits far above this floor, so the null here is signal/power-limited, not floor-limited.
-- Per site: site A min `p_adj` 1.0000; site P min `p_adj` 1.0000; site E min `p_adj` 0.9372.
+- Per site: site A min `p_adj` 1.0000; site P min `p_adj` 1.0000; site E min `p_adj` 0.9372 (after BH, all 20 cells within each site share that site's adjusted p).
 
 ## Biological interpretation
 
@@ -165,6 +165,10 @@ Columns present: `site`, `amino_acid`, `median_BWM`, `median_control`, `log2_FC`
 - **mw-floor-tight.** The exact Mann-Whitney floor for n=6 vs 6 is ~=0.00216, so per-site BH over 20 tests is feasible only at the very smallest p in the family; here the data does not approach the floor (min raw p 0.1797), so this constraint is not what produced the null.
 - **n=6-modest-power.** With n=6 vs 6, an effect of biologically meaningful size can be missed; treat this null as weakly informative, not strong evidence of equivalence.
 - **bh-per-site.** `p_adj` is BH-corrected within each site's 20-amino-acid family, not across the merged A/P/E file, so compare adjusted p only within a single site.
+
+### Considered and ruled out
+
+- **asymptotic-with-ties.** Concern that scipy's Mann-Whitney could fall back to the asymptotic Z approximation under tied per-replicate occupancy values, shifting raw p away from the exact discrete bound. Ruled out empirically. For this file directly: the 60 (site, amino acid) tests collapse to just 10 distinct p-values, every `U_stat` is integer-valued (range 9 to 27), and all 10 distinct p-values fall exactly on the n=6 vs 6 exact two-sided Mann-Whitney grid -- the signature of the exact branch with no ties. The identical n=6 vs 6 design was also audited directly on the per-replicate sister data: 0 of 60 tests carry rank ties, `method='auto'` selected the exact branch for all 60, recomputed p matches the pipeline to ~=1e-16, and forcing `method='asymptotic'` shifts raw p by at most 0.0155 (median 0.0102), flips zero raw-p<0.05 decisions, and leaves the per-site BH conclusion unchanged (0 hits at FDR<0.05 either way; the asymptotic branch is marginally more conservative). The rule-out carries to this whole-transcriptome occupancy file.
 
 ---
 

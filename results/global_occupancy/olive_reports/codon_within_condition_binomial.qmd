@@ -47,7 +47,7 @@ Each glyph is one codon tested against its transcriptome background frequency (`
 ### Family-level caveats
 
 - **pseudorep** — replicates within a group are summed before `binomtest`. Standard pseudoreplication; anti-conservative.
-- **iid-violation-binomial** — the binomial test assumes `total_n` iid Bernoulli draws with probability p_bg; ribosome footprints are not iid (one transcript contributes overlapping A/P/E windows, and transcripts vary widely in coverage). Headline-grade tiny p-values (down to ~1e-132) reflect this violation more than a per-feature biological signal. `log2_enrichment` is the primary effect column, not p.
+- **iid-violation-binomial** — the binomial test assumes `total_n` iid Bernoulli draws with probability p_bg; ribosome footprints are not iid (one transcript contributes overlapping A/P/E windows, and transcripts vary widely in coverage). Headline-grade tiny p-values (here `p_adj` underflows to exactly 0.0 for 624 of 1116 cells; smallest nonzero 5.93e-323) reflect this violation more than a per-feature biological signal. `log2_enrichment` is the primary effect column, not p.
 - **bh-per-(group,site)** — BH-FDR is per (group,site) family of ~20 (aa) or ~61 (codon) tests. `p_adj` means "corrected within this group at this site", not across the whole CSV.
 - **bg-transcriptome-freq** — the null frequency is the transcriptome codon/AA composition (the `Transcriptome` column), so enrichment means "more occupied than its transcriptomic abundance predicts", not vs a uniform expectation.
 
@@ -356,7 +356,7 @@ Each panel below is one (group, site) BH-FDR family of 62 codons, plotted as a v
 
 ![BWM Day 10, E site. ATA (Ile, ~-1.40) is the far-left depletion; CTA (Leu) follows. AAG (Lys, ~+1.06) is the largest sense enrichment; the in-frame stop TGA is the far-right outlier (~+3.30, enriched).](../plots/within_condition/codon/individual/unweighted/BWM_day_10_E_volcano.png)
 
-![control Day 0, A site. The in-frame stop TGA is the far-right outlier (~+2.6, enriched). Largest sense enrichment AAG (Lys, ~+1.07); largest depletion GGG (Gly, ~-1.12), with CTA (Leu) and AGT (Ser) nearby. Densest A-site panel (61/62 hits).](../plots/within_condition/codon/individual/unweighted/control_day_0_A_volcano.png)
+![control Day 0, A site. The in-frame stop TGA is the far-right outlier (~+2.6, enriched). Largest sense enrichment AAG (Lys, ~+1.07); largest depletion GGG (Gly, ~-1.12), with CTA (Leu) and AGT (Ser) nearby. 61/62 A-site hits.](../plots/within_condition/codon/individual/unweighted/control_day_0_A_volcano.png)
 
 ![control Day 0, P site. ATA (Ile, ~-1.57) is the far-left depletion; CTA (Leu) and CGG (Arg) follow. AAG (Lys, ~+0.97) and CGT (Arg, ~+0.89) are the largest sense enrichments; the in-frame stop TGA sits to the right (~+1.83, enriched). Full 62/62 P-site hits.](../plots/within_condition/codon/individual/unweighted/control_day_0_P_volcano.png)
 
@@ -366,7 +366,7 @@ Each panel below is one (group, site) BH-FDR family of 62 codons, plotted as a v
 
 ![control Day 5, P site. ATA (Ile, ~-1.31) is the far-left depletion; GGG (Gly) and CTA (Leu) follow. Largest sense enrichment CGT (Arg, ~+0.79); the in-frame stop TGA sits to the right (~+2.74, enriched). Full 62/62 P-site hits.](../plots/within_condition/codon/individual/unweighted/control_day_5_P_volcano.png)
 
-![control Day 5, E site. AAG (Lys, ~+1.40) is the largest sense enrichment and the file maximum sense magnitude; ATA (Ile, ~-1.38) is the far-left depletion. The in-frame stop TGA sits to the right (~+2.47, enriched).](../plots/within_condition/codon/individual/unweighted/control_day_5_E_volcano.png)
+![control Day 5, E site. AAG (Lys, ~+1.40) is the largest sense enrichment in the file; ATA (Ile, ~-1.38) is the far-left depletion. The in-frame stop TGA sits to the right (~+2.47, enriched).](../plots/within_condition/codon/individual/unweighted/control_day_5_E_volcano.png)
 
 ![control Day 10, A site. The in-frame stop TGA is the far-right outlier (~+1.4, the smallest TGA value across the 6 groups, still enriched). Largest sense enrichment CGC (Arg, ~+1.01); largest depletion GGG (Gly, ~-0.86), with CTA (Leu) nearby. Full 62/62 A-site hits.](../plots/within_condition/codon/individual/unweighted/control_day_10_A_volcano.png)
 

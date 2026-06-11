@@ -20,8 +20,7 @@ shell_scripts/
 ├── adj_coverage/             # Step 1 — CDS-aligned coverage
 ├── stall_sites_consensus/    # Step 2a — consensus stall calling
 ├── stall_sites_non_consensus/# Step 2b — per-replicate calling, stats, and R plots
-├── global_occupancy/         # Step 3 — occupancy base CSVs, stats, and R plots
-└── misc/                     # Dylan/Olive helpers (table checkers, report rendering)
+└── global_occupancy/         # Step 3 — occupancy base CSVs, stats, and R plots
 ```
 
 ---
@@ -139,22 +138,3 @@ For a full plot regeneration after a stats rerun (PowerShell uses `;` between co
 ```
 
 The within-condition shells are the slowest (~3 minutes each); the others finish in under a minute.
-
----
-
-## Misc helpers (`misc/`)
-
-Not part of the pipeline — these drive the Dylan/Olive audit loop.
-
-Dylan table checkers (validate Dylan interpretation tables against the stats CSVs):
-
-```powershell
-& "C:\Program Files\Git\bin\bash.exe" shell_scripts/misc/run_dylan_table_checker.sh
-& "C:\Program Files\Git\bin\bash.exe" shell_scripts/misc/run_dylan_table_checker_global_occupancy.sh
-```
-
-Re-render the Olive Quarto reports (HTML+PDF):
-
-```powershell
-& "C:\Program Files\Git\bin\bash.exe" shell_scripts/misc/render_olive_reports.sh
-```

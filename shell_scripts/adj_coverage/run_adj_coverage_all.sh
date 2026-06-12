@@ -12,8 +12,8 @@ RIBO_DIR="./all_ribo_file"
 #  adj_coverage.py -- it is consumed by downstream sequence steps, not this one.)
 
 # adj_coverage.py arguments (required)
-MIN_LEN=26
-MAX_LEN=38
+MIN_LEN=27
+MAX_LEN=34
 RETURN_SITE="P"    # P-site or A-site
 
 # Optional: site type and search window for offset (uncomment and set if needed)

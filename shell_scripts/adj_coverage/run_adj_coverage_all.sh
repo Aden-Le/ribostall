@@ -7,9 +7,10 @@
 # Path to directory containing .ribo files (absolute or relative to current directory)
 RIBO_DIR="./all_ribo_file"
 
-# Input .ribo for this run: all_ribo_file/mouse_all.ribo
+# Exact input .ribo for this run (a single file, not a directory glob).
 # (The mouse reference reference/appris_mouse_v2_selected.fa.gz is NOT used by
 #  adj_coverage.py -- it is consumed by downstream sequence steps, not this one.)
+RIBO_FILE="$RIBO_DIR/mouse_all.ribo"
 
 # adj_coverage.py arguments (required)
 MIN_LEN=27
@@ -37,20 +38,22 @@ conda activate ribostall_env
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/../.."
 
-# Process all .ribo files
-for RIBO in "$RIBO_DIR"/*.ribo; do
-  [ -f "$RIBO" ] || continue
-  BASENAME=$(basename "$RIBO" .ribo)
-  OUT="${RIBO_DIR}/${BASENAME}_coverage.pkl.gz"
+# Process the single specified .ribo file
+RIBO="$RIBO_FILE"
+if [ ! -f "$RIBO" ]; then
+  echo "Error: ribo file not found: $RIBO"
+  exit 1
+fi
+BASENAME=$(basename "$RIBO" .ribo)
+OUT="${RIBO_DIR}/${BASENAME}_coverage.pkl.gz"
 
-  CMD="python3 scripts/adj_coverage.py --ribo $RIBO --min-len $MIN_LEN --max-len $MAX_LEN --return-site $RETURN_SITE --out $OUT --procs $PROCS"
-  [ "$USE_ALIAS" = "yes" ] && CMD="$CMD --alias"
-  CMD="$CMD --site-type $SITE_TYPE"
-  CMD="$CMD --search-window $SEARCH_WINDOW"
+CMD="python3 scripts/adj_coverage.py --ribo $RIBO --min-len $MIN_LEN --max-len $MAX_LEN --return-site $RETURN_SITE --out $OUT --procs $PROCS"
+[ "$USE_ALIAS" = "yes" ] && CMD="$CMD --alias"
+CMD="$CMD --site-type $SITE_TYPE"
+CMD="$CMD --search-window $SEARCH_WINDOW"
 
-  echo "Running: $CMD"
-  eval $CMD
-done
+echo "Running: $CMD"
+eval $CMD
 
 echo "Done."
 date

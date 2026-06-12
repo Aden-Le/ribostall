@@ -27,6 +27,7 @@ from ribostall.amino_acids import (
     background_codon_freq,
 )
 from ribostall.sequence import get_sequence, get_cds_range_lookup
+from ribostall.enrichment import plot_coverage_density
 
 # =========================
 # Logging
@@ -198,6 +199,14 @@ def main():
             print(f"  {rep:<25} {group:<15} {avg_cov:>22.4f} {sd_cov:>10.4f} {total_cov:>16,.0f}")
     print()
     # --- end logging ---
+
+    # Coverage density plot: KDE of per-transcript body coverage per replicate
+    # (mirrors stall_sites_non_consensus_call.py). The body window matches the
+    # one used by filter_tx / call_stalls. Written into --out-dir.
+    os.makedirs(args.out_dir, exist_ok=True)
+    plot_coverage_density(cov, groups, args.out_dir,
+                          trim_start=args.trim_start, trim_stop=args.trim_stop)
+    logging.info(f"Saved coverage density plot to {args.out_dir}/coverage_density.png")
 
     # Per-group transcript universe — each group keeps its own filtered tx set
     # (mirrors stall_sites_non_consensus_call.py; no cross-group intersection).

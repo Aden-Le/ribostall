@@ -12,8 +12,8 @@ RIBO_FILE="$RIBO_DIR/mouse_all.ribo"
 # Format: "group1:rep1,rep2;group2:rep1,rep2"
 # Flat control-vs-treatment design (no timepoints). Replicate names must match
 # the experiments in the coverage pickle; group labels are free-form.
-# Mouse run: 2-vs-1 design — control has 2 reps (AA_3, AA_4), treatment has 1 (ChWAA2).
-EXP_GROUPS='control:AA_3,AA_4;treatment:ChWAA2'
+# Mouse run: 2-vs-1 design — control has 2 reps (AA_3, AA_4), treatment has 1 (Ch_WAA2).
+EXP_GROUPS='control:AA_3,AA_4;treatment:Ch_WAA2'
 
 # Transcript filtering thresholds
 # Aligned with the C. elegans non-consensus "Parameter set v2 (2026-04-27)":

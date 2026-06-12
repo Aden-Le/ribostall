@@ -61,11 +61,14 @@ conda activate ribostall_env
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/../.."
 
-# Find coverage pickle
-PICKLE=$(ls "$RIBO_DIR"/*_coverage.pkl.gz 2>/dev/null | head -1)
+# Coverage pickle for the exact ribo file above (not a directory glob).
+# adj_coverage.py writes <basename>_coverage.pkl.gz next to the .ribo, so derive
+# it from RIBO_FILE. With multiple *_coverage.pkl.gz present (e.g. C. elegans +
+# mouse), a glob would pick the wrong one.
+PICKLE="${RIBO_DIR}/$(basename "$RIBO_FILE" .ribo)_coverage.pkl.gz"
 
-if [ -z "$PICKLE" ]; then
-  echo "Error: No coverage pickle files found in $RIBO_DIR"
+if [ ! -f "$PICKLE" ]; then
+  echo "Error: coverage pickle not found: $PICKLE"
   exit 1
 fi
 

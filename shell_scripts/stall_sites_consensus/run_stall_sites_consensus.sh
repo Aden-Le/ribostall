@@ -7,20 +7,28 @@
 # ============== CONFIG: edit these ==============
 # Path to directory containing _coverage.pkl.gz files
 RIBO_DIR="./all_ribo_file"
-RIBO_FILE="$RIBO_DIR/C_elegan_all_02_04_2026.ribo"
+RIBO_FILE="$RIBO_DIR/mouse_all.ribo"
 
 # Format: "group1:rep1,rep2;group2:rep1,rep2"
-# Flat control-vs-treatment design (no timepoints). Edit the replicate sample
-# names to match the experiments in the coverage pickle.
-EXP_GROUPS='control:control_rep1,control_rep2;treatment:treatment_rep1,treatment_rep2'
+# Flat control-vs-treatment design (no timepoints). Replicate names must match
+# the experiments in the coverage pickle; group labels are free-form.
+# Mouse run: 2-vs-1 design — control has 2 reps (AA_3, AA_4), treatment has 1 (ChWAA2).
+EXP_GROUPS='control:AA_3,AA_4;treatment:ChWAA2'
 
 # Transcript filtering thresholds
-TX_THRESHOLD=1.0
-TX_MIN_REPS=2
+# Aligned with the C. elegans non-consensus "Parameter set v2 (2026-04-27)":
+# TX_THRESHOLD 1.0 -> 0.5 to retain more transcripts in low-coverage groups.
+TX_THRESHOLD=0.5
+# Global gate (no per-group override exists). MUST be 1 here: the 1-rep treatment
+# group can never reach 2, so a value of 2 would leave it with zero transcripts.
+# Trade-off: this also relaxes the 2-rep control filter to ">=1 of 2 reps".
+TX_MIN_REPS=1
 
 # Stall site calling thresholds
+# Aligned with the C. elegans non-consensus v2 set: MIN_READS 2 -> 5 (off the
+# noise floor); TRIM_START already 20. Keeps consensus comparable to non-consensus.
 MIN_Z=1.0
-MIN_READS=2
+MIN_READS=5
 TRIM_START=20
 TRIM_STOP=10
 PSEUDOCOUNT=0.5
@@ -33,7 +41,7 @@ TOL=0
 MIN_SEP=7
 
 # Reference file (required for E/P/A annotation)
-REFERENCE_FILE="./reference/appris_celegans_v1_selected_new.fa"
+REFERENCE_FILE="./reference/appris_mouse_v2_selected.fa.gz"
 
 # E/P/A annotation parameters
 BASIS="P"            # register for E/P/A offsets (P or A)

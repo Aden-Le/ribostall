@@ -7,6 +7,10 @@
 # Path to directory containing .ribo files (absolute or relative to current directory)
 RIBO_DIR="./all_ribo_file"
 
+# Input .ribo for this run: all_ribo_file/mouse_all.ribo
+# (The mouse reference reference/appris_mouse_v2_selected.fa.gz is NOT used by
+#  adj_coverage.py -- it is consumed by downstream sequence steps, not this one.)
+
 # adj_coverage.py arguments (required)
 MIN_LEN=26
 MAX_LEN=38
@@ -14,7 +18,7 @@ RETURN_SITE="P"    # P-site or A-site
 
 # Optional: site type and search window for offset (uncomment and set if needed)
 SITE_TYPE="start"
-# SEARCH_WINDOW="-60 -30"
+SEARCH_WINDOW="-25 -10"
 
 # Optional: use human/mouse alias (set to "yes" if your .ribo uses apris_human_alias)
 USE_ALIAS="no"
@@ -42,8 +46,7 @@ for RIBO in "$RIBO_DIR"/*.ribo; do
   CMD="python3 scripts/adj_coverage.py --ribo $RIBO --min-len $MIN_LEN --max-len $MAX_LEN --return-site $RETURN_SITE --out $OUT --procs $PROCS"
   [ "$USE_ALIAS" = "yes" ] && CMD="$CMD --alias"
   CMD="$CMD --site-type $SITE_TYPE"
-  # Uncomment if using custom search window:
-  # CMD="$CMD --search-window $SEARCH_WINDOW"
+  CMD="$CMD --search-window $SEARCH_WINDOW"
 
   echo "Running: $CMD"
   eval $CMD

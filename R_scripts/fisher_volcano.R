@@ -46,6 +46,19 @@ parser$add_argument("--comparison-label",
                     default = "BWM vs Control",
                     help = "Label describing the comparison (used in titles)")
 
+parser$add_argument("--effect-col",
+                    default = "odds_ratio",
+                    help = "Name of the effect-size column to place on the x-axis. Default 'odds_ratio' (Fisher); log2-transformed unless --effect-is-log2 is set.")
+
+parser$add_argument("--effect-is-log2",
+                    action = "store_true",
+                    default = FALSE,
+                    help = "Treat --effect-col as already log2-scaled (e.g. delta_log2_enrichment from the background-aware between-condition test) and plot it directly instead of taking log2(). Default: FALSE (column is linear, log2 is applied).")
+
+parser$add_argument("--x-label",
+                    default = "",
+                    help = "Override the x-axis label. Default (empty) uses 'Log2 (Odds Ratio)'. Pass e.g. 'Log2 Enrichment Ratio (treatment / control)' for the background-aware test.")
+
 parser$add_argument("--format",
                     default = "both",
                     choices = c("pdf", "png", "both"),
@@ -100,14 +113,24 @@ if (!feature_col %in% colnames(data)) {
                feature_col, paste(colnames(data), collapse = ", ")))
 }
 
+if (!args$effect_col %in% colnames(data)) {
+  stop(sprintf("Effect column '%s' not found in input CSV. Found: %s",
+               args$effect_col, paste(colnames(data), collapse = ", ")))
+}
+
 group_col <- args$group_col
 cat("  Rows:", nrow(data), "| Groups:", paste(unique(data[[group_col]]), collapse = ", "),
     "| Sites:", paste(unique(data$site), collapse = ", "), "\n")
+cat("  Effect column:", args$effect_col,
+    if (args$effect_is_log2) "(already log2)" else "(linear -> log2)", "\n")
 
-# Compute log2 odds ratio and -log10 adjusted p-value
+# Compute the x-axis effect (log2) and -log10 adjusted p-value. The internal
+# column keeps the name `log2_odds_ratio` for the plotting code below; for a
+# pre-logged effect column (e.g. delta_log2_enrichment) it is used as-is.
 data <- data |>
   mutate(
-    log2_odds_ratio = log2(odds_ratio),
+    log2_odds_ratio = if (args$effect_is_log2) .data[[args$effect_col]]
+                      else log2(.data[[args$effect_col]]),
     neg_log10_p = -log10(p_adj)
   )
 
@@ -158,6 +181,11 @@ y_max <- max(data$neg_log10_p, na.rm = TRUE) * 1.1
 
 cat("  Axis limits -- x:", round(x_lim, 2), "| y: [0,", round(y_max, 2), "]\n")
 
+# X-axis label: default keeps the Fisher odds-ratio expression; --x-label
+# overrides it (plain text) for other effect sizes (e.g. enrichment ratio).
+x_axis_label <- if (nzchar(args$x_label)) args$x_label else
+  expression(bold("Log"[2] ~ "(Odds Ratio)"))
+
 # ============================================================
 # Volcano Plot Function
 # ============================================================
@@ -176,7 +204,8 @@ cat("  Axis limits -- x:", round(x_lim, 2), "| y: [0,", round(y_max, 2), "]\n")
 #   show_legend : logical, whether to show the legend (default TRUE)
 
 make_volcano <- function(plot_data, x_lim, y_max, title,
-                         show_legend = TRUE) {
+                         show_legend = TRUE,
+                         x_label = expression(bold("Log"[2] ~ "(Odds Ratio)"))) {
 
   # --- Base layer: scatter plot ---
   # Points colored by amino acid class, shaped by significance status
@@ -247,7 +276,7 @@ make_volcano <- function(plot_data, x_lim, y_max, title,
 
     labs(
       title = title,
-      x = expression(bold("Log"[2] ~ "(Odds Ratio)")),
+      x = x_label,
       y = expression(bold("-Log"[10] ~ "(FDR)"))
     ) +
 
@@ -316,7 +345,8 @@ for (gv in group_values) {
       x_lim = x_lim,
       y_max = y_max,
       title = title,
-      show_legend = TRUE
+      show_legend = TRUE,
+      x_label = x_axis_label
     )
 
     filepath <- file.path(args$outdir, "individual",
@@ -351,7 +381,8 @@ for (gv in group_values) {
       x_lim = x_lim,
       y_max = y_max,
       title = subtitle,
-      show_legend = FALSE
+      show_legend = FALSE,
+      x_label = x_axis_label
     )
 
     plot_list[[length(plot_list) + 1]] <- p

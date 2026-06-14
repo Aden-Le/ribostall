@@ -50,6 +50,11 @@ parser$add_argument("--mega-composite",
                     default = FALSE,
                     help = "Also emit an all-groups composite (rows = condition x timepoint, cols = sites)")
 
+parser$add_argument("--flat-design",
+                    action = "store_true",
+                    default = FALSE,
+                    help = "Flat control-vs-treatment input with no timepoint dimension (group == condition, timepoint == condition). Composites are built per group (rows = group, cols = sites) instead of condition x timepoint; the by-day composite is skipped. Use for the consensus stall-site pipeline.")
+
 parser$add_argument("--enrichment-type",
                     default = "both",
                     choices = c("unweighted", "weighted", "both"),
@@ -369,11 +374,17 @@ for (etype in names(enrichment_configs)) {
 
       plot_data <- data |> filter(group == grp, site == st)
 
-      day_label <- gsub("_", " ", gsub(".*_(day)", "\\1", grp))
-      day_label <- gsub("day ", "Day ", day_label)
-      cond_label <- gsub("_day.*", "", grp)
+      if (args$flat_design) {
+        # No timepoint dimension: label by the group (condition) alone.
+        group_label <- grp
+      } else {
+        day_label <- gsub("_", " ", gsub(".*_(day)", "\\1", grp))
+        day_label <- gsub("day ", "Day ", day_label)
+        cond_label <- gsub("_day.*", "", grp)
+        group_label <- paste0(cond_label, " ", day_label)
+      }
       title <- paste0(SITE_LABELS[st], " ", level_label, " ", cfg$label,
-                      " Enrichment | ", cond_label, " ", day_label)
+                      " Enrichment | ", group_label)
 
       p <- make_volcano(
         plot_data,
@@ -398,6 +409,124 @@ for (etype in names(enrichment_configs)) {
 }
 
 cat("  Saved", plot_count, "individual plots\n")
+
+# ============================================================
+# Composite Plots
+#   Layout depends on the input design:
+#     - flat (--flat-design): one composite per group (rows = group,
+#       cols = sites). No by-day composite (there is no timepoint axis).
+#     - timepoint (default): by-condition and by-day grids over the
+#       condition x timepoint cross-product.
+# ============================================================
+
+composite_count <- 0
+composite_day_count <- 0
+mega_count <- 0
+
+if (args$flat_design) {
+
+  # ---- Flat control-vs-treatment design (no timepoint) ----
+  # `group` already identifies the only experimental axis, so filter on it
+  # directly rather than reconstructing a condition_timepoint key.
+  cat("Generating composite plots (flat design)...\n")
+
+  for (etype in names(enrichment_configs)) {
+    cfg <- enrichment_configs[[etype]]
+
+    for (grp in groups) {
+
+      plot_list <- list()
+
+      for (st in sites) {
+        plot_data <- data |> filter(group == grp, site == st)
+        subtitle <- paste0(SITE_LABELS[st], " | ", grp)
+
+        plot_list[[length(plot_list) + 1]] <- make_volcano(
+          plot_data,
+          x_col        = cfg$x_col,
+          ci_lower_col = cfg$ci_lower_col,
+          ci_upper_col = cfg$ci_upper_col,
+          x_lim        = cfg$x_lim,
+          y_max        = y_max,
+          title        = subtitle,
+          x_label      = cfg$x_label,
+          show_ci      = args$show_ci,
+          show_legend  = FALSE
+        )
+      }
+
+      n_sites <- length(sites)
+      composite <- wrap_plots(plot_list, ncol = n_sites, nrow = 1) +
+        plot_layout(guides = "collect") +
+        plot_annotation(
+          title = paste0(grp, ": ", cfg$label, " ", level_label, " Enrichment"),
+          theme = theme(
+            plot.title = element_text(hjust = 0.5, size = 18, face = "bold")
+          )
+        ) &
+        theme(legend.position = "bottom")
+
+      filepath <- file.path(args$outdir, "composite", etype,
+                            paste0(grp, "_volcano_grid"))
+      save_plot(composite, filepath,
+                width  = 6 * n_sites,
+                height = 5.5 * 1 + 1.5,
+                format = args$format, dpi = args$dpi)
+      composite_count <- composite_count + 1
+    }
+  }
+  cat("  Saved", composite_count, "group composite plots\n")
+
+  # Mega composite (all groups): rows = group, cols = sites.
+  if (args$mega_composite) {
+    cat("Generating mega composite (all groups)...\n")
+
+    for (etype in names(enrichment_configs)) {
+      cfg <- enrichment_configs[[etype]]
+      plot_list <- list()
+
+      for (grp in groups) {
+        for (st in sites) {
+          plot_data <- data |> filter(group == grp, site == st)
+          plot_list[[length(plot_list) + 1]] <- make_volcano(
+            plot_data,
+            x_col        = cfg$x_col,
+            ci_lower_col = cfg$ci_lower_col,
+            ci_upper_col = cfg$ci_upper_col,
+            x_lim        = cfg$x_lim,
+            y_max        = y_max,
+            title        = paste0(SITE_LABELS[st], " | ", grp),
+            x_label      = cfg$x_label,
+            show_ci      = args$show_ci,
+            show_legend  = FALSE
+          )
+        }
+      }
+
+      n_groups <- length(groups)
+      n_sites  <- length(sites)
+      mega <- wrap_plots(plot_list, ncol = n_sites, nrow = n_groups) +
+        plot_layout(guides = "collect") +
+        plot_annotation(
+          title = paste0(cfg$label, " ", level_label,
+                         " Enrichment - All Groups"),
+          theme = theme(
+            plot.title = element_text(hjust = 0.5, size = 20, face = "bold")
+          )
+        ) &
+        theme(legend.position = "bottom")
+
+      filepath <- file.path(args$outdir, "composite", etype, "all_groups_volcano_grid")
+      save_plot(mega, filepath,
+                width  = 6 * n_sites,
+                height = 5.5 * n_groups + 1.5,
+                format = args$format, dpi = args$dpi)
+      mega_count <- mega_count + 1
+    }
+    cat("  Saved", mega_count, "mega composite plots\n")
+  }
+
+} else {
 
 # ============================================================
 # Composite Plots: Grouped by Condition
@@ -601,6 +730,8 @@ if (args$mega_composite) {
   }
   cat("  Saved", mega_count, "mega composite plots\n")
 }
+
+}  # end timepoint-design composites
 
 # ============================================================
 # Summary

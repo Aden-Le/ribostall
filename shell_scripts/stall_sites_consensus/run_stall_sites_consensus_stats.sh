@@ -23,6 +23,12 @@ EXP_GROUPS='control:control;treatment:treatment'
 OUT_ENRICHMENT="./results/stall_sites/enrichment"
 OUT_DIR="./results/stall_sites/enrichment/analysis_stats"
 
+# Headline condition for the between-condition Fisher test: a positive
+# log2(odds ratio) means the codon/AA is enriched in THIS condition. Must match
+# one of the group labels above. Set to "treatment" so positive = treatment-
+# enriched. Leave empty ("") to fall back to alphabetical ordering.
+HEADLINE_CONDITION="treatment"
+
 # ===============================================
 
 # Navigate to repo root (two levels up from shell_scripts/<subdir>/)
@@ -35,14 +41,21 @@ echo "=============================================="
 echo "Groups: $EXP_GROUPS"
 echo "Input: $OUT_ENRICHMENT"
 echo "Output: $OUT_DIR"
+echo "Headline condition: ${HEADLINE_CONDITION:-alphabetical default}"
 echo "=============================================="
+
+# Pass --headline-condition only when set, so an empty value falls back to the
+# script's alphabetical default.
+HEADLINE_FLAG=()
+[ -n "$HEADLINE_CONDITION" ] && HEADLINE_FLAG=(--headline-condition "$HEADLINE_CONDITION")
 
 for LEVEL in aa codon; do
   python3 scripts/stall_sites_consensus_stats.py \
     --stall-sites "$OUT_ENRICHMENT/stall_sites_${LEVEL}.csv" \
     --background "$OUT_ENRICHMENT/per_group_background_${LEVEL}.csv" \
     --groups "$EXP_GROUPS" \
-    --out-dir "$OUT_DIR"
+    --out-dir "$OUT_DIR" \
+    "${HEADLINE_FLAG[@]}"
 done
 
 echo ""

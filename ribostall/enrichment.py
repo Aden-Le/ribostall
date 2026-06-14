@@ -11,6 +11,7 @@ Each E/P/A site is tested INDEPENDENTLY — never accumulated across sites.
 """
 
 import os
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -504,6 +505,7 @@ def between_condition_fisher(
     rep_to_condition: dict,
     *,
     feature_col: str = "amino_acid",
+    headline_condition: Optional[str] = None,
 ) -> pd.DataFrame:
     """
     For each unit (amino acid or codon) at each E/P/A site, pool replicate
@@ -514,6 +516,10 @@ def between_condition_fisher(
     NOTE: pooling replicates is pseudoreplication. P-values should be
     interpreted cautiously.
 
+    Direction: the 2x2 odds ratio is computed as (odds in ``cond_a``) /
+    (odds in ``cond_b``), so a positive log2(odds_ratio) means the unit is
+    enriched in ``cond_a``. ``cond_a`` is the *headline* condition.
+
     Parameters
     ----------
     replicate_counts : dict
@@ -522,6 +528,11 @@ def between_condition_fisher(
         {replicate: "control" or "treatment"}
     feature_col : str
         Output column name for the feature level (e.g. "amino_acid" or "codon").
+    headline_condition : str or None
+        Which of the two conditions is the headline (``cond_a``, the odds-ratio
+        numerator), so a positive log2(odds_ratio) means enriched in it. Must
+        equal one of the two condition labels. If ``None`` (default), the
+        conditions are ordered alphabetically — backward-compatible behaviour.
 
     Returns
     -------
@@ -529,11 +540,22 @@ def between_condition_fisher(
         site, <feature_col>, <cond_a>_count, <cond_a>_total, <cond_b>_count,
         <cond_b>_total, odds_ratio, p_value, p_adj
     """
-    # Exactly two conditions, sorted alphabetically for consistent column naming.
     conditions = sorted(set(rep_to_condition.values()))
     if len(conditions) != 2:
         raise ValueError(f"Expected exactly 2 conditions, got {conditions}")
-    cond_a, cond_b = conditions
+    if headline_condition is not None:
+        if headline_condition not in conditions:
+            raise ValueError(
+                f"headline_condition {headline_condition!r} is not one of the "
+                f"two conditions {conditions}"
+            )
+        # Headline becomes cond_a (odds-ratio numerator): positive log2(OR)
+        # means enriched in headline_condition.
+        cond_a = headline_condition
+        cond_b = next(c for c in conditions if c != headline_condition)
+    else:
+        # Default: alphabetical ordering (consistent column naming).
+        cond_a, cond_b = conditions
 
     # Unit list from first replicate (assumes all replicates share the same index).
     first_rep = next(iter(replicate_counts))

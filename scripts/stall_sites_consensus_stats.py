@@ -16,6 +16,14 @@ consensus collapses replicates), so only two comparisons are meaningful:
 
   * Analysis 1 — within-condition enrichment (binomial vs each group's background)
   * Analysis 2 — between-condition Fisher's exact (control vs treatment)
+  * Analysis 3 — between-condition background-aware diff (control vs treatment)
+
+Analysis 3 is the background-aware counterpart of Analysis 2: instead of
+comparing raw stall-site shares between conditions (Fisher), it compares each
+condition's enrichment over its OWN background, so a shift in the expressed
+transcriptome between conditions cannot masquerade as differential stalling. It
+complements rather than replaces Fisher — the two agree when the per-condition
+backgrounds match and diverge only when they differ.
 
 The Wilcoxon and per-/between-timepoint analyses from the non-consensus stats
 script are N/A here (n=1 per arm, no timepoints) and are deliberately omitted.
@@ -44,6 +52,7 @@ from ribostall.amino_acids import AA_ORDER, SENSE_CODONS
 from ribostall.enrichment import (
     within_condition_enrichment,
     between_condition_fisher,
+    between_condition_background_diff,
 )
 
 
@@ -68,9 +77,10 @@ def parse_args():
     parser.add_argument("--out-dir", default="results/stall_sites/enrichment",
                         help="Output directory for enrichment CSVs")
     parser.add_argument("--headline-condition", default=None,
-                        help="Condition treated as the headline (odds-ratio numerator) in the "
-                             "between-condition Fisher test: a positive log2(odds ratio) means "
-                             "enriched in this condition. Must match one of the two group labels "
+                        help="Condition treated as the headline (numerator) in BOTH between-"
+                             "condition tests: a positive log2(odds ratio) [Fisher, Analysis 2] or "
+                             "delta_log2_enrichment [background-aware, Analysis 3] means enriched in "
+                             "this condition. Must match one of the two group labels "
                              "(e.g. 'treatment'). Default: alphabetical (first condition is headline).")
     return parser.parse_args()
 
@@ -202,8 +212,37 @@ def main():
         replicate_counts, rep_to_condition, feature_col=feature_col,
         headline_condition=args.headline_condition,
     )
+
+    # Printing Purposes
     for site in sorted(df_fisher["site"].unique()) if not df_fisher.empty else []:
         site_df = df_fisher[df_fisher["site"] == site]
+        n_sig_s = (site_df["p_adj"] < 0.05).sum()
+        print(f"  [{site}] {len(site_df)} tests, {n_sig_s} significant")
+
+    # --------------------------------------------------------------
+    # Analysis 3: Between-condition background-aware diff (control vs treatment)
+    # --------------------------------------------------------------
+    # NOTE: same control-vs-treatment comparison as Analysis 2, but each
+    # condition is normalized to its OWN background before comparison (Fisher
+    # compares raw shares). Positive delta_log2_enrichment = more enriched vs
+    # background in the headline condition. bg_freq_per_group keys by group, and
+    # group == condition in this flat consensus design, so it passes through.
+    print(f"\n{'='*60}\nANALYSIS 3: BETWEEN-CONDITION BACKGROUND-AWARE DIFF\n"
+          f"  NOTE: enrichment-over-background ratio; consensus pools sites — interpret cautiously\n{'='*60}")
+    if args.headline_condition is not None:
+        print(f"  Headline condition: {args.headline_condition} "
+              f"(positive delta_log2_enrichment = more enriched vs background in {args.headline_condition})")
+    else:
+        print("  Headline condition: alphabetical default "
+              "(positive delta_log2_enrichment = more enriched vs background in the first condition)")
+    df_bgdiff = between_condition_background_diff(
+        replicate_counts, rep_to_condition, bg_freq_per_group,
+        feature_col=feature_col, headline_condition=args.headline_condition,
+    )
+
+    # Printing Purposes
+    for site in sorted(df_bgdiff["site"].unique()) if not df_bgdiff.empty else []:
+        site_df = df_bgdiff[df_bgdiff["site"] == site]
         n_sig_s = (site_df["p_adj"] < 0.05).sum()
         print(f"  [{site}] {len(site_df)} tests, {n_sig_s} significant")
 
@@ -212,11 +251,13 @@ def main():
     # --------------------------------------------------------------
     within_path = out_dir / f"within_condition_binomial_{suffix}.csv"
     fisher_path = out_dir / f"between_condition_fisher_{suffix}.csv"
+    bgdiff_path = out_dir / f"between_condition_background_diff_{suffix}.csv"
     df_within.to_csv(within_path, index=False)
     df_fisher.to_csv(fisher_path, index=False)
+    df_bgdiff.to_csv(bgdiff_path, index=False)
 
     print(f"\nSaved:")
-    for p in (within_path, fisher_path):
+    for p in (within_path, fisher_path, bgdiff_path):
         print(f"  {p}")
     logging.info(f"All {level}-level consensus enrichment results saved to {out_dir}")
 

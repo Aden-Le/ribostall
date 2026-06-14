@@ -102,6 +102,28 @@ Within-condition binomial enrichment volcano plots (with Beta-Jeffreys CIs):
 & "C:\Program Files\Git\bin\bash.exe" shell_scripts/stall_sites_non_consensus/analyze_stall_sites_non_consensus_within_condition_enrichment.sh
 ```
 
+### Stall_sites (consensus)
+
+These drive the volcano scripts on the **consensus** stats CSVs (flat control-vs-treatment, no timepoints) in `results/stall_sites/enrichment/analysis_stats/`.
+
+Between-condition Fisher volcano plots (raw stall-site share, Treatment vs Control):
+
+```powershell
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/stall_sites_consensus/analyze_stall_sites_consensus_fisher_volcano.sh
+```
+
+Between-condition **background-aware** volcano plots (enrichment-over-background ratio, Treatment vs Control — the background-aware counterpart of the Fisher plot above):
+
+```powershell
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/stall_sites_consensus/analyze_stall_sites_consensus_background_diff_volcano.sh
+```
+
+Within-condition binomial enrichment volcano plots (per group, with Beta-Jeffreys CIs):
+
+```powershell
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/stall_sites_consensus/analyze_stall_sites_consensus_within_condition_volcano.sh
+```
+
 ### Global occupancy
 
 Fisher's exact test volcano plots (per-timepoint + within-condition timepoint):

@@ -24,6 +24,7 @@ from ribostall.stats_core import (
     binom_row,
     wilcoxon_row,
     fisher_row,
+    background_diff_row,
 )
 
 # bh_fdr is re-exported from stats_core so existing
@@ -36,6 +37,7 @@ __all__ = [
     "between_timepoint_fisher_within_condition",
     "per_timepoint_fisher",
     "between_condition_fisher",
+    "between_condition_background_diff",
     "plot_coverage_density",
 ]
 
@@ -558,7 +560,9 @@ def between_condition_fisher(
         cond_a, cond_b = conditions
 
     # Unit list from first replicate (assumes all replicates share the same index).
+    # first rep would be the first key in the replicate_counts dictionary
     first_rep = next(iter(replicate_counts))
+    # Unit List would be the index of the first replicate's E column (basically the AAs)
     unit_list = list(replicate_counts[first_rep]["E"].index)
 
     rows = []
@@ -600,6 +604,156 @@ def between_condition_fisher(
                 f"{cond_b}_count": count_b,
                 f"{cond_b}_total": total_b,
                 "odds_ratio": res["odds_ratio"],
+                "p_value": res["p_value"],
+            })
+
+    df = pd.DataFrame(rows)
+    if df.empty:
+        return df
+
+    # BH-FDR correction per site: each E/P/A site is its own family of hypotheses.
+    df = apply_bh_fdr(df, ["site"])
+    return df.sort_values(["site", "p_adj"])
+
+
+# ---------------------------------------------------------------------------
+# Analysis 6: Between-condition, background-aware (binomial-vs-background offset)
+# ---------------------------------------------------------------------------
+def between_condition_background_diff(
+    replicate_counts: dict,
+    rep_to_condition: dict,
+    bg_freq_per_cond: dict,
+    *,
+    feature_col: str = "amino_acid",
+    headline_condition: Optional[str] = None,
+) -> pd.DataFrame:
+    """
+    Background-aware counterpart of ``between_condition_fisher``. For each unit
+    (amino acid or codon) at each E/P/A site, it asks whether the unit's
+    enrichment OVER ITS OWN BACKGROUND differs between the two conditions,
+    rather than whether the raw stall-site share differs.
+
+    Each condition's enrichment is ``stall_count / (stall_total * bg_freq)`` —
+    exactly Analysis 1's quantity. The effect size ``delta_log2_enrichment`` is
+    the difference of the two within-condition log2 enrichments, and the test is
+    the exact conditional binomial for two equal Poisson rates with background
+    as the offset (see ``stats_core.background_diff_row``).
+
+    Why this exists: Fisher compares raw shares, so a shift in the expressed /
+    translated transcriptome between conditions can masquerade as differential
+    stalling. Normalizing each condition to its own background removes that
+    confound; the two tests agree when the backgrounds match and diverge only
+    when they differ (which is itself the diagnostic).
+
+    NOTE: pooling replicates is pseudoreplication. As with ``between_condition_
+    fisher``, this does not model biological-replicate variability, so p-values
+    should be interpreted cautiously.
+
+    Direction: ``delta_log2_enrichment`` > 0 means the unit is more enriched
+    (vs background) in the headline condition (``cond_headline``). If
+    ``headline_condition`` is ``None`` the conditions are ordered alphabetically.
+
+    Parameters
+    ----------
+    replicate_counts : dict
+        {replicate: {"E": Series, "P": Series, "A": Series}}
+    rep_to_condition : dict
+        {replicate: "control" or "treatment"}
+    bg_freq_per_cond : dict
+        {condition: pd.Series} — background frequencies per condition (indexed by
+        the same alphabet as ``replicate_counts``). In the consensus flat design
+        group == condition, so the per-group backgrounds key directly here.
+    feature_col : str
+        Output column name for the feature level (e.g. "amino_acid" or "codon").
+    headline_condition : str or None
+        Which condition is the headline (numerator of the enrichment ratio).
+        Must equal one of the two condition labels. Default: alphabetical.
+
+    Returns
+    -------
+    pd.DataFrame with columns:
+        site, <feature_col>, <cond_headline>_count, <cond_headline>_total,
+        <cond_headline>_bg_freq, <cond_other>_count, <cond_other>_total,
+        <cond_other>_bg_freq, log2_enrich_<cond_headline>,
+        log2_enrich_<cond_other>, delta_log2_enrichment, enrichment_ratio,
+        p_value, p_adj
+    """
+    conditions = sorted(set(rep_to_condition.values()))
+    if len(conditions) != 2:
+        raise ValueError(f"Expected exactly 2 conditions, got {conditions}")
+    if headline_condition is not None:
+        if headline_condition not in conditions:
+            raise ValueError(
+                f"headline_condition {headline_condition!r} is not one of the "
+                f"two conditions {conditions}"
+            )
+        cond_headline = headline_condition
+        cond_other = next(c for c in conditions if c != headline_condition)
+    else:
+        cond_headline, cond_other = conditions
+
+    # This can be the amino acid list or the codon list
+    # Unit list from first replicate (assumes all replicates share the same index).
+    first_rep = next(iter(replicate_counts))
+    unit_list = list(replicate_counts[first_rep]["E"].index)
+
+    rows = []
+    for site in ("E", "P", "A"):
+        # Pool counts per condition across replicates at this site (same as Fisher).
+        pooled_by_cond = {}
+        for cond in conditions:
+            pooled = None
+            for rep in replicate_counts:
+                if rep_to_condition.get(rep) != cond:
+                    continue
+                counts = replicate_counts[rep][site]
+                if pooled is None:
+                    pooled = counts.copy()
+                else:
+                    # Fill value is needed because if value didn't exist 5 + NaN wold be NaN
+                    pooled = pooled.add(counts, fill_value=0)
+            pooled_by_cond[cond] = pooled
+
+        # Skip the site if either condition has no replicates.
+        if any(v is None for v in pooled_by_cond.values()):
+            continue
+        
+        # The total fo the headline
+        stall_total_headline = int(pooled_by_cond[cond_headline].sum())
+        # The total of the other condition (control)
+        stall_total_other = int(pooled_by_cond[cond_other].sum())
+        if stall_total_headline == 0 or stall_total_other == 0:
+            continue
+        
+        # For each amino acid or codon
+        for unit in unit_list:
+            # Gets the count for that unit in each condition
+            stall_count_headline = int(pooled_by_cond[cond_headline].get(unit, 0))
+            stall_count_other = int(pooled_by_cond[cond_other].get(unit, 0))
+
+            # Small pseudocount mirrors within_condition_enrichment so a unit
+            # absent from a condition's background does not divide by zero.
+            bg_freq_headline = float(bg_freq_per_cond[cond_headline].get(unit, 1e-6))
+            bg_freq_other = float(bg_freq_per_cond[cond_other].get(unit, 1e-6))
+
+            res = background_diff_row(
+                stall_count_headline, stall_total_headline, bg_freq_headline,
+                stall_count_other, stall_total_other, bg_freq_other,
+            )
+            
+            rows.append({
+                "site": site,
+                feature_col: unit,
+                f"{cond_headline}_count": stall_count_headline,
+                f"{cond_headline}_total": stall_total_headline,
+                f"{cond_headline}_bg_freq": bg_freq_headline,
+                f"{cond_other}_count": stall_count_other,
+                f"{cond_other}_total": stall_total_other,
+                f"{cond_other}_bg_freq": bg_freq_other,
+                f"log2_enrich_{cond_headline}": res["log2_enrich_headline"],
+                f"log2_enrich_{cond_other}": res["log2_enrich_other"],
+                "delta_log2_enrichment": res["delta_log2_enrichment"],
+                "enrichment_ratio": res["enrichment_ratio"],
                 "p_value": res["p_value"],
             })
 

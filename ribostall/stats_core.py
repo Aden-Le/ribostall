@@ -126,3 +126,94 @@ def fisher_row(count_a: int, total_a: int, count_b: int, total_b: int) -> dict:
     except ValueError:
         odds_ratio, p_val = np.nan, 1.0
     return {"odds_ratio": odds_ratio, "p_value": p_val}
+
+
+def background_diff_row(
+    stall_count_headline: int, stall_total_headline: int, bg_freq_headline: float,
+    stall_count_other: int, stall_total_other: int, bg_freq_other: float,
+) -> dict:
+    """One background-aware between-condition row.
+
+    Unlike ``fisher_row`` (which compares raw stall-site *shares* between two
+    conditions), this compares each condition's enrichment OVER ITS OWN
+    background. Per condition:
+
+        expected_count = stall_total * bg_freq    # count if stalling tracked background
+        enrichment     = stall_count / expected_count   # == Analysis-1 enrichment
+
+    Effect size is the difference of the two log2 enrichments:
+
+        delta_log2_enrichment = log2(enrichment_headline) - log2(enrichment_other)
+
+    Test: under H0 (equal enrichment), conditional on
+    ``combined_count = stall_count_headline + stall_count_other``,
+
+        stall_count_headline | combined_count ~ Binomial(combined_count, null_share)
+        null_share = expected_count_headline / (expected_count_headline + expected_count_other)
+
+    This is the exact conditional test for two equal Poisson rates with
+    background as the exposure/offset. The background frequencies are treated as
+    known (they are estimated from millions of codons) and are taken as given:
+    the caller is responsible for any pseudocount, mirroring ``binom_row`` whose
+    ``p_bg`` is likewise caller-supplied (both adapters pass a pseudocounted,
+    strictly-positive background, so ``expected_count`` is never zero here). When
+    the two backgrounds are equal, ``null_share`` reduces to the raw stall-total
+    split and the result converges to ``fisher_row``; the two diverge only when
+    the transcriptome composition shifts between conditions.
+
+    Returns ``expected_count_headline, expected_count_other, log2_enrich_headline,
+    log2_enrich_other, delta_log2_enrichment, enrichment_ratio, null_share,
+    observed_share, p_value``.
+    """
+    # This is what we expect to get if the stalling is random
+    expected_count_headline = stall_total_headline * bg_freq_headline
+    expected_count_other = stall_total_other * bg_freq_other
+
+    # The log2 enrichment for each condition
+    log2_enrich_headline = (
+        np.log2(stall_count_headline / expected_count_headline)
+        if stall_count_headline > 0 and expected_count_headline > 0 else 0.0
+    )
+    log2_enrich_other = (
+        np.log2(stall_count_other / expected_count_other)
+        if stall_count_other > 0 and expected_count_other > 0 else 0.0
+    )
+    # The difference in log2 enrichments
+    delta_log2_enrichment = log2_enrich_headline - log2_enrich_other
+
+    # Gets the total stalls of the two conditions
+    combined_count = stall_count_headline + stall_count_other
+
+    # Gets the expected total stalls from the  condition
+    expected_total = expected_count_headline + expected_count_other
+    if combined_count == 0 or expected_total == 0:
+        return {
+            "expected_count_headline": expected_count_headline,
+            "expected_count_other": expected_count_other,
+            "log2_enrich_headline": log2_enrich_headline,
+            "log2_enrich_other": log2_enrich_other,
+            "delta_log2_enrichment": 0.0,
+            "enrichment_ratio": 2.0 ** delta_log2_enrichment,
+            "null_share": np.nan,
+            "observed_share": np.nan,
+            "p_value": 1.0,
+        }
+
+    # The expected fraction of stalls that should be the headline
+    null_share = expected_count_headline / expected_total
+    # Out of the total stalls, what is the expected fraction for the headline
+    # is the null_share
+    p_value = stats.binomtest(
+        stall_count_headline, combined_count, null_share, alternative="two-sided"
+    ).pvalue
+    return {
+        "expected_count_headline": expected_count_headline,
+        "expected_count_other": expected_count_other,
+        "log2_enrich_headline": log2_enrich_headline,
+        "log2_enrich_other": log2_enrich_other,
+        "delta_log2_enrichment": delta_log2_enrichment,
+        "enrichment_ratio": 2.0 ** delta_log2_enrichment,
+        "null_share": null_share,
+        "observed_share": stall_count_headline / combined_count,
+        "p_value": p_value,
+    }

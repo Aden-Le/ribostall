@@ -67,6 +67,11 @@ def parse_args():
                         help="Path to per_group_background_{level}.csv written by the consensus call script.")
     parser.add_argument("--out-dir", default="results/stall_sites/enrichment",
                         help="Output directory for enrichment CSVs")
+    parser.add_argument("--headline-condition", default=None,
+                        help="Condition treated as the headline (odds-ratio numerator) in the "
+                             "between-condition Fisher test: a positive log2(odds ratio) means "
+                             "enriched in this condition. Must match one of the two group labels "
+                             "(e.g. 'treatment'). Default: alphabetical (first condition is headline).")
     return parser.parse_args()
 
 
@@ -92,11 +97,18 @@ def detect_level(df: pd.DataFrame) -> tuple[str, tuple[str, str, str], list, str
 def build_replicate_counts(df: pd.DataFrame, site_cols, alphabet) -> dict:
     """{rep: {"E": Series, "P": Series, "A": Series}} indexed by ``alphabet``."""
     out = {}
+    # Groups by control or treatment
     for rep, sub in df.groupby("replicate"):
         rep_map = {}
+        # The name of the site and the column that site lives in
         for site_name, col in zip(("E", "P", "A"), site_cols):
+            # Counts the occurrences of each Amino Acid or Codon in the column
+            # For example: {"A": 10, "C": 5, "G": 3, "T": 2}
             counts = sub[col].value_counts()
+            # Reindex the counts to match the alphabet and fill missing values with 0
+            # It will look like {E: {"A": 10, "C": 5, "G": 3, "T": 2}, P: {"A": 10, "C": 5, "G": 3, "T": 2}, A: {"A": 10, "C": 5, "G": 3, "T": 2}}
             rep_map[site_name] = counts.reindex(alphabet, fill_value=0).astype(int)
+        # Stores the above dictionary for the replicate
         out[rep] = rep_map
     return out
 
@@ -123,14 +135,19 @@ def main():
     # per group and writes replicate == group, so each "replicate" is a group
     # and the condition is the group name itself (flat control vs treatment).
     # --------------------------------------------------------------
+    # Ex: 'control:control;treatment:treatment'
+    # {"control": ["control"], "treatment": ["treatment"]}
     groups = parse_groups(args.groups)
+    # Would look like {"control": "control", "treatment": "treatment"}
     rep_to_group = {rep: grp for grp, reps in groups.items() for rep in reps}
     # Flat design: no timepoints, so condition is the group name (e.g. control, treatment).
+    # Would look the same as rep_to_group
     rep_to_condition = {rep: grp.split("_", 1)[0] for rep, grp in rep_to_group.items()}
 
     # --------------------------------------------------------------
     # Per-replicate counts (one "replicate" per group after consensus)
     # --------------------------------------------------------------
+    # Builds
     replicate_counts = build_replicate_counts(df, site_cols, alphabet)
 
     # Print total counts per site across replicates (for sanity check)
@@ -175,8 +192,15 @@ def main():
     # --------------------------------------------------------------
     print(f"\n{'='*60}\nANALYSIS 2: BETWEEN-CONDITION FISHER'S EXACT\n"
           f"  NOTE: consensus pools sites per group — interpret cautiously\n{'='*60}")
+    if args.headline_condition is not None:
+        print(f"  Headline condition: {args.headline_condition} "
+              f"(positive log2 odds ratio = enriched in {args.headline_condition})")
+    else:
+        print("  Headline condition: alphabetical default "
+              "(positive log2 odds ratio = enriched in the first condition)")
     df_fisher = between_condition_fisher(
         replicate_counts, rep_to_condition, feature_col=feature_col,
+        headline_condition=args.headline_condition,
     )
     for site in sorted(df_fisher["site"].unique()) if not df_fisher.empty else []:
         site_df = df_fisher[df_fisher["site"] == site]

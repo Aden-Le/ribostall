@@ -46,6 +46,9 @@ echo "=============================================="
 
 # Pass --headline-condition only when set, so an empty value falls back to the
 # script's alphabetical default.
+# -n $HEADLINE_CONDITION checks if the variable is non-empty, if it is, then the flag is added.
+# Its like an if else statement, if HEADLINE_CONDITION is not empty, then add the flag.
+# If not then the whole argument is omitted from the python script below
 HEADLINE_FLAG=()
 [ -n "$HEADLINE_CONDITION" ] && HEADLINE_FLAG=(--headline-condition "$HEADLINE_CONDITION")
 

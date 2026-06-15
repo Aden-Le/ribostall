@@ -5,9 +5,10 @@
 #
 # Ribopy-free. Consumes stall_sites_{codon,aa}.csv and
 # per_group_background_{codon,aa}.csv produced by
-# run_stall_sites_non_consensus.sh and writes within-condition,
-# between-condition Wilcoxon, and per-timepoint Fisher
-# result CSVs into $OUT_ENRICHMENT.
+# run_stall_sites_non_consensus.sh and writes within-condition binomial,
+# between-condition Wilcoxon, between-timepoint Wilcoxon + Fisher,
+# per-timepoint Fisher, and per-timepoint background-aware diff result
+# CSVs into $OUT_DIR.
 #----------------------------------------------------
 
 # ============== CONFIG: edit these ==============
@@ -19,6 +20,15 @@ EXP_GROUPS='control_day_0:control_day0_rep2,control_day0_rep3;control_day_5:cont
 OUT_ENRICHMENT="./results/stall_sites/enrichment"
 OUT_DIR="./results/stall_sites/enrichment/analysis_stats"
 
+# Headline condition for the between-condition tests: the between-condition
+# Wilcoxon (Analysis 2), the per-timepoint Fisher (Analysis 4), and the
+# per-timepoint background-aware diff (Analysis 5). A positive effect size
+# (log2_FC / log2 odds ratio / delta_log2_enrichment) means enriched in THIS
+# condition. Must match one of the condition labels above (the part before the
+# first underscore, e.g. BWM or control). Set to "BWM" so positive = BWM-
+# enriched. Leave empty ("") to fall back to alphabetical ordering.
+HEADLINE_CONDITION="BWM"
+
 # ===============================================
 
 # Navigate to repo root (two levels up from shell_scripts/<subdir>/)
@@ -29,15 +39,24 @@ echo "=============================================="
 echo "RIBOSOME STALL SITE ENRICHMENT STATS"
 echo "=============================================="
 echo "Groups: $EXP_GROUPS"
-echo "Input/Output: $OUT_ENRICHMENT"
+echo "Input: $OUT_ENRICHMENT"
+echo "Output: $OUT_DIR"
+echo "Headline condition: ${HEADLINE_CONDITION:-alphabetical default}"
 echo "=============================================="
+
+# Pass --headline-condition only when set, so an empty value falls back to the
+# script's alphabetical default. -n "$HEADLINE_CONDITION" is true when non-empty:
+# if set, the flag is added; if empty, the whole argument is omitted below.
+HEADLINE_FLAG=()
+[ -n "$HEADLINE_CONDITION" ] && HEADLINE_FLAG=(--headline-condition "$HEADLINE_CONDITION")
 
 for LEVEL in aa codon; do
   python3 scripts/stall_sites_non_consensus_stats.py \
     --stall-sites "$OUT_ENRICHMENT/stall_sites_${LEVEL}.csv" \
     --background "$OUT_ENRICHMENT/per_group_background_${LEVEL}.csv" \
     --groups "$EXP_GROUPS" \
-    --out-dir "$OUT_DIR"
+    --out-dir "$OUT_DIR" \
+    "${HEADLINE_FLAG[@]}"
 done
 
 echo ""

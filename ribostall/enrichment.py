@@ -149,11 +149,16 @@ def between_condition_wilcoxon(
     rep_to_condition: dict,
     *,
     feature_col: str = "amino_acid",
+    headline_condition: Optional[str] = None,
 ) -> pd.DataFrame:
     """
     For each feature (amino acid or codon) at each E/P/A site, compare
     per-replicate stall frequencies between conditions using Wilcoxon
     rank-sum (Mann-Whitney U).
+
+    Direction: ``log2_FC`` is ``log2(median_cond_a / median_cond_b)``, so a
+    positive value means the feature has a higher per-replicate stall frequency
+    in ``cond_a``. ``cond_a`` is the *headline* condition.
 
     Parameters
     ----------
@@ -163,6 +168,11 @@ def between_condition_wilcoxon(
         {replicate: "control" or "BWM"}
     feature_col : str
         Output column name for the feature level (e.g. "amino_acid" or "codon").
+    headline_condition : str or None
+        Which of the two conditions is the headline (``cond_a``, the log2_FC
+        numerator), so a positive ``log2_FC`` means higher in it. Must equal one
+        of the two condition labels. If ``None`` (default), the conditions are
+        ordered alphabetically — backward-compatible behaviour.
 
     Returns
     -------
@@ -172,8 +182,20 @@ def between_condition_wilcoxon(
     conditions = sorted(set(rep_to_condition.values()))
     if len(conditions) != 2:
         raise ValueError(f"Expected exactly 2 conditions, got {conditions}")
-    # Gets the 2 conditions in alphabetical order for consistent output column naming (e.g. median_BWM, median_control)
-    cond_a, cond_b = conditions  # alphabetical: BWM, control
+    if headline_condition is not None:
+        if headline_condition not in conditions:
+            raise ValueError(
+                f"headline_condition {headline_condition!r} is not one of the "
+                f"two conditions {conditions}"
+            )
+        # Headline becomes cond_a (log2_FC numerator): positive log2_FC means
+        # higher per-replicate frequency in headline_condition.
+        cond_a = headline_condition
+        cond_b = next(c for c in conditions if c != headline_condition)
+    else:
+        # Default: alphabetical order for consistent output column naming
+        # (e.g. median_BWM, median_control).
+        cond_a, cond_b = conditions  # alphabetical: BWM, control
 
     # Compute per-replicate frequencies
     # Example: rep_freqs = {
@@ -409,6 +431,7 @@ def per_timepoint_fisher(
     rep_to_timepoint: dict,
     *,
     feature_col: str = "amino_acid",
+    headline_condition: Optional[str] = None,
 ) -> pd.DataFrame:
     """
     For each timepoint, pool 2 reps per condition and run Fisher's exact test
@@ -416,6 +439,10 @@ def per_timepoint_fisher(
 
     NOTE: pooling 2 biological replicates is pseudoreplication. P-values should
     be interpreted cautiously.
+
+    Direction: the 2x2 odds ratio is computed as (odds in ``cond_a``) /
+    (odds in ``cond_b``), so a positive log2(odds_ratio) means the unit is
+    enriched in ``cond_a``. ``cond_a`` is the *headline* condition.
 
     Parameters
     ----------
@@ -427,6 +454,11 @@ def per_timepoint_fisher(
         {replicate: "day_0", "day_5", or "day_10"}
     feature_col : str
         Output column name for the feature level (e.g. "amino_acid" or "codon").
+    headline_condition : str or None
+        Which of the two conditions is the headline (``cond_a``, the odds-ratio
+        numerator), so a positive log2(odds_ratio) means enriched in it. Must
+        equal one of the two condition labels. If ``None`` (default), the
+        conditions are ordered alphabetically — backward-compatible behaviour.
 
     Returns
     -------
@@ -437,6 +469,19 @@ def per_timepoint_fisher(
     # All the conditions and timepoints present in the data, sorted for consistent output
     conditions = sorted(set(rep_to_condition.values())) # e.g. ["BWM", "control"]
     timepoints = sorted(set(rep_to_timepoint.values())) # e.g. ["day_0", "day_5", "day_10"]
+
+    # Direction: cond_a is the odds-ratio numerator (positive log2(OR) = enriched
+    # in cond_a). headline_condition makes that the headline; default alphabetical.
+    if headline_condition is not None:
+        if headline_condition not in conditions:
+            raise ValueError(
+                f"headline_condition {headline_condition!r} is not one of the "
+                f"conditions {conditions}"
+            )
+        cond_a = headline_condition
+        cond_b = next(c for c in conditions if c != headline_condition)
+    else:
+        cond_a, cond_b = conditions[0], conditions[1]
 
     # Gets the unit list using the first replicate (assumes all replicates have the same index)
     first_rep = next(iter(replicate_counts))
@@ -470,11 +515,10 @@ def per_timepoint_fisher(
 
             # For each unit, build the 2x2 contingency table and run Fisher's exact test
             for unit in unit_list:
-                # Table: [[BWM_unit, BWM_notUnit], [control_unit, control_notUnit]]
-                # — conditions are sorted, so row 0 = cond_a, row 1 = cond_b.
+                # 2x2 table: [[cond_a_unit, cond_a_notUnit], [cond_b_unit, cond_b_notUnit]]
+                # — row 0 = cond_a (headline / odds-ratio numerator), row 1 = cond_b.
                 counts = {cond: int(pooled_by_cond[cond].get(unit, 0)) for cond in conditions}
                 totals = {cond: int(pooled_by_cond[cond].sum()) for cond in conditions}
-                cond_a, cond_b = conditions[0], conditions[1]
                 res = fisher_row(counts[cond_a], totals[cond_a], counts[cond_b], totals[cond_b])
 
                 row = {

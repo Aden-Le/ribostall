@@ -85,6 +85,7 @@ CMD=(Rscript R_scripts/fisher_volcano.R \
   --effect-col "delta_log2_enrichment" \
   --effect-is-log2 \
   --x-label "$X_LABEL" \
+  --title-test-label "Background-Aware Enrichment" \
   --format "$FORMAT" --dpi "$DPI")
 echo "Running: ${CMD[@]}"
 "${CMD[@]}"
@@ -118,6 +119,7 @@ CMD=(Rscript R_scripts/fisher_volcano.R \
   --effect-col "delta_log2_enrichment" \
   --effect-is-log2 \
   --x-label "$X_LABEL" \
+  --title-test-label "Background-Aware Enrichment" \
   --format "$FORMAT" --dpi "$DPI")
 echo "Running: ${CMD[@]}"
 "${CMD[@]}"

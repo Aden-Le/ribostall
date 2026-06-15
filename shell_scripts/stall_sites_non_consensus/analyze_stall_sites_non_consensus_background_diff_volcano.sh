@@ -1,0 +1,120 @@
+#!/bin/bash
+#----------------------------------------------------
+# Per-Timepoint Background-Aware Between-Condition Volcano Plots
+# (NON-CONSENSUS stall_sites)
+#
+# Drives R_scripts/fisher_volcano.R on the per-timepoint background-aware
+# between-condition CSVs emitted by stall_sites_non_consensus_stats.py
+# (Analysis 5):
+#   per_timepoint_background_diff_{aa,codon}.csv
+#
+# This is the background-aware counterpart of
+# analyze_stall_sites_non_consensus_fisher_volcano.sh (per-timepoint Fisher,
+# Analysis 4). Fisher compares raw stall-site shares between conditions; this
+# test compares each condition's enrichment OVER ITS OWN background, so the
+# x-axis effect size is `delta_log2_enrichment` (already log2 — an enrichment
+# RATIO, not an odds ratio). fisher_volcano.R is reused via its generalized
+# options:
+#   --effect-col delta_log2_enrichment  (which column is the x-axis)
+#   --effect-is-log2                    (it is already log2; do not re-log)
+#   --x-label "..."                     (honest axis label, not 'Odds Ratio')
+#
+# Unlike the consensus background-diff launcher (which injects a constant
+# `comparison` column because the consensus CSV has no grouping column), the
+# non-consensus CSV already carries a `timepoint` column — one comparison per
+# day — so we split into plots with --group-col timepoint directly, exactly like
+# the non-consensus Fisher launcher. The stats CSV is read as-is.
+#----------------------------------------------------
+
+# Add R to PATH (Windows)
+export PATH="$PATH:/c/Program Files/R/R-4.4.2/bin"
+
+# ── CONFIG ───────────────────────────────────────────────────
+INPUT_DIR="./results/stall_sites/enrichment/analysis_stats"
+PLOTS_DIR="./results/stall_sites/plots"
+# Label describing the comparison (used in plot titles). The stats script is run
+# (run_stall_sites_non_consensus_stats.sh) with --headline-condition BWM, so a
+# positive delta_log2_enrichment means more enriched (vs background) in BWM.
+# Keep this in sync with that choice.
+COMPARISON_LABEL="BWM vs Control"
+# X-axis label. The effect is a ratio of enrichments (BWM / control), each taken
+# relative to its own background — NOT an odds ratio. Keep the direction
+# (numerator / denominator) in sync with --headline-condition above.
+X_LABEL="Log2 Enrichment Ratio (BWM / control)"
+FORMAT="both"
+DPI=300
+# ─────────────────────────────────────────────────────────────
+
+# Navigate to repo root (two levels up from shell_scripts/<subdir>/)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/../.."
+
+PT_OUT="$PLOTS_DIR/per_timepoint_background_diff"
+
+echo "=============================================="
+echo "STALL SITES PER-TIMEPOINT BACKGROUND-AWARE VOLCANO PLOTS"
+echo "=============================================="
+echo "Input directory:  $INPUT_DIR"
+echo "Output directory: $PT_OUT"
+echo "Comparison:       $COMPARISON_LABEL"
+echo "X-axis label:     $X_LABEL"
+echo "Format:           $FORMAT  | DPI: $DPI"
+echo "=============================================="
+
+# =============================================
+# Amino acid level
+# Output: plots/per_timepoint_background_diff/{,codon/}
+# =============================================
+AA_SRC="$INPUT_DIR/per_timepoint_background_diff_aa.csv"
+if [ ! -f "$AA_SRC" ]; then
+  echo "Error: input CSV not found: $AA_SRC"
+  exit 1
+fi
+
+echo ""
+echo "--- AA: Per-Timepoint Background-Aware (BWM vs Control) ---"
+CMD=(Rscript R_scripts/fisher_volcano.R \
+  --input "$AA_SRC" \
+  --outdir "$PT_OUT" \
+  --level aa \
+  --group-col "timepoint" \
+  --comparison-label "$COMPARISON_LABEL" \
+  --effect-col "delta_log2_enrichment" \
+  --effect-is-log2 \
+  --x-label "$X_LABEL" \
+  --title-test-label "Background-Aware Enrichment" \
+  --format "$FORMAT" --dpi "$DPI")
+echo "Running: ${CMD[@]}"
+"${CMD[@]}"
+
+# =============================================
+# Codon level
+# Output: plots/per_timepoint_background_diff/codon/
+# =============================================
+CODON_SRC="$INPUT_DIR/per_timepoint_background_diff_codon.csv"
+if [ ! -f "$CODON_SRC" ]; then
+  echo "Error: input CSV not found: $CODON_SRC"
+  exit 1
+fi
+
+echo ""
+echo "--- Codon: Per-Timepoint Background-Aware (BWM vs Control) ---"
+CMD=(Rscript R_scripts/fisher_volcano.R \
+  --input "$CODON_SRC" \
+  --outdir "$PT_OUT/codon" \
+  --level codon \
+  --group-col "timepoint" \
+  --comparison-label "$COMPARISON_LABEL" \
+  --effect-col "delta_log2_enrichment" \
+  --effect-is-log2 \
+  --x-label "$X_LABEL" \
+  --title-test-label "Background-Aware Enrichment" \
+  --format "$FORMAT" --dpi "$DPI")
+echo "Running: ${CMD[@]}"
+"${CMD[@]}"
+
+echo ""
+echo "=============================================="
+echo "Done."
+date
+echo "=============================================="

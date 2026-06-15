@@ -90,6 +90,12 @@ Fisher's exact test volcano plots (per-timepoint BWM-vs-Control + within-conditi
 & "C:\Program Files\Git\bin\bash.exe" shell_scripts/stall_sites_non_consensus/analyze_stall_sites_non_consensus_fisher_volcano.sh
 ```
 
+Per-timepoint **background-aware** between-condition volcano plots (enrichment-over-background ratio, BWM vs Control — the background-aware counterpart of the per-timepoint Fisher plot above):
+
+```powershell
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/stall_sites_non_consensus/analyze_stall_sites_non_consensus_background_diff_volcano.sh
+```
+
 Wilcoxon rank-sum bar plots (between-condition BWM-vs-Control + between-timepoint comparisons):
 
 ```powershell
@@ -146,12 +152,13 @@ Within-condition binomial enrichment volcano plots (with all-groups mega-composi
 
 ---
 
-## Run all 6 R-plot shells in sequence
+## Run all 7 R-plot shells in sequence
 
 For a full plot regeneration after a stats rerun (PowerShell uses `;` between commands, not `&&`):
 
 ```powershell
 & "C:\Program Files\Git\bin\bash.exe" shell_scripts/stall_sites_non_consensus/analyze_stall_sites_non_consensus_fisher_volcano.sh;
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/stall_sites_non_consensus/analyze_stall_sites_non_consensus_background_diff_volcano.sh;
 & "C:\Program Files\Git\bin\bash.exe" shell_scripts/stall_sites_non_consensus/analyze_stall_sites_non_consensus_wilcoxon.sh;
 & "C:\Program Files\Git\bin\bash.exe" shell_scripts/stall_sites_non_consensus/analyze_stall_sites_non_consensus_within_condition_enrichment.sh;
 & "C:\Program Files\Git\bin\bash.exe" shell_scripts/global_occupancy/analyze_global_occupancy_fisher_volcano.sh;

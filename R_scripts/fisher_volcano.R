@@ -59,6 +59,10 @@ parser$add_argument("--x-label",
                     default = "",
                     help = "Override the x-axis label. Default (empty) uses 'Log2 (Odds Ratio)'. Pass e.g. 'Log2 Enrichment Ratio (treatment / control)' for the background-aware test.")
 
+parser$add_argument("--title-test-label",
+                    default = "Fisher's Test",
+                    help = "Test name used in the composite plot title, formatted as '<level> <label> (<comparison>)'. Default \"Fisher's Test\". Pass e.g. 'Background-Aware Enrichment' for the background-aware between-condition test.")
+
 parser$add_argument("--format",
                     default = "both",
                     choices = c("pdf", "png", "both"),
@@ -394,7 +398,7 @@ n_sites  <- length(sites)
 composite <- wrap_plots(plot_list, ncol = n_sites, nrow = n_groups) +
   plot_layout(guides = "collect") +
   plot_annotation(
-    title = paste0(level_label, " Fisher's Test (", args$comparison_label, ")"),
+    title = paste0(level_label, " ", args$title_test_label, " (", args$comparison_label, ")"),
     theme = theme(
       plot.title = element_text(hjust = 0.5, size = 18, face = "bold")
     )

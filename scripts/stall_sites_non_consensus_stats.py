@@ -8,10 +8,22 @@ two CSVs emitted by ``stall_sites_non_consensus_call.py``:
   * ``stall_sites_codon.csv`` → codon-level enrichment (alphabet = 61 sense codons)
   * ``stall_sites_aa.csv``    → amino-acid-level enrichment (alphabet = AA_ORDER)
 
-Level is auto-detected from the input columns. The three enrichment tests
-(within-condition binomial, between-condition Wilcoxon, per-timepoint Fisher)
-are run identically in both modes — the only things that differ are the
+Level is auto-detected from the input columns. The enrichment tests
+(within-condition binomial, between-condition Wilcoxon, between-timepoint
+Wilcoxon + Fisher, per-timepoint Fisher, and the per-timepoint background-aware
+diff) are run identically in both modes — the only things that differ are the
 feature alphabet and the background-frequency helper.
+
+The per-timepoint background-aware diff (Analysis 5) is the background-aware
+counterpart of the per-timepoint Fisher (Analysis 4): instead of comparing raw
+stall-site shares between conditions, it compares each condition's enrichment
+over its OWN background, so a shift in the expressed transcriptome between
+conditions cannot masquerade as differential stalling. It is run per timepoint
+(using each timepoint's own per-group background, e.g. BWM_day_0 vs
+control_day_0) because — unlike the flat consensus design where group ==
+condition — each condition here spans several timepoint groups. It complements
+rather than replaces Fisher; the two agree when the per-(condition,timepoint)
+backgrounds match and diverge only when they differ.
 
 This script is intentionally ribopy-free: per-group background frequencies
 are read from the ``per_group_background_{codon,aa}.csv`` CSVs emitted by
@@ -39,6 +51,7 @@ from ribostall.enrichment import (
     between_timepoint_wilcoxon,
     between_timepoint_fisher_within_condition,
     per_timepoint_fisher,
+    between_condition_background_diff,
 )
 
 
@@ -60,6 +73,15 @@ def parse_args():
                         help="Path to per_group_background_{level}.csv written by the call script.")
     parser.add_argument("--out-dir", default="results/stall_sites/enrichment",
                         help="Output directory for enrichment CSVs")
+    parser.add_argument("--headline-condition", default=None,
+                        help="Condition treated as the headline (numerator / direction reference) in "
+                             "ALL between-condition tests: the between-condition Wilcoxon (Analysis 2; "
+                             "positive log2_FC = higher per-replicate frequency here), the per-timepoint "
+                             "Fisher (Analysis 4; positive log2 odds ratio = enriched here), and the "
+                             "per-timepoint background-aware diff (Analysis 5; positive "
+                             "delta_log2_enrichment = more enriched vs background here). Must match one "
+                             "of the two condition labels (e.g. 'BWM'). Default: alphabetical (first "
+                             "condition is headline).")
     return parser.parse_args()
 
 
@@ -172,8 +194,15 @@ def main():
     # Analysis 2: Between-condition Wilcoxon
     # --------------------------------------------------------------
     print(f"\n{'='*60}\nANALYSIS 2: BETWEEN-CONDITION WILCOXON\n{'='*60}")
+    if args.headline_condition is not None:
+        print(f"  Headline condition: {args.headline_condition} "
+              f"(positive log2_FC = higher per-replicate frequency in {args.headline_condition})")
+    else:
+        print("  Headline condition: alphabetical default "
+              "(positive log2_FC = higher per-replicate frequency in the first condition)")
     df_wilcox = between_condition_wilcoxon(
         replicate_counts, rep_to_condition, feature_col=feature_col,
+        headline_condition=args.headline_condition,
     )
     n_sig = (df_wilcox["p_adj"] < 0.05).sum() if not df_wilcox.empty else 0
     print(f"  Tests: {len(df_wilcox)}  |  Significant (p_adj<0.05): {n_sig}")
@@ -226,8 +255,15 @@ def main():
     # --------------------------------------------------------------
     print(f"\n{'='*60}\nANALYSIS 4: PER-TIMEPOINT FISHER'S EXACT\n"
           f"  NOTE: pooling replicates is pseudoreplication — interpret cautiously\n{'='*60}")
+    if args.headline_condition is not None:
+        print(f"  Headline condition: {args.headline_condition} "
+              f"(positive log2 odds ratio = enriched in {args.headline_condition})")
+    else:
+        print("  Headline condition: alphabetical default "
+              "(positive log2 odds ratio = enriched in the first condition)")
     df_fisher = per_timepoint_fisher(
         replicate_counts, rep_to_condition, rep_to_timepoint, feature_col=feature_col,
+        headline_condition=args.headline_condition,
     )
     for tp in sorted(df_fisher["timepoint"].unique()) if not df_fisher.empty else []:
         tp_df = df_fisher[df_fisher["timepoint"] == tp]
@@ -235,14 +271,87 @@ def main():
         print(f"  [{tp}] {len(tp_df)} tests, {n_sig_tp} significant")
 
     # --------------------------------------------------------------
+    # Analysis 5: Per-timepoint background-aware diff (control vs treatment)
+    # --------------------------------------------------------------
+    # Background-aware counterpart of Analysis 4 (per-timepoint Fisher). For each
+    # timepoint it asks whether each unit's enrichment OVER ITS OWN BACKGROUND
+    # differs between the two conditions, rather than comparing raw stall-site
+    # shares (Fisher). Normalizing each condition to its own background means a
+    # shift in the expressed transcriptome between conditions cannot masquerade as
+    # differential stalling. Positive delta_log2_enrichment = more enriched vs
+    # background in the headline condition.
+    #
+    # Key design choice: run PER TIMEPOINT, not flat. In the flat consensus design
+    # group == condition, so the per-group background keys straight into the test.
+    # Here each condition spans several timepoint groups, so we slice to one
+    # timepoint at a time and feed that timepoint's own per-group background
+    # (e.g. BWM_day_0 vs control_day_0), keeping the background matched within each
+    # comparison. FDR is applied per (timepoint, site), mirroring per_timepoint_fisher.
+    print(f"\n{'='*60}\nANALYSIS 5: PER-TIMEPOINT BACKGROUND-AWARE DIFF\n"
+          f"  NOTE: enrichment-over-background ratio; pooling replicates is "
+          f"pseudoreplication — interpret cautiously\n{'='*60}")
+    if args.headline_condition is not None:
+        print(f"  Headline condition: {args.headline_condition} "
+              f"(positive delta_log2_enrichment = more enriched vs background in {args.headline_condition})")
+    else:
+        print("  Headline condition: alphabetical default "
+              "(positive delta_log2_enrichment = more enriched vs background in the first condition)")
+
+    conditions = sorted(set(rep_to_condition.values()))
+    timepoints = sorted(set(rep_to_timepoint.values()))
+
+    # Map (condition, timepoint) -> group so each per-timepoint comparison pulls
+    # that timepoint's own per-group background frequencies.
+    # Will look like:
+    #   {("BWM", "day_0"): "BWM_day_0", ("control", "day_0"): "control_day_0", ...}
+    cond_tp_to_group = {
+        (rep_to_condition[rep], rep_to_timepoint[rep]): grp
+        for rep, grp in rep_to_group.items()
+    }
+
+    bgdiff_frames = []
+    # For each timepoint
+    for tp in timepoints:
+        # Gather the replicate and their counts for that timepoint
+        reps_at_tp = {
+            rep: counts for rep, counts in replicate_counts.items()
+            if rep_to_timepoint.get(rep) == tp
+        }
+        # Gets the its background frequencies for the condition at the timepoint
+        # In the dataset, there is one background frequency per group
+        bg_for_tp = {
+            cond: bg_freq_per_group[cond_tp_to_group[(cond, tp)]]
+            for cond in conditions
+        }
+        # Runs the actual test
+        df_bgdiff_tp = between_condition_background_diff(
+            reps_at_tp, rep_to_condition, bg_for_tp,
+            feature_col=feature_col, headline_condition=args.headline_condition,
+        )
+        if not df_bgdiff_tp.empty:
+            # Tag the timepoint as the second column (after "site"), mirroring
+            # per_timepoint_fisher's (site, timepoint, ...) layout.
+            df_bgdiff_tp.insert(1, "timepoint", tp)
+        bgdiff_frames.append(df_bgdiff_tp)
+
+        # Printing purposes only
+        n_sig_tp = (df_bgdiff_tp["p_adj"] < 0.05).sum() if not df_bgdiff_tp.empty else 0
+        print(f"  [{tp}] {len(df_bgdiff_tp)} tests, {n_sig_tp} significant")
+
+    # Builds the final data frame
+    df_bgdiff = pd.concat(bgdiff_frames, ignore_index=True) if bgdiff_frames else pd.DataFrame()
+
+    # --------------------------------------------------------------
     # Write outputs
     # --------------------------------------------------------------
     within_path = out_dir / f"within_condition_binomial_{suffix}.csv"
     wilcox_path = out_dir / f"between_condition_wilcoxon_{suffix}.csv"
     fisher_path = out_dir / f"per_timepoint_fisher_{suffix}.csv"
+    bgdiff_path = out_dir / f"per_timepoint_background_diff_{suffix}.csv"
     df_within.to_csv(within_path, index=False)
     df_wilcox.to_csv(wilcox_path, index=False)
     df_fisher.to_csv(fisher_path, index=False)
+    df_bgdiff.to_csv(bgdiff_path, index=False)
 
     timepoint_paths = []
     for tag, (df_w_tp, df_f_tp) in timepoint_results.items():
@@ -253,7 +362,7 @@ def main():
         timepoint_paths.extend([w_path, f_path])
 
     print(f"\nSaved:")
-    for p in (within_path, wilcox_path, *timepoint_paths, fisher_path):
+    for p in (within_path, wilcox_path, *timepoint_paths, fisher_path, bgdiff_path):
         print(f"  {p}")
     logging.info(f"All {level}-level enrichment results saved to {out_dir}")
 

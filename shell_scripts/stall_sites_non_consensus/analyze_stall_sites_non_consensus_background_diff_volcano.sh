@@ -3,7 +3,7 @@
 # Per-Timepoint Background-Aware Between-Condition Volcano Plots
 # (NON-CONSENSUS stall_sites)
 #
-# Drives R_scripts/fisher_volcano.R on the per-timepoint background-aware
+# Drives R_scripts/between_group_volcano.R on the per-timepoint background-aware
 # between-condition CSVs emitted by stall_sites_non_consensus_stats.py
 # (Analysis 5):
 #   per_timepoint_background_diff_{aa,codon}.csv
@@ -13,7 +13,7 @@
 # Analysis 4). Fisher compares raw stall-site shares between conditions; this
 # test compares each condition's enrichment OVER ITS OWN background, so the
 # x-axis effect size is `delta_log2_enrichment` (already log2 — an enrichment
-# RATIO, not an odds ratio). fisher_volcano.R is reused via its generalized
+# RATIO, not an odds ratio). between_group_volcano.R is reused via its generalized
 # options:
 #   --effect-col delta_log2_enrichment  (which column is the x-axis)
 #   --effect-is-log2                    (it is already log2; do not re-log)
@@ -71,7 +71,7 @@ fi
 
 echo ""
 echo "--- AA: Per-Timepoint Background-Aware (BWM vs Control) ---"
-CMD=(Rscript R_scripts/fisher_volcano.R \
+CMD=(Rscript R_scripts/between_group_volcano.R \
   --input "$AA_SRC" \
   --outdir "$PT_OUT" \
   --level aa \
@@ -97,7 +97,7 @@ fi
 
 echo ""
 echo "--- Codon: Per-Timepoint Background-Aware (BWM vs Control) ---"
-CMD=(Rscript R_scripts/fisher_volcano.R \
+CMD=(Rscript R_scripts/between_group_volcano.R \
   --input "$CODON_SRC" \
   --outdir "$PT_OUT/codon" \
   --level codon \

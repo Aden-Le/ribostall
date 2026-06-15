@@ -1,16 +1,23 @@
 #!/usr/bin/env Rscript
 
 # ============================================================
-# Fisher Volcano Plots (unified)
-# Reads a Fisher's exact test CSV and generates volcano plots
-# for codon/AA enrichment or depletion.
+# Between-Group Volcano Plots (unified)
+# Reads a pre-computed between-group comparison CSV and generates volcano plots
+# of a log2 effect size vs -log10(FDR), faceted by a grouping column (--group-col).
+#
+# Drives two test families; the x-axis column is chosen with --effect-col:
+#   - Fisher's exact   : effect = odds_ratio            (default; log2-transformed)
+#   - Background-aware  : effect = delta_log2_enrichment (--effect-is-log2; already log2)
+# --x-label / --title-test-label keep the axis label and title honest per test.
 #
 # Handles both datasets:
-#   - stall_sites (per-timepoint Fisher, within-condition timepoint Fisher)
+#   - stall_sites (per-timepoint Fisher, within-condition timepoint Fisher,
+#     consensus between-condition Fisher, per-timepoint background-aware diff)
 #   - global_occupancy (per-timepoint Fisher, within-condition timepoint Fisher)
 #
 # Level is selected with --level {aa,codon}. The CSV must contain a column
 # named `amino_acid` (level=aa) or `codon` (level=codon).
+# (Formerly fisher_volcano.R — renamed once it also drove the background-diff.)
 # ============================================================
 
 library(argparse)
@@ -23,14 +30,14 @@ library(dplyr)
 # Argument Parsing
 # ============================================================
 
-parser <- ArgumentParser(description = "Generate volcano plots for Fisher enrichment results")
+parser <- ArgumentParser(description = "Generate between-group volcano plots (Fisher odds ratio or background-aware enrichment ratio)")
 
 parser$add_argument("--input",
                     required = TRUE,
                     help = "Path to Fisher CSV (codon or AA level)")
 
 parser$add_argument("--outdir",
-                    default = "fisher_volcano_output",
+                    default = "between_group_volcano_output",
                     help = "Output directory for plots")
 
 parser$add_argument("--level",

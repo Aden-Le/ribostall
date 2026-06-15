@@ -1,7 +1,7 @@
 #!/bin/bash
 #----------------------------------------------------
 # Background-Aware Between-Condition Volcano Plots (CONSENSUS stall_sites)
-# Drives R_scripts/fisher_volcano.R on the background-aware between-condition
+# Drives R_scripts/between_group_volcano.R on the background-aware between-condition
 # CSVs emitted by stall_sites_consensus_stats.py:
 #   between_condition_background_diff_{aa,codon}.csv
 #
@@ -10,14 +10,14 @@
 # stall-site shares between conditions; this test compares each condition's
 # enrichment OVER ITS OWN background, so the x-axis effect size is
 # `delta_log2_enrichment` (already log2 — an enrichment RATIO, not an odds
-# ratio). fisher_volcano.R is reused via its generalized options:
+# ratio). between_group_volcano.R is reused via its generalized options:
 #   --effect-col delta_log2_enrichment  (which column is the x-axis)
 #   --effect-is-log2                    (it is already log2; do not re-log)
 #   --x-label "..."                     (honest axis label, not 'Odds Ratio')
 #
 # Like the Fisher launcher, the consensus CSV holds a SINGLE control-vs-
 # treatment comparison with no timepoint/condition grouping column, and
-# fisher_volcano.R needs a --group-col to split into plots, so this launcher
+# between_group_volcano.R needs a --group-col to split into plots, so this launcher
 # injects a constant `comparison` column into a derived CSV (in the plots dir)
 # before plotting. The original stats CSV is left untouched.
 #----------------------------------------------------
@@ -64,7 +64,7 @@ fi
 AA_OUT="$PLOTS_DIR"
 mkdir -p "$AA_OUT"
 
-# Derive a copy with a constant `comparison` column so fisher_volcano.R has
+# Derive a copy with a constant `comparison` column so between_group_volcano.R has
 # a --group-col to split on. Header gets ",comparison"; data rows get the tag.
 AA_DERIVED="$AA_OUT/_input_with_comparison_aa.csv"
 awk -v tag="$COMPARISON_TAG" 'NR==1 {print $0",comparison"; next} {print $0","tag}' \
@@ -72,7 +72,7 @@ awk -v tag="$COMPARISON_TAG" 'NR==1 {print $0",comparison"; next} {print $0","ta
 
 echo ""
 echo "--- AA: Background-Aware Between-Condition (Treatment vs Control) ---"
-CMD=(Rscript R_scripts/fisher_volcano.R \
+CMD=(Rscript R_scripts/between_group_volcano.R \
   --input "$AA_DERIVED" \
   --outdir "$AA_OUT" \
   --level aa \
@@ -98,7 +98,7 @@ fi
 CODON_OUT="$PLOTS_DIR/codon"
 mkdir -p "$CODON_OUT"
 
-# Derive a copy with a constant `comparison` column so fisher_volcano.R has
+# Derive a copy with a constant `comparison` column so between_group_volcano.R has
 # a --group-col to split on. Header gets ",comparison"; data rows get the tag.
 CODON_DERIVED="$CODON_OUT/_input_with_comparison_codon.csv"
 awk -v tag="$COMPARISON_TAG" 'NR==1 {print $0",comparison"; next} {print $0","tag}' \
@@ -106,7 +106,7 @@ awk -v tag="$COMPARISON_TAG" 'NR==1 {print $0",comparison"; next} {print $0","ta
 
 echo ""
 echo "--- Codon: Background-Aware Between-Condition (Treatment vs Control) ---"
-CMD=(Rscript R_scripts/fisher_volcano.R \
+CMD=(Rscript R_scripts/between_group_volcano.R \
   --input "$CODON_DERIVED" \
   --outdir "$CODON_OUT" \
   --level codon \

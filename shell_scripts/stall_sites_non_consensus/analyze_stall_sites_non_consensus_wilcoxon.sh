@@ -3,7 +3,7 @@
 # Bash script: generate Wilcoxon bar plots via R for
 # stall_sites enrichment (between-condition AND
 # between-timepoint comparisons).
-# Drives R_scripts/wilcoxon_barplot.R.
+# Drives R_scripts/between_group_barplot.R.
 #----------------------------------------------------
 
 # Add R to PATH (Windows)
@@ -50,7 +50,7 @@ echo "=============================================="
 # --- AA: BWM vs Control ---
 echo ""
 echo "--- AA: BWM vs Control ---"
-CMD=(Rscript R_scripts/wilcoxon_barplot.R \
+CMD=(Rscript R_scripts/between_group_barplot.R \
   --input "$INPUT_DIR/between_condition_wilcoxon_aa.csv" \
   --outdir "$OUTPUT_DIR" \
   --level aa \
@@ -64,7 +64,7 @@ echo "Running: ${CMD[@]}"
 # --- Codon: BWM vs Control ---
 echo ""
 echo "--- Codon: BWM vs Control ---"
-CMD=(Rscript R_scripts/wilcoxon_barplot.R \
+CMD=(Rscript R_scripts/between_group_barplot.R \
   --input "$INPUT_DIR/between_condition_wilcoxon_codon.csv" \
   --outdir "$OUTPUT_DIR/codon" \
   --level codon \
@@ -88,7 +88,7 @@ for comparison in d10_vs_d0 d10_vs_d5 d5_vs_d0; do
   # --- AA ---
   echo ""
   echo "--- AA: $pretty ---"
-  CMD=(Rscript R_scripts/wilcoxon_barplot.R \
+  CMD=(Rscript R_scripts/between_group_barplot.R \
     --input "$INPUT_DIR/between_timepoint_wilcoxon_${comparison}_aa.csv" \
     --outdir "$BT_OUTPUT_DIR/${comparison}" \
     --level aa \
@@ -101,7 +101,7 @@ for comparison in d10_vs_d0 d10_vs_d5 d5_vs_d0; do
   # --- Codon ---
   echo ""
   echo "--- Codon: $pretty ---"
-  CMD=(Rscript R_scripts/wilcoxon_barplot.R \
+  CMD=(Rscript R_scripts/between_group_barplot.R \
     --input "$INPUT_DIR/between_timepoint_wilcoxon_${comparison}_codon.csv" \
     --outdir "$BT_OUTPUT_DIR/${comparison}/codon" \
     --level codon \

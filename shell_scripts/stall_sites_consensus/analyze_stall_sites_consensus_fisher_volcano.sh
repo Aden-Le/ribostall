@@ -1,7 +1,7 @@
 #!/bin/bash
 #----------------------------------------------------
 # Fisher Volcano Plot Generator (CONSENSUS stall_sites)
-# Drives R_scripts/fisher_volcano.R on the between-condition
+# Drives R_scripts/between_group_volcano.R on the between-condition
 # Fisher CSVs emitted by stall_sites_consensus_stats.py:
 #   between_condition_fisher_{aa,codon}.csv
 #
@@ -60,7 +60,7 @@ awk -v tag="$COMPARISON_TAG" 'NR==1 {print $0",comparison"; next} {print $0","ta
 
 echo ""
 echo "--- AA: Between-Condition Fisher (Treatment vs Control) ---"
-CMD=(Rscript R_scripts/fisher_volcano.R \
+CMD=(Rscript R_scripts/between_group_volcano.R \
   --input "$AA_DERIVED" \
   --outdir "$AA_OUT" \
   --level aa \
@@ -90,7 +90,7 @@ awk -v tag="$COMPARISON_TAG" 'NR==1 {print $0",comparison"; next} {print $0","ta
 
 echo ""
 echo "--- Codon: Between-Condition Fisher (Treatment vs Control) ---"
-CMD=(Rscript R_scripts/fisher_volcano.R \
+CMD=(Rscript R_scripts/between_group_volcano.R \
   --input "$CODON_DERIVED" \
   --outdir "$CODON_OUT" \
   --level codon \

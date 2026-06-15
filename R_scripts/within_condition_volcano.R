@@ -176,7 +176,7 @@ data <- data |>
 cat("  Y-axis cap:", y_cap, "| Capped", capped_n, "points\n")
 
 # Cap log2 enrichment values to keep ±Inf points on-canvas (mirrors the
-# defensive cap used in fisher_volcano.R for sparse codon data).
+# defensive cap used in between_group_volcano.R for sparse codon data).
 data <- data |>
   mutate(
     log2_enrichment           = pmin(pmax(log2_enrichment,           -10), 10),

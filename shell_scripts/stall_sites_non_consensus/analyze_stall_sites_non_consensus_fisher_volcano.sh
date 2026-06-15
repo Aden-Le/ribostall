@@ -1,6 +1,6 @@
 #!/bin/bash
 # Fisher Volcano Plot Generator (stall_sites)
-# Drives R_scripts/fisher_volcano.R on the per_timepoint_fisher AND
+# Drives R_scripts/between_group_volcano.R on the per_timepoint_fisher AND
 # timepoint_fisher_within_condition CSVs emitted by
 # stall_sites_non_consensus_stats.py.
 
@@ -34,7 +34,7 @@ PT_OUT="$PLOTS_DIR/per_timepoint_fisher"
 
 echo ""
 echo "--- AA: Per-Timepoint (BWM vs Control) ---"
-CMD=(Rscript R_scripts/fisher_volcano.R \
+CMD=(Rscript R_scripts/between_group_volcano.R \
   --input "$INPUT_DIR/per_timepoint_fisher_aa.csv" \
   --outdir "$PT_OUT" \
   --level aa \
@@ -46,7 +46,7 @@ echo "Running: ${CMD[@]}"
 
 echo ""
 echo "--- Codon: Per-Timepoint (BWM vs Control) ---"
-CMD=(Rscript R_scripts/fisher_volcano.R \
+CMD=(Rscript R_scripts/between_group_volcano.R \
   --input "$INPUT_DIR/per_timepoint_fisher_codon.csv" \
   --outdir "$PT_OUT/codon" \
   --level codon \
@@ -68,7 +68,7 @@ for comparison in d10_vs_d0 d10_vs_d5 d5_vs_d0; do
 
   echo ""
   echo "--- AA: Within-Condition Timepoint ($pretty) ---"
-  CMD=(Rscript R_scripts/fisher_volcano.R \
+  CMD=(Rscript R_scripts/between_group_volcano.R \
     --input "$INPUT_DIR/timepoint_fisher_within_condition_${comparison}_aa.csv" \
     --outdir "$WCT_OUT/${comparison}" \
     --level aa \
@@ -80,7 +80,7 @@ for comparison in d10_vs_d0 d10_vs_d5 d5_vs_d0; do
 
   echo ""
   echo "--- Codon: Within-Condition Timepoint ($pretty) ---"
-  CMD=(Rscript R_scripts/fisher_volcano.R \
+  CMD=(Rscript R_scripts/between_group_volcano.R \
     --input "$INPUT_DIR/timepoint_fisher_within_condition_${comparison}_codon.csv" \
     --outdir "$WCT_OUT/${comparison}/codon" \
     --level codon \

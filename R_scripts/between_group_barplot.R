@@ -1,9 +1,12 @@
 #!/usr/bin/env Rscript
 
 # ============================================================
-# Wilcoxon Bar Plots (unified)
+# Between-Group Bar Plots (unified)
 # Reads a Wilcoxon rank-sum CSV and generates sorted bar plots
 # of log2 fold-change per feature (codon or AA), per E/P/A site.
+# (Between-condition or between-timepoint; Wilcoxon is the only test that feeds
+#  this plot — its coarse rank-test p-values suit bars over a volcano.
+#  Formerly wilcoxon_barplot.R.)
 #
 # Handles both datasets:
 #   - stall_sites (between-condition, between-timepoint)
@@ -31,7 +34,7 @@ parser$add_argument("--input",
                     help = "Path to Wilcoxon CSV (codon or AA level)")
 
 parser$add_argument("--outdir",
-                    default = "wilcoxon_barplot_output",
+                    default = "between_group_barplot_output",
                     help = "Output directory for plots")
 
 parser$add_argument("--level",
@@ -61,7 +64,7 @@ feature_col <- ifelse(args$level == "aa", "amino_acid", "codon")
 # Constants
 # ============================================================
 
-# Amino-acid class lookup and colours — shared with R_scripts/fisher_volcano.R.
+# Amino-acid class lookup and colours — shared with R_scripts/between_group_volcano.R.
 # Bars are filled by class; the sign of the fold-change is read from bar
 # direction (up = enriched, down = depleted).
 AA_CLASS <- c(

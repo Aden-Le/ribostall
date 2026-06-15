@@ -3,7 +3,7 @@
 # Bash script: generate Fisher's exact test volcano plots
 # for global codon and amino acid occupancy.
 # Runs both per-timepoint and within-condition-timepoint Fishers.
-# Drives R_scripts/fisher_volcano.R.
+# Drives R_scripts/between_group_volcano.R.
 #----------------------------------------------------
 
 # Add R to PATH (Windows)
@@ -36,7 +36,7 @@ PT_OUT="$PLOTS_DIR/per_timepoint_fisher"
 
 echo ""
 echo "--- AA: Per-Timepoint (BWM vs Control) ---"
-CMD=(Rscript R_scripts/fisher_volcano.R \
+CMD=(Rscript R_scripts/between_group_volcano.R \
   --input "$INPUT_DIR/aa_per_timepoint_fisher.csv" \
   --outdir "$PT_OUT" \
   --level aa \
@@ -48,7 +48,7 @@ echo "Running: ${CMD[@]}"
 
 echo ""
 echo "--- Codon: Per-Timepoint (BWM vs Control) ---"
-CMD=(Rscript R_scripts/fisher_volcano.R \
+CMD=(Rscript R_scripts/between_group_volcano.R \
   --input "$INPUT_DIR/codon_per_timepoint_fisher.csv" \
   --outdir "$PT_OUT/codon" \
   --level codon \
@@ -70,7 +70,7 @@ for comparison in d10_vs_d0 d10_vs_d5 d5_vs_d0; do
 
   echo ""
   echo "--- AA: Within-Condition Timepoint ($pretty) ---"
-  CMD=(Rscript R_scripts/fisher_volcano.R \
+  CMD=(Rscript R_scripts/between_group_volcano.R \
     --input "$INPUT_DIR/aa_timepoint_fisher_within_condition_${comparison}.csv" \
     --outdir "$WCT_OUT/${comparison}" \
     --level aa \
@@ -82,7 +82,7 @@ for comparison in d10_vs_d0 d10_vs_d5 d5_vs_d0; do
 
   echo ""
   echo "--- Codon: Within-Condition Timepoint ($pretty) ---"
-  CMD=(Rscript R_scripts/fisher_volcano.R \
+  CMD=(Rscript R_scripts/between_group_volcano.R \
     --input "$INPUT_DIR/codon_timepoint_fisher_within_condition_${comparison}.csv" \
     --outdir "$WCT_OUT/${comparison}/codon" \
     --level codon \

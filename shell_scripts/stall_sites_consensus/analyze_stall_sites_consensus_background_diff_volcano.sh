@@ -28,16 +28,12 @@ export PATH="$PATH:/c/Program Files/R/R-4.4.2/bin"
 # ============== CONFIG: edit these ==============
 INPUT_DIR="./results/stall_sites/enrichment/analysis_stats"
 PLOTS_DIR="./results/stall_sites/plots/between_condition_background_diff"
-# Label describing the comparison (used in plot titles). The stats script is run
-# with --headline-condition treatment, so a positive delta_log2_enrichment means
-# more enriched (vs background) in treatment. Keep this in sync with that choice.
-COMPARISON_LABEL="Treatment vs Control"
-# X-axis label. The effect is a ratio of enrichments (treatment / control), each
-# taken relative to its own background — NOT an odds ratio. Keep the direction
-# (numerator / denominator) in sync with --headline-condition above.
-X_LABEL="Log2 Enrichment Ratio (treatment / control)"
-# Value written into the injected grouping column (becomes the plot file prefix).
-COMPARISON_TAG="treatment_vs_control"
+# Shared headline/direction config (same file the stats runner sources). The
+# comparison label, x-axis direction (enrichment ratio, headline / other), and
+# injected grouping tag are derived from the headline there, so they match the
+# stats numerator and cannot drift.
+source "$(dirname "${BASH_SOURCE[0]}")/_headline_config.sh"
+X_LABEL="$X_LABEL_RATIO"
 FORMAT="both"
 DPI=300
 # ===============================================

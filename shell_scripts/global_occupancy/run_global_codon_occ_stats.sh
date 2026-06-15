@@ -24,11 +24,23 @@ OUT_DIR="./results/global_occupancy"
 SITES=(E P A)
 LEVELS=(codon aa)
 
+# Headline condition for the between-condition tests (Wilcoxon Analysis 2,
+# per-timepoint Fisher Analysis 4) lives in the shared _headline_config.sh, which
+# the plot launchers also source — so the stats direction and the plot labels come
+# from ONE place and cannot drift. A positive effect (log2_FC / log2 odds ratio)
+# means enriched in HEADLINE_CONDITION. Leave it empty there for alphabetical.
+source "$(dirname "${BASH_SOURCE[0]}")/_headline_config.sh"
+
 # ===============================================
 
 # Navigate to repo root (two levels up from shell_scripts/<subdir>/)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/../.."
+
+# Pass --headline-condition only when set, so an empty value falls back to the
+# script's alphabetical default.
+HEADLINE_FLAG=()
+[ -n "$HEADLINE_CONDITION" ] && HEADLINE_FLAG=(--headline-condition "$HEADLINE_CONDITION")
 
 echo "=============================================="
 echo "GLOBAL CODON & AMINO ACID OCCUPANCY — STEP 2"
@@ -54,7 +66,8 @@ for level in "${LEVELS[@]}"; do
     --corrected-dir "$OUT_DIR/analysis_corrected" \
     --level "$level" \
     --sites "${SITES[@]}" \
-    --groups "$EXP_GROUPS")
+    --groups "$EXP_GROUPS" \
+    "${HEADLINE_FLAG[@]}")
 
   echo "Running: ${CMD[@]}"
   "${CMD[@]}"

@@ -11,6 +11,7 @@ Each test is run independently for codon-level and amino acid-level occupancy.
 """
 
 import logging
+from typing import Optional
 
 import pandas as pd
 
@@ -128,10 +129,15 @@ def between_condition_wilcoxon_occupancy(
     rep_to_condition: dict,
     *,
     feature_col: str = "amino_acid",
+    headline_condition: Optional[str] = None,
 ) -> pd.DataFrame:
     """
     Compare per-replicate normalized occupancy rates between conditions
     using Wilcoxon rank-sum (Mann-Whitney U). BWM vs Control, n=6 vs n=6.
+
+    Direction: ``log2_FC`` is ``log2(median_cond_a / median_cond_b)``, so a
+    positive value means higher per-replicate occupancy in ``cond_a``. ``cond_a``
+    is the *headline* condition.
 
     Parameters
     ----------
@@ -141,6 +147,11 @@ def between_condition_wilcoxon_occupancy(
         {replicate: "control" or "BWM"}
     feature_col : str
         Output column name for the feature level (e.g. "amino_acid" or "codon").
+    headline_condition : str or None
+        Which of the two conditions is the headline (``cond_a``, the log2_FC
+        numerator), so a positive ``log2_FC`` means higher in it. Must equal one
+        of the two condition labels. If ``None`` (default), the conditions are
+        ordered alphabetically — backward-compatible behaviour.
 
     Returns
     -------
@@ -150,7 +161,18 @@ def between_condition_wilcoxon_occupancy(
     conditions = sorted(set(rep_to_condition.values()))
     if len(conditions) != 2:
         raise ValueError(f"Expected exactly 2 conditions, got {conditions}")
-    cond_a, cond_b = conditions  # alphabetical: BWM, control
+    if headline_condition is not None:
+        if headline_condition not in conditions:
+            raise ValueError(
+                f"headline_condition {headline_condition!r} is not one of the "
+                f"two conditions {conditions}"
+            )
+        # Headline becomes cond_a (log2_FC numerator): positive log2_FC means
+        # higher per-replicate occupancy in headline_condition.
+        cond_a = headline_condition
+        cond_b = next(c for c in conditions if c != headline_condition)
+    else:
+        cond_a, cond_b = conditions  # alphabetical: BWM, control
 
     # Get all units from first replicate
     first_rep = next(iter(rates_by_exp))
@@ -350,6 +372,7 @@ def per_timepoint_fisher_occupancy(
     rep_to_timepoint: dict,
     *,
     feature_col: str = "amino_acid",
+    headline_condition: Optional[str] = None,
 ) -> pd.DataFrame:
     """
     For each timepoint, pool reps per condition and run Fisher's exact test
@@ -357,6 +380,10 @@ def per_timepoint_fisher_occupancy(
 
     NOTE: pooling 2 biological replicates is pseudoreplication. P-values
     should be interpreted cautiously.
+
+    Direction: the 2x2 odds ratio is computed as (odds in ``cond_a``) /
+    (odds in ``cond_b``), so a positive log2(odds_ratio) means the unit is
+    enriched in ``cond_a``. ``cond_a`` is the *headline* condition.
 
     Parameters
     ----------
@@ -368,6 +395,11 @@ def per_timepoint_fisher_occupancy(
         {replicate: "day_0", "day_5", or "day_10"}
     feature_col : str
         Output column name for the feature level (e.g. "amino_acid" or "codon").
+    headline_condition : str or None
+        Which of the two conditions is the headline (``cond_a``, the odds-ratio
+        numerator), so a positive log2(odds_ratio) means enriched in it. Must
+        equal one of the two condition labels. If ``None`` (default), the
+        conditions are ordered alphabetically — backward-compatible behaviour.
 
     Returns
     -------
@@ -381,6 +413,19 @@ def per_timepoint_fisher_occupancy(
     timepoints = sorted(set(rep_to_timepoint.values()))
     first_rep = next(iter(raw_counts_by_exp))
     all_units = sorted(raw_counts_by_exp[first_rep].keys())
+
+    # Direction: cond_a is the odds-ratio numerator (positive log2(OR) = enriched
+    # in cond_a). headline_condition makes that the headline; default alphabetical.
+    if headline_condition is not None:
+        if headline_condition not in conditions:
+            raise ValueError(
+                f"headline_condition {headline_condition!r} is not one of the "
+                f"conditions {conditions}"
+            )
+        cond_a = headline_condition
+        cond_b = next(c for c in conditions if c != headline_condition)
+    else:
+        cond_a, cond_b = conditions[0], conditions[1]
 
     rows = []
     # Ex: For day_0
@@ -406,11 +451,10 @@ def per_timepoint_fisher_occupancy(
         
         # For each Amino Acid
         for unit in all_units:
-            # Table: BWM first then control (BWM on top); conditions are sorted,
-            # so row 0 = cond_a, row 1 = cond_b.
+            # 2x2 table: row 0 = cond_a (headline / odds-ratio numerator),
+            # row 1 = cond_b.
             counts = {cond: int(round(pooled_by_cond[cond][unit])) for cond in conditions}
             totals_int = {cond: int(round(totals[cond])) for cond in conditions}
-            cond_a, cond_b = conditions[0], conditions[1]
             res = fisher_row(counts[cond_a], totals_int[cond_a], counts[cond_b], totals_int[cond_b])
 
             row = {

@@ -12,6 +12,9 @@ export PATH="$PATH:/c/Program Files/R/R-4.4.2/bin"
 # ============== CONFIG: edit these ==============
 INPUT_DIR="./results/global_occupancy/analysis_corrected"
 PLOTS_DIR="./results/global_occupancy/plots"
+# Shared headline/direction config (same file the stats runner sources) so the
+# per-timepoint BWM-vs-Control label matches the stats numerator and cannot drift.
+source "$(dirname "${BASH_SOURCE[0]}")/_headline_config.sh"
 FORMAT="both"       # pdf, png, or both
 DPI=300
 # ===============================================
@@ -38,7 +41,7 @@ CMD=(Rscript R_scripts/fisher_volcano.R \
   --outdir "$PT_OUT" \
   --level aa \
   --group-col "timepoint" \
-  --comparison-label "BWM vs Control" \
+  --comparison-label "$COMPARISON_LABEL" \
   --format "$FORMAT" --dpi "$DPI")
 echo "Running: ${CMD[@]}"
 "${CMD[@]}"
@@ -50,7 +53,7 @@ CMD=(Rscript R_scripts/fisher_volcano.R \
   --outdir "$PT_OUT/codon" \
   --level codon \
   --group-col "timepoint" \
-  --comparison-label "BWM vs Control" \
+  --comparison-label "$COMPARISON_LABEL" \
   --format "$FORMAT" --dpi "$DPI")
 echo "Running: ${CMD[@]}"
 "${CMD[@]}"

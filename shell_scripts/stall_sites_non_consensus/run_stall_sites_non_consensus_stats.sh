@@ -20,14 +20,13 @@ EXP_GROUPS='control_day_0:control_day0_rep2,control_day0_rep3;control_day_5:cont
 OUT_ENRICHMENT="./results/stall_sites/enrichment"
 OUT_DIR="./results/stall_sites/enrichment/analysis_stats"
 
-# Headline condition for the between-condition tests: the between-condition
-# Wilcoxon (Analysis 2), the per-timepoint Fisher (Analysis 4), and the
-# per-timepoint background-aware diff (Analysis 5). A positive effect size
-# (log2_FC / log2 odds ratio / delta_log2_enrichment) means enriched in THIS
-# condition. Must match one of the condition labels above (the part before the
-# first underscore, e.g. BWM or control). Set to "BWM" so positive = BWM-
-# enriched. Leave empty ("") to fall back to alphabetical ordering.
-HEADLINE_CONDITION="BWM"
+# Headline condition for the between-condition tests (Wilcoxon Analysis 2,
+# per-timepoint Fisher Analysis 4, per-timepoint background-aware diff Analysis 5)
+# lives in the shared _headline_config.sh, which the plot launchers also source —
+# so the stats direction and the plot labels come from ONE place and cannot drift.
+# A positive effect (log2_FC / log2 odds ratio / delta_log2_enrichment) means
+# enriched in HEADLINE_CONDITION. Leave it empty there to fall back to alphabetical.
+source "$(dirname "${BASH_SOURCE[0]}")/_headline_config.sh"
 
 # ===============================================
 

@@ -23,11 +23,12 @@ EXP_GROUPS='control:control;treatment:treatment'
 OUT_ENRICHMENT="./results/stall_sites/enrichment"
 OUT_DIR="./results/stall_sites/enrichment/analysis_stats"
 
-# Headline condition for the between-condition Fisher test: a positive
-# log2(odds ratio) means the codon/AA is enriched in THIS condition. Must match
-# one of the group labels above. Set to "treatment" so positive = treatment-
-# enriched. Leave empty ("") to fall back to alphabetical ordering.
-HEADLINE_CONDITION="treatment"
+# Headline condition for the between-condition tests (Fisher + background-aware
+# diff) lives in the shared _headline_config.sh, which the plot launchers also
+# source — so the stats direction and the plot labels come from ONE place and
+# cannot drift. A positive log2(odds ratio) / delta_log2_enrichment means enriched
+# in HEADLINE_CONDITION. Leave it empty there to fall back to alphabetical.
+source "$(dirname "${BASH_SOURCE[0]}")/_headline_config.sh"
 
 # ===============================================
 

@@ -19,12 +19,10 @@ export PATH="$PATH:/c/Program Files/R/R-4.4.2/bin"
 # ============== CONFIG: edit these ==============
 INPUT_DIR="./results/stall_sites/enrichment/analysis_stats"
 PLOTS_DIR="./results/stall_sites/plots/between_condition_fisher"
-# Label describing the comparison (used in plot titles). The stats script is run
-# with --headline-condition treatment, so a positive log2(odds ratio) means
-# enriched in treatment. Keep this label in sync with that headline choice.
-COMPARISON_LABEL="Treatment vs Control"
-# Value written into the injected grouping column (becomes the plot file prefix).
-COMPARISON_TAG="treatment_vs_control"
+# Shared headline/direction config (same file the stats runner sources) so the
+# comparison label + injected grouping tag match the stats numerator and cannot
+# drift. A positive log2(odds ratio) = enriched in the headline condition.
+source "$(dirname "${BASH_SOURCE[0]}")/_headline_config.sh"
 FORMAT="both"
 DPI=300
 # ===============================================

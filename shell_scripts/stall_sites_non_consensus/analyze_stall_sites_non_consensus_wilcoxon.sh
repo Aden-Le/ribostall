@@ -18,6 +18,10 @@ INPUT_DIR="./results/stall_sites/enrichment/analysis_stats"
 # Output directory for plots
 OUTPUT_DIR="./results/stall_sites/plots/between_condition"
 
+# Shared headline/direction config (same file the stats runner sources) so the
+# between-condition comparison tag matches the stats numerator and cannot drift.
+source "$(dirname "${BASH_SOURCE[0]}")/_headline_config.sh"
+
 # Output format: "pdf", "png", or "both"
 FORMAT="both"
 
@@ -50,7 +54,7 @@ CMD=(Rscript R_scripts/wilcoxon_barplot.R \
   --input "$INPUT_DIR/between_condition_wilcoxon_aa.csv" \
   --outdir "$OUTPUT_DIR" \
   --level aa \
-  --comparison "BWM_vs_Control" \
+  --comparison "$COMPARISON_TAG" \
   --format "$FORMAT" \
   --dpi "$DPI")
 
@@ -64,7 +68,7 @@ CMD=(Rscript R_scripts/wilcoxon_barplot.R \
   --input "$INPUT_DIR/between_condition_wilcoxon_codon.csv" \
   --outdir "$OUTPUT_DIR/codon" \
   --level codon \
-  --comparison "BWM_vs_Control" \
+  --comparison "$COMPARISON_TAG" \
   --format "$FORMAT" \
   --dpi "$DPI")
 

@@ -8,6 +8,8 @@ Copy-and-paste commands for every shell script in this directory. Commands assum
 > If your bash lives elsewhere, replace the path in each command. From a Git Bash terminal (not PowerShell), you can drop the `& "C:\..."` wrapper and run `bash shell_scripts/<subdir>/<name>.sh` directly.
 >
 > Edit the `CONFIG` block at the top of each script to point at your data before running.
+>
+> **Direction (headline condition):** for the stall-sites and global-occupancy stats, the between-condition direction (which condition is the numerator, so a positive effect means "enriched there") and the matching plot labels are both read from one sourced file per pipeline — `shell_scripts/<pipeline>/_headline_config.sh`. Set `HEADLINE_CONDITION` there once; the stats runner and the plot launchers then stay in sync automatically.
 
 ---
 

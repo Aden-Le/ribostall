@@ -32,15 +32,13 @@ export PATH="$PATH:/c/Program Files/R/R-4.4.2/bin"
 # ── CONFIG ───────────────────────────────────────────────────
 INPUT_DIR="./results/stall_sites/enrichment/analysis_stats"
 PLOTS_DIR="./results/stall_sites/plots"
-# Label describing the comparison (used in plot titles). The stats script is run
-# (run_stall_sites_non_consensus_stats.sh) with --headline-condition BWM, so a
-# positive delta_log2_enrichment means more enriched (vs background) in BWM.
-# Keep this in sync with that choice.
-COMPARISON_LABEL="BWM vs Control"
-# X-axis label. The effect is a ratio of enrichments (BWM / control), each taken
-# relative to its own background — NOT an odds ratio. Keep the direction
-# (numerator / denominator) in sync with --headline-condition above.
-X_LABEL="Log2 Enrichment Ratio (BWM / control)"
+# Shared headline/direction config (same file the stats runner sources). The
+# comparison label and the x-axis direction (enrichment ratio, headline / other)
+# are derived from the headline there, so they match the stats numerator and
+# cannot drift. A positive delta_log2_enrichment = more enriched vs background in
+# the headline condition.
+source "$(dirname "${BASH_SOURCE[0]}")/_headline_config.sh"
+X_LABEL="$X_LABEL_RATIO"
 FORMAT="both"
 DPI=300
 # ─────────────────────────────────────────────────────────────

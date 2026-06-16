@@ -38,7 +38,7 @@ PSEUDOCOUNT=0.5
 # control needs both reps; treatment has only 1 rep.
 STALL_MIN_REPS_PER_GROUP='control:2;treatment:1'
 TOL=0
-MIN_SEP=7
+MIN_SEP=0
 
 # Reference file (required for E/P/A annotation)
 REFERENCE_FILE="./reference/appris_mouse_v2_selected.fa.gz"

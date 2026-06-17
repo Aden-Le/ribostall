@@ -80,7 +80,7 @@ Optional: `--motif` finds amino acid enrichment around stall sites. This is done
 | `--tx_min_rep`    | int    | 2       | ❌       | Min replicates to support transcript |
 | `--min_z`        | float  | 1.0     | ❌       | Min z-score to call stall site |
 | `--min_reads`    | int    | 2       | ❌       | Min reads to call stall site |
-| `--stall_min_reps` | int   | 2       | ❌       | Min replicates to support stall site |
+| `--stall_min_reps_per_group` | str | — | ✅ | Per-group min replicates to support a stall site; must name every declared group, e.g. `control:2;treatment:1` |
 | `--trim_edges`   | int    | 10      | ❌       | Exclude codons at CDS ends |
 | `--min_sep`      | int    | 7       | ❌       | Minimum separation between consensus sites; prefer downstream when closer than this |
 | `--pseudocount`   | float  | 0.5     | ❌       | Small value added to all amino acid counts before calculating enrichment, to avoid division by zero and stabilize log2 ratios |

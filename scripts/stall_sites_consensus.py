@@ -61,13 +61,9 @@ def main():
                         help="Exclude last N codons before stop (termination region)")
     parser.add_argument("--pseudocount", type=float, default=0.5,
                         help="Pseudocount for stall calling")
-    parser.add_argument("--stall_min_reps", type=int, default=2,
-                        help="Default minimum number of replicates that must support a site "
-                             "(fallback for groups not listed in --stall_min_reps_per_group)")
-    parser.add_argument("--stall_min_reps_per_group", default=None,
-                        help="Per-group override for the minimum supporting replicates, "
-                             "e.g. 'control:2;treatment:1'. Groups omitted here fall back to "
-                             "--stall_min_reps.")
+    parser.add_argument("--stall_min_reps_per_group", required=True,
+                        help="Per-group minimum supporting replicates; must name every "
+                             "declared group, e.g. 'control:2;treatment:1'.")
     parser.add_argument("--tol", type=int, default=0,
                         help="Tolerance window for matching sites across reps (same units as indices)")
     parser.add_argument("--min_sep", type=int, default=7,
@@ -98,35 +94,38 @@ def main():
     # --- end logging ---
 
     # -------------------------------------------------------------------------
-    # Per-group min_support: explicit overrides, falling back to --stall_min_reps
+    # Per-group min_support: every declared group must be named explicitly
+    # (there is no global fallback).
     # -------------------------------------------------------------------------
     def parse_min_support(arg):
         mapping = {}
-        if not arg:
-            return mapping
         for block in arg.split(";"):
             name, val = block.split(":")
             mapping[name.strip()] = int(val)
         return mapping
 
-    min_support_override = parse_min_support(args.stall_min_reps_per_group)
-    unknown = set(min_support_override) - set(groups)
+    min_support_by_group = parse_min_support(args.stall_min_reps_per_group)
+    unknown = set(min_support_by_group) - set(groups)
     if unknown:
         raise ValueError(
             f"--stall_min_reps_per_group names unknown group(s) {sorted(unknown)}; "
             f"declared groups are {sorted(groups)}"
         )
-    # Resolve the effective min_support per group; warn if it exceeds the group's
-    # replicate count (which would make every site fail the support gate → empty).
-    min_support_by_group = {}
+    missing = set(groups) - set(min_support_by_group)
+    if missing:
+        raise ValueError(
+            f"--stall_min_reps_per_group must name every declared group; "
+            f"missing {sorted(missing)} (declared groups are {sorted(groups)})"
+        )
+    # Warn if any group's support exceeds its replicate count (which would make
+    # every site fail the support gate → empty consensus for that group).
     for group, reps in groups.items():
-        ms = min_support_override.get(group, args.stall_min_reps)
-        if ms > len(reps):
+        if min_support_by_group[group] > len(reps):
             logging.warning(
-                f"min_support={ms} for group '{group}' exceeds its {len(reps)} replicate(s); "
-                f"no site can reach that support and the group's consensus will be empty."
+                f"min_support={min_support_by_group[group]} for group '{group}' exceeds its "
+                f"{len(reps)} replicate(s); no site can reach that support and the group's "
+                f"consensus will be empty."
             )
-        min_support_by_group[group] = ms
     logging.info(f"Per-group min_support: {min_support_by_group}")
 
     # -------------------------------------------------------------------------

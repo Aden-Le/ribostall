@@ -26,7 +26,9 @@ TRIM_STOP=10
 PSEUDOCOUNT=0.5
 
 # Consensus calling parameters
-STALL_MIN_REPS=2
+# Per-group consensus support: must name EVERY declared group (no global fallback).
+# control needs both reps; treatment has only 1 rep.
+STALL_MIN_REPS_PER_GROUP='control:2;treatment:1'
 TOL=0
 MIN_SEP=7
 
@@ -67,7 +69,7 @@ echo "Ribo file: $RIBO_FILE"
 echo "Reference: $REFERENCE_FILE"
 echo "Groups: $EXP_GROUPS"
 echo "Parameters: min_z=$MIN_Z, min_reads=$MIN_READS, trim_start=$TRIM_START, trim_stop=$TRIM_STOP, pseudocount=$PSEUDOCOUNT"
-echo "Consensus: stall_min_reps=$STALL_MIN_REPS, tol=$TOL, min_sep=$MIN_SEP"
+echo "Consensus: per-group min_reps=$STALL_MIN_REPS_PER_GROUP, tol=$TOL, min_sep=$MIN_SEP"
 echo "E/P/A: basis=$BASIS, psite_offset=$PSITE_OFFSET"
 echo "Output dir: $OUT_DIR"
 echo "=============================================="
@@ -84,7 +86,7 @@ CMD=(python3 scripts/stall_sites_consensus.py \
   --trim-start "$TRIM_START" \
   --trim-stop "$TRIM_STOP" \
   --pseudocount "$PSEUDOCOUNT" \
-  --stall_min_reps "$STALL_MIN_REPS" \
+  --stall_min_reps_per_group "$STALL_MIN_REPS_PER_GROUP" \
   --tol "$TOL" \
   --min_sep "$MIN_SEP" \
   --basis "$BASIS" \

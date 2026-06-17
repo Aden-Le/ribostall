@@ -82,6 +82,20 @@ def parse_args():
                              "delta_log2_enrichment [background-aware, Analysis 3] means enriched in "
                              "this condition. Must match one of the two group labels "
                              "(e.g. 'treatment'). Default: alphabetical (first condition is headline).")
+
+    # Per-analysis toggles. Each takes the literal value true or false and
+    # defaults to true (the analysis runs); pass e.g.
+    # --between-condition-background-diff false to skip it. A skipped analysis is
+    # announced and writes no output CSV.
+    parser.add_argument("--within-condition", choices=["true", "false"], default="true",
+                        help="Analysis 1: within-condition binomial enrichment. "
+                             "Default: true (set false to skip).")
+    parser.add_argument("--between-condition-fisher", choices=["true", "false"], default="true",
+                        help="Analysis 2: between-condition Fisher's exact. "
+                             "Default: true (set false to skip).")
+    parser.add_argument("--between-condition-background-diff", choices=["true", "false"], default="true",
+                        help="Analysis 3: between-condition background-aware diff. "
+                             "Default: true (set false to skip).")
     return parser.parse_args()
 
 
@@ -186,38 +200,56 @@ def main():
         print(f"  [{grp}] {int(counts.sum())} total {level}s")
     print(f"{'='*60}\n")
 
+    # Each analysis below runs only when its toggle is on (the default). A
+    # skipped analysis is announced and writes no CSV. saved_paths collects the
+    # outputs actually written, in run order, for the closing summary.
+    saved_paths = []
+
     # --------------------------------------------------------------
     # Analysis 1: Within-condition enrichment (binomial)
     # --------------------------------------------------------------
-    print(f"\n{'='*60}\nANALYSIS 1: WITHIN-CONDITION ENRICHMENT (Binomial)\n{'='*60}")
-    df_within = within_condition_enrichment(
-        replicate_counts, bg_freq_per_group, rep_to_condition, rep_to_group,
-        feature_col=feature_col,
-    )
-    n_sig = (df_within["p_adj"] < 0.05).sum() if not df_within.empty else 0
-    print(f"  Tests: {len(df_within)}  |  Significant (p_adj<0.05): {n_sig}")
+    if args.within_condition == "true":
+        print(f"\n{'='*60}\nANALYSIS 1: WITHIN-CONDITION ENRICHMENT (Binomial)\n{'='*60}")
+        df_within = within_condition_enrichment(
+            replicate_counts, bg_freq_per_group, rep_to_condition, rep_to_group,
+            feature_col=feature_col,
+        )
+        n_sig = (df_within["p_adj"] < 0.05).sum() if not df_within.empty else 0
+        print(f"  Tests: {len(df_within)}  |  Significant (p_adj<0.05): {n_sig}")
+        within_path = out_dir / f"within_condition_binomial_{suffix}.csv"
+        df_within.to_csv(within_path, index=False)
+        saved_paths.append(within_path)
+    else:
+        print(f"\n{'='*60}\nANALYSIS 1: WITHIN-CONDITION ENRICHMENT (Binomial)  [SKIPPED]\n{'='*60}")
 
     # --------------------------------------------------------------
     # Analysis 2: Between-condition Fisher's exact (control vs treatment)
     # --------------------------------------------------------------
-    print(f"\n{'='*60}\nANALYSIS 2: BETWEEN-CONDITION FISHER'S EXACT\n"
-          f"  NOTE: consensus pools sites per group — interpret cautiously\n{'='*60}")
-    if args.headline_condition is not None:
-        print(f"  Headline condition: {args.headline_condition} "
-              f"(positive log2 odds ratio = enriched in {args.headline_condition})")
-    else:
-        print("  Headline condition: alphabetical default "
-              "(positive log2 odds ratio = enriched in the first condition)")
-    df_fisher = between_condition_fisher(
-        replicate_counts, rep_to_condition, feature_col=feature_col,
-        headline_condition=args.headline_condition,
-    )
+    if args.between_condition_fisher == "true":
+        print(f"\n{'='*60}\nANALYSIS 2: BETWEEN-CONDITION FISHER'S EXACT\n"
+              f"  NOTE: consensus pools sites per group — interpret cautiously\n{'='*60}")
+        if args.headline_condition is not None:
+            print(f"  Headline condition: {args.headline_condition} "
+                  f"(positive log2 odds ratio = enriched in {args.headline_condition})")
+        else:
+            print("  Headline condition: alphabetical default "
+                  "(positive log2 odds ratio = enriched in the first condition)")
+        df_fisher = between_condition_fisher(
+            replicate_counts, rep_to_condition, feature_col=feature_col,
+            headline_condition=args.headline_condition,
+        )
 
-    # Printing Purposes
-    for site in sorted(df_fisher["site"].unique()) if not df_fisher.empty else []:
-        site_df = df_fisher[df_fisher["site"] == site]
-        n_sig_s = (site_df["p_adj"] < 0.05).sum()
-        print(f"  [{site}] {len(site_df)} tests, {n_sig_s} significant")
+        # Printing Purposes
+        for site in sorted(df_fisher["site"].unique()) if not df_fisher.empty else []:
+            site_df = df_fisher[df_fisher["site"] == site]
+            n_sig_s = (site_df["p_adj"] < 0.05).sum()
+            print(f"  [{site}] {len(site_df)} tests, {n_sig_s} significant")
+
+        fisher_path = out_dir / f"between_condition_fisher_{suffix}.csv"
+        df_fisher.to_csv(fisher_path, index=False)
+        saved_paths.append(fisher_path)
+    else:
+        print(f"\n{'='*60}\nANALYSIS 2: BETWEEN-CONDITION FISHER'S EXACT  [SKIPPED]\n{'='*60}")
 
     # --------------------------------------------------------------
     # Analysis 3: Between-condition background-aware diff (control vs treatment)
@@ -227,39 +259,42 @@ def main():
     # compares raw shares). Positive delta_log2_enrichment = more enriched vs
     # background in the headline condition. bg_freq_per_group keys by group, and
     # group == condition in this flat consensus design, so it passes through.
-    print(f"\n{'='*60}\nANALYSIS 3: BETWEEN-CONDITION BACKGROUND-AWARE DIFF\n"
-          f"  NOTE: enrichment-over-background ratio; consensus pools sites — interpret cautiously\n{'='*60}")
-    if args.headline_condition is not None:
-        print(f"  Headline condition: {args.headline_condition} "
-              f"(positive delta_log2_enrichment = more enriched vs background in {args.headline_condition})")
+    if args.between_condition_background_diff == "true":
+        print(f"\n{'='*60}\nANALYSIS 3: BETWEEN-CONDITION BACKGROUND-AWARE DIFF\n"
+              f"  NOTE: enrichment-over-background ratio; consensus pools sites — interpret cautiously\n{'='*60}")
+        if args.headline_condition is not None:
+            print(f"  Headline condition: {args.headline_condition} "
+                  f"(positive delta_log2_enrichment = more enriched vs background in {args.headline_condition})")
+        else:
+            print("  Headline condition: alphabetical default "
+                  "(positive delta_log2_enrichment = more enriched vs background in the first condition)")
+        df_bgdiff = between_condition_background_diff(
+            replicate_counts, rep_to_condition, bg_freq_per_group,
+            feature_col=feature_col, headline_condition=args.headline_condition,
+        )
+
+        # Printing Purposes
+        for site in sorted(df_bgdiff["site"].unique()) if not df_bgdiff.empty else []:
+            site_df = df_bgdiff[df_bgdiff["site"] == site]
+            n_sig_s = (site_df["p_adj"] < 0.05).sum()
+            print(f"  [{site}] {len(site_df)} tests, {n_sig_s} significant")
+
+        bgdiff_path = out_dir / f"between_condition_background_diff_{suffix}.csv"
+        df_bgdiff.to_csv(bgdiff_path, index=False)
+        saved_paths.append(bgdiff_path)
     else:
-        print("  Headline condition: alphabetical default "
-              "(positive delta_log2_enrichment = more enriched vs background in the first condition)")
-    df_bgdiff = between_condition_background_diff(
-        replicate_counts, rep_to_condition, bg_freq_per_group,
-        feature_col=feature_col, headline_condition=args.headline_condition,
-    )
-
-    # Printing Purposes
-    for site in sorted(df_bgdiff["site"].unique()) if not df_bgdiff.empty else []:
-        site_df = df_bgdiff[df_bgdiff["site"] == site]
-        n_sig_s = (site_df["p_adj"] < 0.05).sum()
-        print(f"  [{site}] {len(site_df)} tests, {n_sig_s} significant")
+        print(f"\n{'='*60}\nANALYSIS 3: BETWEEN-CONDITION BACKGROUND-AWARE DIFF  [SKIPPED]\n{'='*60}")
 
     # --------------------------------------------------------------
-    # Write outputs
+    # Write summary
     # --------------------------------------------------------------
-    within_path = out_dir / f"within_condition_binomial_{suffix}.csv"
-    fisher_path = out_dir / f"between_condition_fisher_{suffix}.csv"
-    bgdiff_path = out_dir / f"between_condition_background_diff_{suffix}.csv"
-    df_within.to_csv(within_path, index=False)
-    df_fisher.to_csv(fisher_path, index=False)
-    df_bgdiff.to_csv(bgdiff_path, index=False)
-
-    print(f"\nSaved:")
-    for p in (within_path, fisher_path, bgdiff_path):
-        print(f"  {p}")
-    logging.info(f"All {level}-level consensus enrichment results saved to {out_dir}")
+    if saved_paths:
+        print(f"\nSaved:")
+        for p in saved_paths:
+            print(f"  {p}")
+    else:
+        print("\nNo analyses selected — nothing written.")
+    logging.info(f"All selected {level}-level consensus enrichment results saved to {out_dir}")
 
 
 if __name__ == "__main__":

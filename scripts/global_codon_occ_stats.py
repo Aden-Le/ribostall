@@ -52,19 +52,49 @@ def parse_args():
                         "log2_FC = higher occupancy here) and the per-timepoint Fisher (Analysis 4; "
                         "positive log2 odds ratio = enriched here). Must match one of the two condition "
                         "labels (e.g. 'BWM'). Default: alphabetical (first condition is headline).")
+
+    # Per-analysis toggles. Each takes the literal value true or false and
+    # defaults to true (the analysis runs); pass e.g. --per-timepoint-fisher false
+    # to skip it. The between-timepoint block (Analysis 3) is split into its two
+    # sub-tests so each can be skipped independently. A skipped analysis writes no
+    # per-site CSV and is therefore absent from the merged analysis_corrected/ tree.
+    p.add_argument("--within-condition", choices=["true", "false"], default="true",
+                   help="Analysis 1: within-condition binomial occupancy. "
+                        "Default: true (set false to skip).")
+    p.add_argument("--between-condition-wilcoxon", choices=["true", "false"], default="true",
+                   help="Analysis 2: between-condition Wilcoxon. "
+                        "Default: true (set false to skip).")
+    p.add_argument("--between-timepoint-wilcoxon", choices=["true", "false"], default="true",
+                   help="Analysis 3a: between-timepoint Wilcoxon (pooled across conditions). "
+                        "Default: true (set false to skip).")
+    p.add_argument("--between-timepoint-fisher", choices=["true", "false"], default="true",
+                   help="Analysis 3b: between-timepoint Fisher within each condition. "
+                        "Default: true (set false to skip).")
+    p.add_argument("--per-timepoint-fisher", choices=["true", "false"], default="true",
+                   help="Analysis 4: per-timepoint Fisher's exact. "
+                        "Default: true (set false to skip).")
     return p.parse_args()
 
 
 def run_site_analyses(input_csv, out_dir, prefix, groups, rep_to_group,
-                      rep_to_condition, rep_to_timepoint, headline_condition=None):
-    """Run the 5 analyses for one (site, level) CSV.
+                      rep_to_condition, rep_to_timepoint, headline_condition=None,
+                      run_within_condition=True, run_between_condition_wilcoxon=True,
+                      run_between_timepoint_wilcoxon=True, run_between_timepoint_fisher=True,
+                      run_per_timepoint_fisher=True):
+    """Run the selected analyses for one (site, level) CSV.
 
     Writes each result to ``out_dir/{prefix}_{name}`` (unchanged behaviour) and
     returns the ordered list of output basenames written, for later merging.
+    Only basenames for analyses that actually ran are returned, so a skipped
+    analysis is absent from both the per-site tree and the merge step.
 
     ``headline_condition`` sets the numerator / direction of the two
     between-condition tests (Wilcoxon Analysis 2, per-timepoint Fisher Analysis
     4); ``None`` keeps the alphabetical default (backward-compatible).
+
+    The ``run_*`` flags toggle each analysis; all default to True (run). The
+    between-timepoint block (Analysis 3) is split into its Wilcoxon and Fisher
+    sub-tests so each can be skipped independently.
     """
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -111,114 +141,135 @@ def run_site_analyses(input_csv, out_dir, prefix, groups, rep_to_group,
     # -----------------------------------------------------------------
     # Analysis 1: Within-condition binomial (Validated (AL) ~ 04/05/2026)
     # -----------------------------------------------------------------
-    print(f"\n{'='*60}")
-    print(f"ANALYSIS 1: WITHIN-CONDITION ENRICHMENT (Binomial Test)")
-    print(f"{'='*60}")
+    if run_within_condition:
+        print(f"\n{'='*60}")
+        print(f"ANALYSIS 1: WITHIN-CONDITION ENRICHMENT (Binomial Test)")
+        print(f"{'='*60}")
 
-    df = within_condition_binomial_occupancy(raw_for_stats, tc, groups, rep_to_group, feature_col=out_feature_col)
-    save_csv(df, "within_condition_binomial.csv")
+        df = within_condition_binomial_occupancy(raw_for_stats, tc, groups, rep_to_group, feature_col=out_feature_col)
+        save_csv(df, "within_condition_binomial.csv")
+    else:
+        print(f"\n{'='*60}\nANALYSIS 1: WITHIN-CONDITION ENRICHMENT (Binomial Test)  [SKIPPED]\n{'='*60}")
 
     # -----------------------------------------------------------------
     # Analysis 2: Between-condition Wilcoxon (BWM vs Control) (Validated (AL) ~ 04/05/2026)
     # -----------------------------------------------------------------
-    print(f"\n{'='*60}")
-    print(f"ANALYSIS 2: BETWEEN-CONDITION WILCOXON (BWM vs Control)")
-    print(f"{'='*60}")
-    if headline_condition is not None:
-        print(f"  Headline condition: {headline_condition} "
-              f"(positive log2_FC = higher occupancy in {headline_condition})")
-    else:
-        print("  Headline condition: alphabetical default "
-              "(positive log2_FC = higher occupancy in the first condition)")
+    if run_between_condition_wilcoxon:
+        print(f"\n{'='*60}")
+        print(f"ANALYSIS 2: BETWEEN-CONDITION WILCOXON (BWM vs Control)")
+        print(f"{'='*60}")
+        if headline_condition is not None:
+            print(f"  Headline condition: {headline_condition} "
+                  f"(positive log2_FC = higher occupancy in {headline_condition})")
+        else:
+            print("  Headline condition: alphabetical default "
+                  "(positive log2_FC = higher occupancy in the first condition)")
 
-    df = between_condition_wilcoxon_occupancy(
-        rates_for_stats, rep_to_condition, feature_col=out_feature_col,
-        headline_condition=headline_condition)
-    save_csv(df, "wilcoxon_condition.csv")
+        df = between_condition_wilcoxon_occupancy(
+            rates_for_stats, rep_to_condition, feature_col=out_feature_col,
+            headline_condition=headline_condition)
+        save_csv(df, "wilcoxon_condition.csv")
+    else:
+        print(f"\n{'='*60}\nANALYSIS 2: BETWEEN-CONDITION WILCOXON (BWM vs Control)  [SKIPPED]\n{'='*60}")
 
     # -----------------------------------------------------------------
     # Analysis 3: Between-timepoint (Validated (AL) ~ 04/05/2026)
     # -----------------------------------------------------------------
-    print(f"\n{'='*60}")
-    print(f"ANALYSIS 3: BETWEEN-TIMEPOINT")
-    print(f"{'='*60}")
+    # The Wilcoxon and Fisher sub-tests are toggled independently
+    # (run_between_timepoint_wilcoxon / run_between_timepoint_fisher); within each
+    # day-pair, each sub-test runs only if its flag is on.
+    if run_between_timepoint_wilcoxon or run_between_timepoint_fisher:
+        print(f"\n{'='*60}")
+        print(f"ANALYSIS 3: BETWEEN-TIMEPOINT")
+        print(f"{'='*60}")
 
-    # --- Day 10 vs Day 0 ---
-    print(f"\n--- Day 10 vs Day 0 ---")
+        # --- Day 10 vs Day 0 ---
+        print(f"\n--- Day 10 vs Day 0 ---")
 
-    # 3a: Wilcoxon pooled across conditions (n=4 vs n=4)
-    print("\n  3a: Wilcoxon (pooled across conditions, n=4 vs n=4)")
-    df = between_timepoint_wilcoxon_occupancy(
-        rates_for_stats, rep_to_timepoint, time_a="day_10", time_b="day_0",
-        feature_col=out_feature_col)
-    save_csv(df, "wilcoxon_timepoint_d10_vs_d0.csv")
+        # 3a: Wilcoxon pooled across conditions (n=4 vs n=4)
+        if run_between_timepoint_wilcoxon:
+            print("\n  3a: Wilcoxon (pooled across conditions, n=4 vs n=4)")
+            df = between_timepoint_wilcoxon_occupancy(
+                rates_for_stats, rep_to_timepoint, time_a="day_10", time_b="day_0",
+                feature_col=out_feature_col)
+            save_csv(df, "wilcoxon_timepoint_d10_vs_d0.csv")
 
-    # 3b: Fisher's within each condition (pool 2 reps)
-    print("\n  3b: Fisher's exact (within each condition, pooled replicates)")
-    print("  WARNING: Pooling 2 biological replicates is pseudoreplication.")
-    print("           P-values are anti-conservative and should be interpreted cautiously.")
-    df = between_timepoint_fisher_within_condition(
-        raw_for_stats, groups, rep_to_condition, rep_to_timepoint,
-        time_a="day_10", time_b="day_0", feature_col=out_feature_col)
-    save_csv(df, "timepoint_fisher_within_condition_d10_vs_d0.csv")
+        # 3b: Fisher's within each condition (pool 2 reps)
+        if run_between_timepoint_fisher:
+            print("\n  3b: Fisher's exact (within each condition, pooled replicates)")
+            print("  WARNING: Pooling 2 biological replicates is pseudoreplication.")
+            print("           P-values are anti-conservative and should be interpreted cautiously.")
+            df = between_timepoint_fisher_within_condition(
+                raw_for_stats, groups, rep_to_condition, rep_to_timepoint,
+                time_a="day_10", time_b="day_0", feature_col=out_feature_col)
+            save_csv(df, "timepoint_fisher_within_condition_d10_vs_d0.csv")
 
-    # --- Day 10 vs Day 5 ---
-    print(f"\n--- Day 10 vs Day 5 ---")
+        # --- Day 10 vs Day 5 ---
+        print(f"\n--- Day 10 vs Day 5 ---")
 
-    # 3c: Wilcoxon pooled across conditions (n=4 vs n=4)
-    print("\n  3c: Wilcoxon (pooled across conditions, n=4 vs n=4)")
-    df = between_timepoint_wilcoxon_occupancy(
-        rates_for_stats, rep_to_timepoint, time_a="day_10", time_b="day_5",
-        feature_col=out_feature_col)
-    save_csv(df, "wilcoxon_timepoint_d10_vs_d5.csv")
+        # 3c: Wilcoxon pooled across conditions (n=4 vs n=4)
+        if run_between_timepoint_wilcoxon:
+            print("\n  3c: Wilcoxon (pooled across conditions, n=4 vs n=4)")
+            df = between_timepoint_wilcoxon_occupancy(
+                rates_for_stats, rep_to_timepoint, time_a="day_10", time_b="day_5",
+                feature_col=out_feature_col)
+            save_csv(df, "wilcoxon_timepoint_d10_vs_d5.csv")
 
-    # 3d: Fisher's within each condition (pool 2 reps)
-    print("\n  3d: Fisher's exact (within each condition, pooled replicates)")
-    print("  WARNING: Pooling 2 biological replicates is pseudoreplication.")
-    print("           P-values are anti-conservative and should be interpreted cautiously.")
-    df = between_timepoint_fisher_within_condition(
-        raw_for_stats, groups, rep_to_condition, rep_to_timepoint,
-        time_a="day_10", time_b="day_5", feature_col=out_feature_col)
-    save_csv(df, "timepoint_fisher_within_condition_d10_vs_d5.csv")
+        # 3d: Fisher's within each condition (pool 2 reps)
+        if run_between_timepoint_fisher:
+            print("\n  3d: Fisher's exact (within each condition, pooled replicates)")
+            print("  WARNING: Pooling 2 biological replicates is pseudoreplication.")
+            print("           P-values are anti-conservative and should be interpreted cautiously.")
+            df = between_timepoint_fisher_within_condition(
+                raw_for_stats, groups, rep_to_condition, rep_to_timepoint,
+                time_a="day_10", time_b="day_5", feature_col=out_feature_col)
+            save_csv(df, "timepoint_fisher_within_condition_d10_vs_d5.csv")
 
-    # --- Day 5 vs Day 0 ---
-    print(f"\n--- Day 5 vs Day 0 ---")
+        # --- Day 5 vs Day 0 ---
+        print(f"\n--- Day 5 vs Day 0 ---")
 
-    # 3e: Wilcoxon pooled across conditions (n=4 vs n=4)
-    print("\n  3e: Wilcoxon (pooled across conditions, n=4 vs n=4)")
-    df = between_timepoint_wilcoxon_occupancy(
-        rates_for_stats, rep_to_timepoint, time_a="day_5", time_b="day_0",
-        feature_col=out_feature_col)
-    save_csv(df, "wilcoxon_timepoint_d5_vs_d0.csv")
+        # 3e: Wilcoxon pooled across conditions (n=4 vs n=4)
+        if run_between_timepoint_wilcoxon:
+            print("\n  3e: Wilcoxon (pooled across conditions, n=4 vs n=4)")
+            df = between_timepoint_wilcoxon_occupancy(
+                rates_for_stats, rep_to_timepoint, time_a="day_5", time_b="day_0",
+                feature_col=out_feature_col)
+            save_csv(df, "wilcoxon_timepoint_d5_vs_d0.csv")
 
-    # 3f: Fisher's within each condition (pool 2 reps)
-    print("\n  3f: Fisher's exact (within each condition, pooled replicates)")
-    print("  WARNING: Pooling 2 biological replicates is pseudoreplication.")
-    print("           P-values are anti-conservative and should be interpreted cautiously.")
-    df = between_timepoint_fisher_within_condition(
-        raw_for_stats, groups, rep_to_condition, rep_to_timepoint,
-        time_a="day_5", time_b="day_0", feature_col=out_feature_col)
-    save_csv(df, "timepoint_fisher_within_condition_d5_vs_d0.csv")
+        # 3f: Fisher's within each condition (pool 2 reps)
+        if run_between_timepoint_fisher:
+            print("\n  3f: Fisher's exact (within each condition, pooled replicates)")
+            print("  WARNING: Pooling 2 biological replicates is pseudoreplication.")
+            print("           P-values are anti-conservative and should be interpreted cautiously.")
+            df = between_timepoint_fisher_within_condition(
+                raw_for_stats, groups, rep_to_condition, rep_to_timepoint,
+                time_a="day_5", time_b="day_0", feature_col=out_feature_col)
+            save_csv(df, "timepoint_fisher_within_condition_d5_vs_d0.csv")
+    else:
+        print(f"\n{'='*60}\nANALYSIS 3: BETWEEN-TIMEPOINT  [SKIPPED]\n{'='*60}")
 
     # -----------------------------------------------------------------
     # Analysis 4: Per-timepoint Fisher's (BWM vs Control at each day) (Validated (AL) ~ 04/05/2026)
     # -----------------------------------------------------------------
-    print(f"\n{'='*60}")
-    print(f"ANALYSIS 4: PER-TIMEPOINT FISHER'S (BWM vs Control at each day)")
-    print(f"{'='*60}")
-    print("WARNING: Pooling 2 biological replicates is pseudoreplication.")
-    print("         P-values are anti-conservative and should be interpreted cautiously.")
-    if headline_condition is not None:
-        print(f"  Headline condition: {headline_condition} "
-              f"(positive log2 odds ratio = enriched in {headline_condition})")
-    else:
-        print("  Headline condition: alphabetical default "
-              "(positive log2 odds ratio = enriched in the first condition)")
+    if run_per_timepoint_fisher:
+        print(f"\n{'='*60}")
+        print(f"ANALYSIS 4: PER-TIMEPOINT FISHER'S (BWM vs Control at each day)")
+        print(f"{'='*60}")
+        print("WARNING: Pooling 2 biological replicates is pseudoreplication.")
+        print("         P-values are anti-conservative and should be interpreted cautiously.")
+        if headline_condition is not None:
+            print(f"  Headline condition: {headline_condition} "
+                  f"(positive log2 odds ratio = enriched in {headline_condition})")
+        else:
+            print("  Headline condition: alphabetical default "
+                  "(positive log2 odds ratio = enriched in the first condition)")
 
-    df = per_timepoint_fisher_occupancy(
-        raw_for_stats, rep_to_condition, rep_to_timepoint, feature_col=out_feature_col,
-        headline_condition=headline_condition)
-    save_csv(df, "per_timepoint_fisher.csv")
+        df = per_timepoint_fisher_occupancy(
+            raw_for_stats, rep_to_condition, rep_to_timepoint, feature_col=out_feature_col,
+            headline_condition=headline_condition)
+        save_csv(df, "per_timepoint_fisher.csv")
+    else:
+        print(f"\n{'='*60}\nANALYSIS 4: PER-TIMEPOINT FISHER'S (BWM vs Control at each day)  [SKIPPED]\n{'='*60}")
 
     return basenames
 
@@ -262,6 +313,11 @@ def main():
             input_csv, site_out_dir, args.level, groups,
             rep_to_group, rep_to_condition, rep_to_timepoint,
             headline_condition=args.headline_condition,
+            run_within_condition=(args.within_condition == "true"),
+            run_between_condition_wilcoxon=(args.between_condition_wilcoxon == "true"),
+            run_between_timepoint_wilcoxon=(args.between_timepoint_wilcoxon == "true"),
+            run_between_timepoint_fisher=(args.between_timepoint_fisher == "true"),
+            run_per_timepoint_fisher=(args.per_timepoint_fisher == "true"),
         )
         if not all_basenames:
             all_basenames = basenames

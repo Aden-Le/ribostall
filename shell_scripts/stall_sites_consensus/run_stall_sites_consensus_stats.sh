@@ -23,6 +23,13 @@ EXP_GROUPS='control:control;treatment:treatment'
 OUT_ENRICHMENT="./results/stall_sites/enrichment"
 OUT_DIR="./results/stall_sites/enrichment/analysis_stats"
 
+# --- Which analyses to run -------------------------------------------------
+# Each analysis defaults to true (runs). Set one to false to skip it; leaving it
+# true (or unset) runs it. A skipped analysis writes no output CSV.
+RUN_WITHIN_CONDITION=true                     # Analysis 1: within-condition binomial
+RUN_BETWEEN_CONDITION_FISHER=true             # Analysis 2: between-condition Fisher's exact
+RUN_BETWEEN_CONDITION_BACKGROUND_DIFF=true    # Analysis 3: between-condition background-aware diff
+
 # Headline condition for the between-condition tests (Fisher + background-aware
 # diff) lives in the shared _headline_config.sh, which the plot launchers also
 # source — so the stats direction and the plot labels come from ONE place and
@@ -43,6 +50,7 @@ echo "Groups: $EXP_GROUPS"
 echo "Input: $OUT_ENRICHMENT"
 echo "Output: $OUT_DIR"
 echo "Headline condition: ${HEADLINE_CONDITION:-alphabetical default}"
+echo "Analyses: within=$RUN_WITHIN_CONDITION  fisher=$RUN_BETWEEN_CONDITION_FISHER  bgdiff=$RUN_BETWEEN_CONDITION_BACKGROUND_DIFF"
 echo "=============================================="
 
 # Pass --headline-condition only when set, so an empty value falls back to the
@@ -53,13 +61,19 @@ echo "=============================================="
 HEADLINE_FLAG=()
 [ -n "$HEADLINE_CONDITION" ] && HEADLINE_FLAG=(--headline-condition "$HEADLINE_CONDITION")
 
+# Each RUN_* config var is passed straight through as a true/false value; the
+# Python script skips any analysis given false. ${VAR:-true} keeps an unset var
+# running, matching the CONFIG defaults above.
 for LEVEL in aa codon; do
   python3 scripts/stall_sites_consensus_stats.py \
     --stall-sites "$OUT_ENRICHMENT/stall_sites_${LEVEL}.csv" \
     --background "$OUT_ENRICHMENT/per_group_background_${LEVEL}.csv" \
     --groups "$EXP_GROUPS" \
     --out-dir "$OUT_DIR" \
-    "${HEADLINE_FLAG[@]}"
+    "${HEADLINE_FLAG[@]}" \
+    --within-condition "${RUN_WITHIN_CONDITION:-true}" \
+    --between-condition-fisher "${RUN_BETWEEN_CONDITION_FISHER:-true}" \
+    --between-condition-background-diff "${RUN_BETWEEN_CONDITION_BACKGROUND_DIFF:-true}"
 done
 
 echo ""

@@ -24,6 +24,17 @@ OUT_DIR="./results/global_occupancy"
 SITES=(E P A)
 LEVELS=(codon aa)
 
+# --- Which analyses to run -------------------------------------------------
+# Each analysis defaults to true (runs). Set one to false to skip it; leaving it
+# true (or unset) runs it. A skipped analysis writes no per-site CSV and is
+# therefore absent from the merged analysis_corrected/ tree. The between-timepoint
+# block (Analysis 3) is split into its two sub-tests so each toggles independently.
+RUN_WITHIN_CONDITION=true            # Analysis 1: within-condition binomial
+RUN_BETWEEN_CONDITION_WILCOXON=true  # Analysis 2: between-condition Wilcoxon
+RUN_BETWEEN_TIMEPOINT_WILCOXON=true  # Analysis 3a: between-timepoint Wilcoxon (pooled)
+RUN_BETWEEN_TIMEPOINT_FISHER=true    # Analysis 3b: between-timepoint Fisher (within condition)
+RUN_PER_TIMEPOINT_FISHER=true        # Analysis 4: per-timepoint Fisher's exact
+
 # Headline condition for the between-condition tests (Wilcoxon Analysis 2,
 # per-timepoint Fisher Analysis 4) lives in the shared _headline_config.sh, which
 # the plot launchers also source — so the stats direction and the plot labels come
@@ -42,6 +53,10 @@ cd "$SCRIPT_DIR/../.."
 HEADLINE_FLAG=()
 [ -n "$HEADLINE_CONDITION" ] && HEADLINE_FLAG=(--headline-condition "$HEADLINE_CONDITION")
 
+# Each RUN_* config var is passed straight through as a true/false value (built
+# into the CMD array below); the Python script skips any analysis given false.
+# ${VAR:-true} keeps an unset var running, matching the CONFIG defaults above.
+
 echo "=============================================="
 echo "GLOBAL CODON & AMINO ACID OCCUPANCY — STEP 2"
 echo "Statistical tests on base CSVs"
@@ -52,6 +67,7 @@ echo "Merged output:        $OUT_DIR/analysis_corrected/"
 echo "Sites:                ${SITES[*]}"
 echo "Levels:               ${LEVELS[*]}"
 echo "Groups:               $EXP_GROUPS"
+echo "Analyses:             within=$RUN_WITHIN_CONDITION  bc_wilcoxon=$RUN_BETWEEN_CONDITION_WILCOXON  bt_wilcoxon=$RUN_BETWEEN_TIMEPOINT_WILCOXON  bt_fisher=$RUN_BETWEEN_TIMEPOINT_FISHER  pt_fisher=$RUN_PER_TIMEPOINT_FISHER"
 echo "=============================================="
 
 for level in "${LEVELS[@]}"; do
@@ -67,7 +83,12 @@ for level in "${LEVELS[@]}"; do
     --level "$level" \
     --sites "${SITES[@]}" \
     --groups "$EXP_GROUPS" \
-    "${HEADLINE_FLAG[@]}")
+    "${HEADLINE_FLAG[@]}" \
+    --within-condition "${RUN_WITHIN_CONDITION:-true}" \
+    --between-condition-wilcoxon "${RUN_BETWEEN_CONDITION_WILCOXON:-true}" \
+    --between-timepoint-wilcoxon "${RUN_BETWEEN_TIMEPOINT_WILCOXON:-true}" \
+    --between-timepoint-fisher "${RUN_BETWEEN_TIMEPOINT_FISHER:-true}" \
+    --per-timepoint-fisher "${RUN_PER_TIMEPOINT_FISHER:-true}")
 
   echo "Running: ${CMD[@]}"
   "${CMD[@]}"

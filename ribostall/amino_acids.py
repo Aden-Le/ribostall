@@ -38,6 +38,9 @@ AA_ORDER = [a for a in "ACDEFGHIKLMNPQRSTVWY"]  # no stop
 # Sense codons (61 total, stops excluded), alphabetical.
 SENSE_CODONS = sorted(c for c, aa in CODON2AA.items() if aa != "*")
 
+# Stop codons (TAA/TAG/TGA), alphabetical. Used by the --drop-stop-codons flag.
+STOP_CODONS = sorted(c for c, aa in CODON2AA.items() if aa == "*")
+
 CLASS_COLORS = {
     "acidic":"#D62728",      # red
     "basic":"#1F77B4",       # blue
@@ -295,8 +298,11 @@ def annotate_stalls_epa(
         ``transcript`` column and a ``pos_codon`` column (codon index within CDS).
     cds_range, sequence : lookups produced by ``ribostall.sequence``.
     psite_offset_codons, basis : same semantics as ``epa_triplet_counts``.
-    drop_invalid : if True, drop rows where any of E/P/A falls outside the CDS
-        or maps to a stop (``*``) or unknown (``X``) codon/AA.
+    drop_invalid : if True, drop rows that cannot be annotated — where any of
+        E/P/A falls outside the CDS, the transcript is unresolvable, or a codon
+        is ambiguous/unknown (``X``). Stop codons (``*``) are NOT dropped here;
+        stop removal is owned by the callers' ``--drop-stop-codons`` flag so it
+        happens exactly once and consistently across the pipeline.
 
     Returns
     -------
@@ -352,7 +358,9 @@ def annotate_stalls_epa(
         e_aa = CODON2AA.get(e_cod, "X")
         p_aa = CODON2AA.get(p_cod, "X")
         a_aa = CODON2AA.get(a_cod, "X")
-        invalid = any(aa in ("*", "X") for aa in (e_aa, p_aa, a_aa))
+        # Only ambiguous/unknown (X) codons are "invalid" here; stop codons (*)
+        # are kept and removed downstream via --drop-stop-codons.
+        invalid = any(aa == "X" for aa in (e_aa, p_aa, a_aa))
         keep.append(not invalid)
         e_cod_out.append(e_cod); p_cod_out.append(p_cod); a_cod_out.append(a_cod)
         e_aa_out.append(e_aa); p_aa_out.append(p_aa); a_aa_out.append(a_aa)

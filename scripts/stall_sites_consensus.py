@@ -22,6 +22,7 @@ from ribostall.stall_sites import (
 from ribostall.amino_acids import (
     AA_ORDER,
     SENSE_CODONS,
+    STOP_CODONS,
     annotate_stalls_epa,
     background_aa_freq,
     background_codon_freq,
@@ -36,6 +37,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s  %(levelname)s  %(processName)s  %(message)s",
 )
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -72,6 +74,10 @@ def main():
                         help="Codon offset applied to each stall index before deriving E/P/A sites")
     parser.add_argument("--basis", choices=("P", "A"), default="P",
                         help="Register for E/P/A offsets (P: E=-1,P=0,A=+1; A: E=-2,P=-1,A=0)")
+    parser.add_argument("--drop-stop-codons", choices=("True", "False"), default="True",
+                        help="Drop stall windows whose E/P/A site hits a stop codon "
+                             "(TAA/TAG/TGA) from the output CSVs. Default: True; pass "
+                             "'--drop-stop-codons False' to keep them.")
     parser.add_argument("--out-dir", default="results/stall_sites/enrichment",
                         help="Output directory for stall-site CSVs")
 
@@ -326,8 +332,22 @@ def main():
     )
     logging.info(
         f"Annotation complete: {len(df_codon)} codon rows, {len(df_aa)} AA rows "
-        f"(dropped {len(df) - len(df_codon)} rows where E/P/A fell outside the CDS or hit stop/unknown)"
+        f"(dropped {len(df) - len(df_codon)} rows where E/P/A fell outside the CDS or hit an unknown codon)"
     )
+
+    # -------------------------------------------------------------------------
+    # Optionally drop stall windows whose E/P/A hits a stop codon
+    # -------------------------------------------------------------------------
+    if args.drop_stop_codons == "True":
+        n_before_stop = len(df_codon)
+        codon_keep = ~df_codon[["E_codon", "P_codon", "A_codon"]].isin(STOP_CODONS).any(axis=1)
+        aa_keep = ~df_aa[["E_aa", "P_aa", "A_aa"]].isin(["*"]).any(axis=1)
+        df_codon = df_codon.loc[codon_keep].reset_index(drop=True)
+        df_aa = df_aa.loc[aa_keep].reset_index(drop=True)
+        logging.info(
+            f"--drop-stop-codons: dropped {n_before_stop - len(df_codon)} stall windows "
+            f"containing a stop codon; {len(df_codon)} codon rows / {len(df_aa)} AA rows remain"
+        )
 
     # -------------------------------------------------------------------------
     # Write outputs

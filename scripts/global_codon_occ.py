@@ -15,7 +15,7 @@ import ribopy
 from ribopy import Ribo
 
 from ribostall.sequence import get_cds_range_lookup, get_sequence
-from ribostall.amino_acids import CODON2AA, AA_ORDER
+from ribostall.amino_acids import CODON2AA, AA_ORDER, STOP_CODONS
 from ribostall.global_occupancy import (
     iter_trimmed_codons,
     iter_trimmed_site_counts,
@@ -125,6 +125,10 @@ def parse_args():
                    help="Exclude the last N codons of the CDS (default: 0)")
     p.add_argument("--use-human-alias", action="store_true",
                    help="Use ribopy.api.alias.apris_human_alias when opening the Ribo file")
+    p.add_argument("--drop-stop-codons", choices=("True", "False"), default="True",
+                   help="Exclude stop codons (TAA/TAG/TGA) before computing occupancy, so "
+                        "they are absent from the codon CSVs and excluded from totals/rates/"
+                        "proportions/rpm. Default: True; pass '--drop-stop-codons False' to keep them.")
     p.add_argument("--groups",
                    help="Semicolon-separated group:rep1,rep2 definitions, "
                         "e.g. 'groupA:rep1,rep2;groupB:rep3,rep4' "
@@ -160,6 +164,11 @@ def main():
     sequence = get_sequence(ribo_object, args.reference,
                             alias=bool(args.use_human_alias))
 
+    # When --drop-stop-codons is set, stop codons are removed up front so they
+    # never enter the background, per-experiment totals, rates, proportions, or
+    # rpm. The AA-level outputs already exclude stops (see aggregate_to_aa).
+    stop_codons = set(STOP_CODONS) if args.drop_stop_codons == "True" else set()
+
     transcriptome_codon_counts = defaultdict(int)
 
     # iterate once over transcripts for background while applying trimming
@@ -168,6 +177,8 @@ def main():
         start, stop = cds_range[tx]
         cds_seq = sequence[tx][start:stop]
         for codon, _ in iter_trimmed_codons(cds_seq, args.trim_start, args.trim_stop):
+            if codon.upper() in stop_codons:
+                continue
             transcriptome_codon_counts[codon] += 1
 
     # Creates dictionary of form {exp: {site: {codon: count}}} for each experiment.
@@ -196,6 +207,7 @@ def main():
                     cds_seq, cov, args.trim_start, args.trim_stop, SITE_SHIFT[site]
                 ):
                     if count > 0:
+                    if count > 0 and site_codon.upper() not in stop_codons:
                         codon_occ_by_exp[exp][site][site_codon] += count
 
     # =========================================================================

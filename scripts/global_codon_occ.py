@@ -206,7 +206,6 @@ def main():
                 for site_codon, count in iter_trimmed_site_counts(
                     cds_seq, cov, args.trim_start, args.trim_stop, SITE_SHIFT[site]
                 ):
-                    if count > 0:
                     if count > 0 and site_codon.upper() not in stop_codons:
                         codon_occ_by_exp[exp][site][site_codon] += count
 

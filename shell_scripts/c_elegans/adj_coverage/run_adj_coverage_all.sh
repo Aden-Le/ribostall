@@ -31,7 +31,7 @@ conda activate ribostall_env
 
 # Navigate to repo root (two levels up from shell_scripts/<subdir>/)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR/../.."
+cd "$SCRIPT_DIR/../../.."
 
 # Process all .ribo files
 for RIBO in "$RIBO_DIR"/*.ribo; do

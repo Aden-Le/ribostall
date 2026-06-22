@@ -46,7 +46,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/_headline_config.sh"
 
 # Navigate to repo root (two levels up from shell_scripts/<subdir>/)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR/../.."
+cd "$SCRIPT_DIR/../../.."
 
 # Pass --headline-condition only when set, so an empty value falls back to the
 # script's alphabetical default.

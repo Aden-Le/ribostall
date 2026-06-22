@@ -25,16 +25,15 @@ shell_scripts/
 │   ├── stall_sites_consensus/    # Step 2a — consensus stall calling
 │   ├── stall_sites_non_consensus/# Step 2b — per-replicate calling, stats, and R plots
 │   └── global_occupancy/         # Step 3 — occupancy base CSVs, stats, and R plots
-└── mouse/                        # Mouse analysis (same stage folders, scripts added as written)
-    ├── adj_coverage/
-    ├── stall_sites_consensus/
-    ├── stall_sites_non_consensus/
-    └── global_occupancy/
+└── mouse/                        # Mouse analysis (same stage layout, scripts added as written)
+    ├── adj_coverage/             # Step 1 — run_adj_coverage_all.sh (mouse_all.ribo)
+    └── stall_sites_consensus/    # Step 2a — run_stall_sites_consensus.sh (2-vs-1 design)
 ```
 
-> The `mouse/` stage folders are currently empty placeholders — they hold a
-> `.gitkeep` and no scripts. Add a mouse script under the matching stage folder
-> when one exists; there is no requirement to mirror every C. elegans script.
+> Only the two stages above have mouse scripts so far; the remaining stages
+> (`stall_sites_non_consensus`, `global_occupancy`) are not yet present. Add a
+> mouse script under the matching stage folder when one exists — there is no
+> requirement to mirror every C. elegans script.
 
 ---
 
@@ -180,3 +179,24 @@ For a full plot regeneration after a stats rerun (PowerShell uses `;` between co
 ```
 
 The within-condition shells are the slowest (~3 minutes each); the others finish in under a minute.
+
+---
+
+## Mouse
+
+The mouse analysis has runners for two pipeline stages so far. Their `CONFIG`
+blocks point at `mouse_all.ribo` and `reference/appris_mouse_v2_selected.fa.gz`;
+the consensus runner uses a 2-vs-1 design (`control:AA_3,AA_4;treatment:Ch_WAA2`).
+Edit the `CONFIG` block at the top of each script before running.
+
+### Step 1 — Extract CDS-aligned coverage
+
+```powershell
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/mouse/adj_coverage/run_adj_coverage_all.sh
+```
+
+### Step 2a — Consensus stall-site calling
+
+```powershell
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/mouse/stall_sites_consensus/run_stall_sites_consensus.sh
+```

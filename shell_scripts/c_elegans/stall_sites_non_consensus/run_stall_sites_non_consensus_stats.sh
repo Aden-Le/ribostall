@@ -17,8 +17,8 @@ EXP_GROUPS='control_day_0:control_day0_rep2,control_day0_rep3;control_day_5:cont
 
 # Directory containing stall_sites_{codon,aa}.csv and
 # per_group_background_{codon,aa}.csv from run_stall_sites_non_consensus.sh
-OUT_ENRICHMENT="./results/stall_sites/enrichment"
-OUT_DIR="./results/stall_sites/enrichment/analysis_stats"
+OUT_ENRICHMENT="./results/c_elegans/stall_sites/enrichment"
+OUT_DIR="./results/c_elegans/stall_sites/enrichment/analysis_stats"
 
 # --- Which analyses to run -------------------------------------------------
 # Each analysis defaults to true (runs). Set one to false to skip it; leaving it

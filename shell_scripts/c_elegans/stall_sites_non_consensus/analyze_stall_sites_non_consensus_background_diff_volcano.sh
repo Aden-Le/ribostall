@@ -30,8 +30,8 @@
 export PATH="$PATH:/c/Program Files/R/R-4.4.2/bin"
 
 # ── CONFIG ───────────────────────────────────────────────────
-INPUT_DIR="./results/stall_sites/enrichment/analysis_stats"
-PLOTS_DIR="./results/stall_sites/plots"
+INPUT_DIR="./results/c_elegans/stall_sites/enrichment/analysis_stats"
+PLOTS_DIR="./results/c_elegans/stall_sites/plots"
 # Shared headline/direction config (same file the stats runner sources). The
 # comparison label and the x-axis direction (enrichment ratio, headline / other)
 # are derived from the headline there, so they match the stats numerator and

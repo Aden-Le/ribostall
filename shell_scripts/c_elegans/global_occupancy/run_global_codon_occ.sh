@@ -22,7 +22,7 @@ TRIM_STOP=10
 REFERENCE_FILE="./reference/appris_celegans_v1_selected_new.fa"
 
 # Output directory (must match --out-dir used in run_global_codon_occ_stats.sh)
-OUT_DIR="./results/global_occupancy"
+OUT_DIR="./results/c_elegans/global_occupancy"
 
 # ===============================================
 

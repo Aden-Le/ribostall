@@ -48,7 +48,7 @@ PSITE_OFFSET=0
 REFERENCE_FILE="./reference/appris_celegans_v1_selected_new.fa"
 
 # Output files
-OUT_ENRICHMENT="./results/stall_sites/enrichment"
+OUT_ENRICHMENT="./results/c_elegans/stall_sites/enrichment"
 
 # ===============================================
 

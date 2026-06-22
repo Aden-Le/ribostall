@@ -13,10 +13,10 @@ export PATH="$PATH:/c/Program Files/R/R-4.4.2/bin"
 
 # Input directory (containing between_condition_wilcoxon_* and
 # between_timepoint_wilcoxon_* CSVs)
-INPUT_DIR="./results/stall_sites/enrichment/analysis_stats"
+INPUT_DIR="./results/c_elegans/stall_sites/enrichment/analysis_stats"
 
 # Output directory for plots
-OUTPUT_DIR="./results/stall_sites/plots/between_condition"
+OUTPUT_DIR="./results/c_elegans/stall_sites/plots/between_condition"
 
 # Shared headline/direction config (same file the stats runner sources) so the
 # between-condition comparison tag matches the stats numerator and cannot drift.
@@ -79,7 +79,7 @@ echo "Running: ${CMD[@]}"
 # Between-Timepoint (day vs day, both levels)
 # =============================================
 
-BT_OUTPUT_DIR="./results/stall_sites/plots/between_timepoint"
+BT_OUTPUT_DIR="./results/c_elegans/stall_sites/plots/between_timepoint"
 
 for comparison in d10_vs_d0 d10_vs_d5 d5_vs_d0; do
   # Human-readable label: d10_vs_d0 → Day10_vs_Day0

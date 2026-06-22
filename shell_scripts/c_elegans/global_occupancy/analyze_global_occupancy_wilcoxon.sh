@@ -10,8 +10,8 @@
 export PATH="$PATH:/c/Program Files/R/R-4.4.2/bin"
 
 # ============== CONFIG: edit these ==============
-INPUT_DIR="./results/global_occupancy/analysis_corrected"
-PLOTS_DIR="./results/global_occupancy/plots"
+INPUT_DIR="./results/c_elegans/global_occupancy/analysis_corrected"
+PLOTS_DIR="./results/c_elegans/global_occupancy/plots"
 # Shared headline/direction config (same file the stats runner sources) so the
 # between-condition comparison tag matches the stats numerator and cannot drift.
 source "$(dirname "${BASH_SOURCE[0]}")/_headline_config.sh"

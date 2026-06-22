@@ -81,7 +81,7 @@ These drive the Python pipeline in `scripts/`. Run in order for a full end-to-en
 
 ## R-plot launchers (`analyze_*.sh`)
 
-These drive the 3 unified R plotting scripts in `R_scripts/`. Output goes to `results/{stall_sites,global_occupancy}/plots/` — both pipelines share the same 5-folder layout:
+These drive the 3 unified R plotting scripts in `R_scripts/`. Output goes to `results/<organism>/{stall_sites,global_occupancy}/plots/` (e.g. `results/c_elegans/stall_sites/plots/`) — both pipelines share the same 5-folder layout:
 
 ```
 plots/
@@ -122,7 +122,7 @@ Within-condition binomial enrichment volcano plots (with Beta-Jeffreys CIs):
 
 ### Stall_sites (consensus)
 
-These drive the volcano scripts on the **consensus** stats CSVs (flat control-vs-treatment, no timepoints) in `results/stall_sites/enrichment/analysis_stats/`.
+These drive the volcano scripts on the **consensus** stats CSVs (flat control-vs-treatment, no timepoints) in `results/c_elegans/stall_sites/enrichment/analysis_stats/`.
 
 Between-condition Fisher volcano plots (raw stall-site share, Treatment vs Control):
 

@@ -15,10 +15,10 @@ export PATH="$PATH:/c/Program Files/R/R-4.4.2/bin"
 
 # ============== CONFIG: edit these ==============
 # Input directory (containing within_condition_binomial_{aa,codon}.csv)
-INPUT_DIR="./results/stall_sites/enrichment/analysis_stats"
+INPUT_DIR="./results/c_elegans/stall_sites/enrichment/analysis_stats"
 
 # Output directory for plots
-OUTPUT_DIR="./results/stall_sites/plots/within_condition"
+OUTPUT_DIR="./results/c_elegans/stall_sites/plots/within_condition"
 
 # Enrichment type: "unweighted", "weighted", or "both"
 ENRICHMENT_TYPE="both"

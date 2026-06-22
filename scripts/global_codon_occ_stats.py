@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import argparse
 import logging
+import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -30,14 +32,13 @@ def parse_args():
     p = argparse.ArgumentParser(
         description="Run statistical tests on the global occupancy CSVs for ONE level "
                     "(codon or AA), processing all E/P/A sites in a single invocation. "
-                    "Writes the per-site analysis CSVs AND the merged analysis_corrected/ "
-                    "tree (per-site frames concatenated with a prepended 'site' column)."
+                    "Writes the merged analysis_corrected/ tree (the E/P/A per-site frames "
+                    "concatenated with a prepended 'site' column). The per-site frames are an "
+                    "internal intermediate and are NOT exported."
     )
     p.add_argument("--raw-dir", default="results/global_occupancy/raw",
                    help="Directory of raw occupancy CSVs from global_codon_occ.py "
                         "(reads {level}_occupancy_{site}.csv).")
-    p.add_argument("--analysis-dir", default="results/global_occupancy/analysis",
-                   help="Directory for per-site analysis CSVs (writes {site}/{level}_*.csv).")
     p.add_argument("--corrected-dir", default="results/global_occupancy/analysis_corrected",
                    help="Directory for the merged CSVs (one per analysis, with a 'site' column).")
     p.add_argument("--level", required=True, choices=["codon", "aa"],
@@ -56,8 +57,8 @@ def parse_args():
     # Per-analysis toggles. Each takes the literal value true or false and
     # defaults to true (the analysis runs); pass e.g. --per-timepoint-fisher false
     # to skip it. The between-timepoint block (Analysis 3) is split into its two
-    # sub-tests so each can be skipped independently. A skipped analysis writes no
-    # per-site CSV and is therefore absent from the merged analysis_corrected/ tree.
+    # sub-tests so each can be skipped independently. A skipped analysis is not
+    # computed and is therefore absent from the merged analysis_corrected/ tree.
     p.add_argument("--within-condition", choices=["true", "false"], default="true",
                    help="Analysis 1: within-condition binomial occupancy. "
                         "Default: true (set false to skip).")
@@ -278,9 +279,14 @@ def main():
     args = parse_args()
 
     raw_dir = Path(args.raw_dir)
-    analysis_dir = Path(args.analysis_dir)
     corrected_dir = Path(args.corrected_dir)
     corrected_dir.mkdir(parents=True, exist_ok=True)
+
+    # The per-site analysis CSVs are an internal intermediate, not an export: they
+    # are written to a temp dir, re-read from disk for the byte-exact merge (the
+    # disk round-trip reproduces the old 2-step pipeline — see the merge note
+    # below), then discarded. Only the merged analysis_corrected/ tree is kept.
+    analysis_dir = Path(tempfile.mkdtemp(prefix="occ_per_site_"))
 
     # groups is a dict: group_name -> list of replicates, e.g. control_day_0 -> [control_day0_rep1, control_day0_rep2]
     groups = parse_groups(args.groups)
@@ -345,9 +351,11 @@ def main():
         merged.to_csv(out_path, index=False)
         logging.info(f"Wrote {out_path}  ({len(merged)} rows from {len(merged_parts)} sites)")
 
+    # Discard the per-site intermediate; only the merged tree is exported.
+    shutil.rmtree(analysis_dir, ignore_errors=True)
+
     print(f"\n{'='*60}")
-    print(f"Done. Per-site results in {analysis_dir.resolve()}/{{{','.join(args.sites)}}}")
-    print(f"      Merged results in {corrected_dir.resolve()}")
+    print(f"Done. Merged results in {corrected_dir.resolve()}")
     print(f"{'='*60}")
 
 

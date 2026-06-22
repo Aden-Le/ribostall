@@ -4,13 +4,13 @@
 # Runs statistical tests on the base CSVs produced
 # by run_global_codon_occ.sh (reads from out_dir/raw/).
 #
-# The Python script now processes all 3 sites (E/P/A)
-# for one level per invocation, and writes BOTH:
-#   - per-site CSVs to out_dir/analysis/{E,P,A}/
-#   - merged CSVs   to out_dir/analysis_corrected/
-#     (per-site frames concatenated with a 'site' column —
-#      the old merge_global_occupancy_analysis.py step is
-#      now folded in). This shell script loops the 2 levels.
+# The Python script processes all 3 sites (E/P/A) for one
+# level per invocation and writes the merged CSVs to
+# out_dir/analysis_corrected/ (the E/P/A per-site frames
+# concatenated with a 'site' column — the old
+# merge_global_occupancy_analysis.py step is folded in). The
+# per-site frames are an internal intermediate and are NOT
+# exported. This shell script loops the 2 levels.
 #----------------------------------------------------
 
 # ============== CONFIG: edit these ==============
@@ -62,7 +62,6 @@ echo "GLOBAL CODON & AMINO ACID OCCUPANCY — STEP 2"
 echo "Statistical tests on base CSVs"
 echo "=============================================="
 echo "Raw directory:        $OUT_DIR/raw/"
-echo "Per-site output:      $OUT_DIR/analysis/{${SITES[*]// /,}}/"
 echo "Merged output:        $OUT_DIR/analysis_corrected/"
 echo "Sites:                ${SITES[*]}"
 echo "Levels:               ${LEVELS[*]}"
@@ -78,7 +77,6 @@ for level in "${LEVELS[@]}"; do
 
   CMD=(python3 scripts/global_codon_occ_stats.py \
     --raw-dir "$OUT_DIR/raw" \
-    --analysis-dir "$OUT_DIR/analysis" \
     --corrected-dir "$OUT_DIR/analysis_corrected" \
     --level "$level" \
     --sites "${SITES[@]}" \
@@ -96,7 +94,6 @@ done
 
 echo ""
 echo "=============================================="
-echo "Done. Per-site CSVs in $OUT_DIR/analysis/{${SITES[*]// /,}}/"
-echo "      Merged CSVs in   $OUT_DIR/analysis_corrected/"
+echo "Done. Merged CSVs in $OUT_DIR/analysis_corrected/"
 date
 echo "=============================================="

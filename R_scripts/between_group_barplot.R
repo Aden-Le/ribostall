@@ -64,46 +64,10 @@ feature_col <- ifelse(args$level == "aa", "amino_acid", "codon")
 # Constants
 # ============================================================
 
-# Amino-acid class lookup and colours — shared with R_scripts/between_group_volcano.R.
-# Bars are filled by class; the sign of the fold-change is read from bar
-# direction (up = enriched, down = depleted).
-AA_CLASS <- c(
-  "D" = "Acidic", "E" = "Acidic",
-  "K" = "Basic", "R" = "Basic", "H" = "Basic",
-  "A" = "Hydrophobic", "V" = "Hydrophobic", "I" = "Hydrophobic",
-  "L" = "Hydrophobic", "M" = "Hydrophobic", "F" = "Hydrophobic",
-  "W" = "Hydrophobic", "Y" = "Hydrophobic",
-  "C" = "Polar", "N" = "Polar", "Q" = "Polar", "S" = "Polar", "T" = "Polar",
-  "G" = "Neutral", "P" = "Neutral"
-)
-
-CLASS_COLORS <- c(
-  "Acidic"      = "#E41A1C",
-  "Basic"       = "#377EB8",
-  "Hydrophobic" = "#4DAF4A",
-  "Polar"       = "#984EA3",
-  "Neutral"     = "#FF7F00",
-  "Stop"        = "#666666"
-)
-
-# Codon → amino-acid decode, used to classify codon-level features.
-CODON2AA <- c(
-  "GCT"="A","GCC"="A","GCA"="A","GCG"="A",
-  "CGT"="R","CGC"="R","CGA"="R","CGG"="R","AGA"="R","AGG"="R",
-  "AAT"="N","AAC"="N","GAT"="D","GAC"="D","TGT"="C","TGC"="C",
-  "GAA"="E","GAG"="E","CAA"="Q","CAG"="Q",
-  "GGT"="G","GGC"="G","GGA"="G","GGG"="G",
-  "CAT"="H","CAC"="H","ATT"="I","ATC"="I","ATA"="I",
-  "TTA"="L","TTG"="L","CTT"="L","CTC"="L","CTA"="L","CTG"="L",
-  "AAA"="K","AAG"="K","ATG"="M","TTT"="F","TTC"="F",
-  "CCT"="P","CCC"="P","CCA"="P","CCG"="P",
-  "TCT"="S","TCC"="S","TCA"="S","TCG"="S","AGT"="S","AGC"="S",
-  "ACT"="T","ACC"="T","ACA"="T","ACG"="T","TGG"="W",
-  "TAT"="Y","TAC"="Y","GTT"="V","GTC"="V","GTA"="V","GTG"="V",
-  "TAA"="*","TAG"="*","TGA"="*"
-)
-
-SITE_LABELS <- c("E" = "E-site", "P" = "P-site", "A" = "A-site")
+# AA_CLASS, CLASS_COLORS, CODON2AA, SITE_LABELS — shared verbatim
+# with the other R_scripts. Bars are filled by class; the sign of the
+# fold-change is read from bar direction (up = enriched, down = depleted).
+source("R_scripts/aa_constants.R")
 
 level_label <- ifelse(args$level == "aa", "Amino Acid", "Codon")
 

@@ -206,7 +206,7 @@ def main():
     # --- end logging ---
 
     # Coverage density plot: KDE of per-transcript body coverage per replicate
-    # (mirrors stall_sites_non_consensus_call.py). The body window matches the
+    # (mirrors stall_sites_non_consensus.py). The body window matches the
     # one used by filter_tx / call_stalls. Written into --out-dir.
     os.makedirs(args.out_dir, exist_ok=True)
     plot_coverage_density(cov, groups, args.out_dir,
@@ -214,7 +214,7 @@ def main():
     logging.info(f"Saved coverage density plot to {args.out_dir}/coverage_density.png")
 
     # Per-group transcript universe — each group keeps its own filtered tx set
-    # (mirrors stall_sites_non_consensus_call.py; no cross-group intersection).
+    # (mirrors stall_sites_non_consensus.py; no cross-group intersection).
     filt_tx_dict = {
         group: filter_tx(cov, reps, min_reps=args.tx_min_reps, threshold=args.tx_threshold,
                          trim_start=args.trim_start, trim_stop=args.trim_stop)

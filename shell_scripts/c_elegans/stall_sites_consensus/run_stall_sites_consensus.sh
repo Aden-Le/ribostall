@@ -10,8 +10,11 @@ RIBO_DIR="./all_ribo_file"
 RIBO_FILE="$RIBO_DIR/C_elegan_all_02_04_2026.ribo"
 
 # Format: "group1:rep1,rep2;group2:rep1,rep2"
-# Flat control-vs-treatment design (no timepoints). Edit the replicate sample
-# names to match the experiments in the coverage pickle.
+# Consensus sets replicate == group (each group becomes its own "replicate" in
+# the stats output). Flat design example (no timepoints):
+#   EXP_GROUPS='control:control_rep1,control_rep2;treatment:treatment_rep1,treatment_rep2'
+# Timepoint-bearing design example (pass --timepoints in the stats runner too):
+#   EXP_GROUPS='control_day_0:control_day0_rep1,control_day0_rep2;control_day_5:control_day5_rep1,control_day5_rep2;treatment_day_0:treatment_day0_rep1,treatment_day0_rep2;treatment_day_5:treatment_day5_rep1,treatment_day5_rep2'
 EXP_GROUPS='control:control_rep1,control_rep2;treatment:treatment_rep1,treatment_rep2'
 
 # Transcript filtering thresholds
@@ -27,7 +30,9 @@ PSEUDOCOUNT=0.5
 
 # Consensus calling parameters
 # Per-group consensus support: must name EVERY declared group (no global fallback).
-# control needs both reps; treatment has only 1 rep.
+# For a flat design: STALL_MIN_REPS_PER_GROUP='control:2;treatment:1'
+# For a timepoint design: name every (condition, timepoint) cell, e.g.
+#   STALL_MIN_REPS_PER_GROUP='control_day_0:2;control_day_5:2;treatment_day_0:2;treatment_day_5:2'
 STALL_MIN_REPS_PER_GROUP='control:2;treatment:1'
 TOL=0
 MIN_SEP=7

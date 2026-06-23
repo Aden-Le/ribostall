@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-stall_sites_non_consensus_call.py
+stall_sites_non_consensus.py
 
 Data-generation half of the non-consensus stall-site pipeline.
 

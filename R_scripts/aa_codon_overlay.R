@@ -97,16 +97,17 @@ effect_col       <- args$effect_col
 # ============================================================
 # Input selection — PRODUCTION (default) vs TEST
 # To run local tests: comment out the PRODUCTION block and
-# uncomment the TEST block (hardcoded paths, no CLI args needed).
+# uncomment the TEST block (no CLI args needed). The TEST inputs are
+# the copies bundled in R_scripts/test_data/, found via script_dir.
 # ============================================================
 
 # --- PRODUCTION (reads CLI --input-aa / --input-codon) ---
 input_aa    <- args$input_aa
 input_codon <- args$input_codon
 
-# --- TEST (uncomment to override with local test files) ---
-# input_aa    <- "results/c_elegans/stall_sites_non_consensus/analysis/per_timepoint_background_diff_aa.csv"
-# input_codon <- "results/c_elegans/stall_sites_non_consensus/analysis/per_timepoint_background_diff_codon.csv"
+# --- TEST (uncomment to use the bundled copies in R_scripts/test_data/) ---
+# input_aa    <- file.path(script_dir, "test_data", "per_timepoint_background_diff_aa.csv")
+# input_codon <- file.path(script_dir, "test_data", "per_timepoint_background_diff_codon.csv")
 
 if (is.null(input_aa) || is.null(input_codon)) {
   stop(paste0(

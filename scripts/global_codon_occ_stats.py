@@ -53,6 +53,12 @@ def parse_args():
                         "log2_FC = higher occupancy here) and the per-timepoint Fisher (Analysis 4; "
                         "positive log2 odds ratio = enriched here). Must match one of the two condition "
                         "labels (e.g. 'BWM'). Default: alphabetical (first condition is headline).")
+    p.add_argument("--timepoints", required=True,
+                   help="Comma-separated timepoint labels in chronological order (earliest first), "
+                        "e.g. 'day_0,day_5,day_10'. Sets the order of the per-timepoint Fisher "
+                        "(Analysis 4) and generates the later-vs-earlier between-timepoint pairs "
+                        "(Analysis 3). Timepoints are NOT sorted automatically — a string sort would "
+                        "place 'day_10' before 'day_5'.")
 
     # Per-analysis toggles. Each takes the literal value true or false and
     # defaults to true (the analysis runs); pass e.g. --per-timepoint-fisher false
@@ -77,8 +83,36 @@ def parse_args():
     return p.parse_args()
 
 
+def parse_timepoints(timepoints_arg):
+    """['day_0', 'day_5', 'day_10'] from 'day_0,day_5,day_10' (order preserved)."""
+    return [t.strip() for t in timepoints_arg.split(",") if t.strip()]
+
+
+def timepoint_token(label):
+    """'day_10' -> 'd10' (legacy short tag); any other label passes through unchanged."""
+    return "d" + label[len("day_"):] if label.startswith("day_") else label
+
+
+def build_timepoint_pairs(timepoint_order):
+    """All later-vs-earlier (time_a, time_b, tag) pairs from a chronological list.
+
+    For ``['day_0', 'day_5', 'day_10']`` this yields, in order,
+    ``('day_10', 'day_0', 'd10_vs_d0')``, ``('day_10', 'day_5', 'd10_vs_d5')``,
+    ``('day_5', 'day_0', 'd5_vs_d0')`` — the same three pairs (and order) the
+    script used to hard-code. ``time_a`` is the later timepoint (direction is
+    later-vs-earlier).
+    """
+    pairs = []
+    for j in range(len(timepoint_order) - 1, 0, -1):   # later: latest index down to 1
+        for i in range(j):                              # earlier: 0 .. j-1
+            time_a, time_b = timepoint_order[j], timepoint_order[i]
+            tag = f"{timepoint_token(time_a)}_vs_{timepoint_token(time_b)}"
+            pairs.append((time_a, time_b, tag))
+    return pairs
+
+
 def run_site_analyses(input_csv, out_dir, prefix, groups, rep_to_group,
-                      rep_to_condition, rep_to_timepoint, headline_condition=None,
+                      rep_to_condition, rep_to_timepoint, timepoint_order, headline_condition=None,
                       run_within_condition=True, run_between_condition_wilcoxon=True,
                       run_between_timepoint_wilcoxon=True, run_between_timepoint_fisher=True,
                       run_per_timepoint_fisher=True):
@@ -92,6 +126,10 @@ def run_site_analyses(input_csv, out_dir, prefix, groups, rep_to_group,
     ``headline_condition`` sets the numerator / direction of the two
     between-condition tests (Wilcoxon Analysis 2, per-timepoint Fisher Analysis
     4); ``None`` keeps the alphabetical default (backward-compatible).
+
+    ``timepoint_order`` is the chronological timepoint list (earliest first) that
+    sets the order of the per-timepoint Fisher (Analysis 4) and generates the
+    later-vs-earlier between-timepoint pairs (Analysis 3).
 
     The ``run_*`` flags toggle each analysis; all default to True (run). The
     between-timepoint block (Analysis 3) is split into its Wilcoxon and Fisher
@@ -184,68 +222,30 @@ def run_site_analyses(input_csv, out_dir, prefix, groups, rep_to_group,
         print(f"ANALYSIS 3: BETWEEN-TIMEPOINT")
         print(f"{'='*60}")
 
-        # --- Day 10 vs Day 0 ---
-        print(f"\n--- Day 10 vs Day 0 ---")
+        # All later-vs-earlier day-pairs generated from --timepoints (previously
+        # three hard-coded, fully-unrolled blocks). Each pair runs (a) Wilcoxon
+        # pooled across conditions and (b) Fisher's within each condition. For
+        # day_0,day_5,day_10 this reproduces wilcoxon_timepoint_d10_vs_d0.csv etc.
+        for time_a, time_b, tag in build_timepoint_pairs(timepoint_order):
+            print(f"\n--- {time_a} vs {time_b} ---")
 
-        # 3a: Wilcoxon pooled across conditions (n=4 vs n=4)
-        if run_between_timepoint_wilcoxon:
-            print("\n  3a: Wilcoxon (pooled across conditions, n=4 vs n=4)")
-            df = between_timepoint_wilcoxon_occupancy(
-                rates_for_stats, rep_to_timepoint, time_a="day_10", time_b="day_0",
-                feature_col=out_feature_col)
-            save_csv(df, "wilcoxon_timepoint_d10_vs_d0.csv")
+            # Wilcoxon pooled across conditions (n=4 vs n=4)
+            if run_between_timepoint_wilcoxon:
+                print("\n  Wilcoxon (pooled across conditions, n=4 vs n=4)")
+                df = between_timepoint_wilcoxon_occupancy(
+                    rates_for_stats, rep_to_timepoint, time_a=time_a, time_b=time_b,
+                    feature_col=out_feature_col)
+                save_csv(df, f"wilcoxon_timepoint_{tag}.csv")
 
-        # 3b: Fisher's within each condition (pool 2 reps)
-        if run_between_timepoint_fisher:
-            print("\n  3b: Fisher's exact (within each condition, pooled replicates)")
-            print("  WARNING: Pooling 2 biological replicates is pseudoreplication.")
-            print("           P-values are anti-conservative and should be interpreted cautiously.")
-            df = between_timepoint_fisher_within_condition(
-                raw_for_stats, groups, rep_to_condition, rep_to_timepoint,
-                time_a="day_10", time_b="day_0", feature_col=out_feature_col)
-            save_csv(df, "timepoint_fisher_within_condition_d10_vs_d0.csv")
-
-        # --- Day 10 vs Day 5 ---
-        print(f"\n--- Day 10 vs Day 5 ---")
-
-        # 3c: Wilcoxon pooled across conditions (n=4 vs n=4)
-        if run_between_timepoint_wilcoxon:
-            print("\n  3c: Wilcoxon (pooled across conditions, n=4 vs n=4)")
-            df = between_timepoint_wilcoxon_occupancy(
-                rates_for_stats, rep_to_timepoint, time_a="day_10", time_b="day_5",
-                feature_col=out_feature_col)
-            save_csv(df, "wilcoxon_timepoint_d10_vs_d5.csv")
-
-        # 3d: Fisher's within each condition (pool 2 reps)
-        if run_between_timepoint_fisher:
-            print("\n  3d: Fisher's exact (within each condition, pooled replicates)")
-            print("  WARNING: Pooling 2 biological replicates is pseudoreplication.")
-            print("           P-values are anti-conservative and should be interpreted cautiously.")
-            df = between_timepoint_fisher_within_condition(
-                raw_for_stats, groups, rep_to_condition, rep_to_timepoint,
-                time_a="day_10", time_b="day_5", feature_col=out_feature_col)
-            save_csv(df, "timepoint_fisher_within_condition_d10_vs_d5.csv")
-
-        # --- Day 5 vs Day 0 ---
-        print(f"\n--- Day 5 vs Day 0 ---")
-
-        # 3e: Wilcoxon pooled across conditions (n=4 vs n=4)
-        if run_between_timepoint_wilcoxon:
-            print("\n  3e: Wilcoxon (pooled across conditions, n=4 vs n=4)")
-            df = between_timepoint_wilcoxon_occupancy(
-                rates_for_stats, rep_to_timepoint, time_a="day_5", time_b="day_0",
-                feature_col=out_feature_col)
-            save_csv(df, "wilcoxon_timepoint_d5_vs_d0.csv")
-
-        # 3f: Fisher's within each condition (pool 2 reps)
-        if run_between_timepoint_fisher:
-            print("\n  3f: Fisher's exact (within each condition, pooled replicates)")
-            print("  WARNING: Pooling 2 biological replicates is pseudoreplication.")
-            print("           P-values are anti-conservative and should be interpreted cautiously.")
-            df = between_timepoint_fisher_within_condition(
-                raw_for_stats, groups, rep_to_condition, rep_to_timepoint,
-                time_a="day_5", time_b="day_0", feature_col=out_feature_col)
-            save_csv(df, "timepoint_fisher_within_condition_d5_vs_d0.csv")
+            # Fisher's within each condition (pool 2 reps)
+            if run_between_timepoint_fisher:
+                print("\n  Fisher's exact (within each condition, pooled replicates)")
+                print("  WARNING: Pooling 2 biological replicates is pseudoreplication.")
+                print("           P-values are anti-conservative and should be interpreted cautiously.")
+                df = between_timepoint_fisher_within_condition(
+                    raw_for_stats, groups, rep_to_condition, rep_to_timepoint,
+                    time_a=time_a, time_b=time_b, feature_col=out_feature_col)
+                save_csv(df, f"timepoint_fisher_within_condition_{tag}.csv")
     else:
         print(f"\n{'='*60}\nANALYSIS 3: BETWEEN-TIMEPOINT  [SKIPPED]\n{'='*60}")
 
@@ -267,7 +267,7 @@ def run_site_analyses(input_csv, out_dir, prefix, groups, rep_to_group,
 
         df = per_timepoint_fisher_occupancy(
             raw_for_stats, rep_to_condition, rep_to_timepoint, feature_col=out_feature_col,
-            headline_condition=headline_condition)
+            headline_condition=headline_condition, timepoints=timepoint_order)
         save_csv(df, "per_timepoint_fisher.csv")
     else:
         print(f"\n{'='*60}\nANALYSIS 4: PER-TIMEPOINT FISHER'S (BWM vs Control at each day)  [SKIPPED]\n{'='*60}")
@@ -304,6 +304,20 @@ def main():
         rep_to_condition[rep] = parts[0]
         rep_to_timepoint[rep] = parts[1] if len(parts) > 1 else grp
 
+    # Declared chronological timepoint order (no automatic sorting — a string sort
+    # would place "day_10" before "day_5"). Drives the per-timepoint Fisher's output
+    # order (Analysis 4) and the later-vs-earlier comparison pairs (Analysis 3).
+    timepoint_order = parse_timepoints(args.timepoints)
+    present_timepoints = set(rep_to_timepoint.values())
+    missing = [tp for tp in timepoint_order if tp not in present_timepoints]
+    if missing:
+        sys.exit(f"--timepoints lists {missing}, not found among the --groups timepoints "
+                 f"{sorted(present_timepoints)}")
+    undeclared = present_timepoints - set(timepoint_order)
+    if undeclared:
+        logging.warning(f"Timepoints {sorted(undeclared)} are present in --groups but not in "
+                        f"--timepoints; they are excluded from the timepoint analyses.")
+
     # For each site: run the 5 analyses and write the per-site CSVs. Collect the
     # set of basenames written (the same across sites) for the merge step.
     all_basenames = []
@@ -317,7 +331,7 @@ def main():
 
         basenames = run_site_analyses(
             input_csv, site_out_dir, args.level, groups,
-            rep_to_group, rep_to_condition, rep_to_timepoint,
+            rep_to_group, rep_to_condition, rep_to_timepoint, timepoint_order,
             headline_condition=args.headline_condition,
             run_within_condition=(args.within_condition == "true"),
             run_between_condition_wilcoxon=(args.between_condition_wilcoxon == "true"),

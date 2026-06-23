@@ -10,9 +10,10 @@ two CSVs emitted by ``stall_sites_non_consensus_call.py``:
 
 Level is auto-detected from the input columns. The enrichment tests
 (within-condition binomial, between-condition Wilcoxon, between-timepoint
-Wilcoxon + Fisher, per-timepoint Fisher, and the per-timepoint background-aware
-diff) are run identically in both modes — the only things that differ are the
-feature alphabet and the background-frequency helper.
+Wilcoxon + Fisher, per-timepoint Fisher, the per-timepoint background-aware
+diff, and the between-timepoint background-aware diff) are run identically in
+both modes — the only things that differ are the feature alphabet and the
+background-frequency helper.
 
 The per-timepoint background-aware diff (Analysis 5) is the background-aware
 counterpart of the per-timepoint Fisher (Analysis 4): instead of comparing raw
@@ -24,6 +25,17 @@ control_day_0) because — unlike the flat consensus design where group ==
 condition — each condition here spans several timepoint groups. It complements
 rather than replaces Fisher; the two agree when the per-(condition,timepoint)
 backgrounds match and diverge only when they differ.
+
+The between-timepoint background-aware diff (Analysis 6) is the background-aware
+counterpart of the between-timepoint Wilcoxon (Analysis 3a): both POOL replicates
+ACROSS CONDITIONS within each timepoint (ignoring the BWM/control split), but
+Analysis 6 normalizes each timepoint to its OWN count-weighted pooled background,
+so a shift in the expressed transcriptome across the time course cannot
+masquerade as differential stalling. It compares every later-vs-earlier day-pair
+generated from ``--timepoints`` (for day_0,day_5,day_10 that is d10_vs_d0,
+d10_vs_d5, d5_vs_d0) and writes one combined CSV tagged by a ``comparison``
+column. Direction is later-vs-earlier (time_a vs time_b), independent of
+--headline-condition (the comparison is between timepoints, not conditions).
 
 This script is intentionally ribopy-free: per-group background frequencies
 are read from the ``per_group_background_{codon,aa}.csv`` CSVs emitted by
@@ -52,6 +64,7 @@ from ribostall.enrichment import (
     between_timepoint_fisher_within_condition,
     per_timepoint_fisher,
     between_condition_background_diff,
+    between_timepoint_background_diff,
 )
 
 
@@ -82,6 +95,12 @@ def parse_args():
                              "delta_log2_enrichment = more enriched vs background here). Must match one "
                              "of the two condition labels (e.g. 'BWM'). Default: alphabetical (first "
                              "condition is headline).")
+    parser.add_argument("--timepoints", required=True,
+                        help="Comma-separated timepoint labels in chronological order (earliest "
+                             "first), e.g. 'day_0,day_5,day_10'. Sets the order of the per-timepoint "
+                             "analyses (4, 5) and generates the later-vs-earlier comparison pairs "
+                             "(Analyses 3, 6). Timepoints are NOT sorted automatically — a string "
+                             "sort would place 'day_10' before 'day_5'.")
 
     # Per-analysis toggles. Each takes the literal value true or false and
     # defaults to true (the analysis runs); pass e.g.
@@ -106,6 +125,9 @@ def parse_args():
     parser.add_argument("--per-timepoint-background-diff", choices=["true", "false"], default="true",
                         help="Analysis 5: per-timepoint background-aware diff. "
                              "Default: true (set false to skip).")
+    parser.add_argument("--between-timepoint-background-diff", choices=["true", "false"], default="true",
+                        help="Analysis 6: between-timepoint background-aware diff (replicates pooled "
+                             "across conditions per timepoint). Default: true (set false to skip).")
     return parser.parse_args()
 
 
@@ -115,6 +137,34 @@ def parse_groups(groups_arg):
         name, reps = block.split(":")
         groups[name] = reps.split(",")
     return groups
+
+
+def parse_timepoints(timepoints_arg):
+    """['day_0', 'day_5', 'day_10'] from 'day_0,day_5,day_10' (order preserved)."""
+    return [t.strip() for t in timepoints_arg.split(",") if t.strip()]
+
+
+def timepoint_token(label):
+    """'day_10' -> 'd10' (legacy short tag); any other label passes through unchanged."""
+    return "d" + label[len("day_"):] if label.startswith("day_") else label
+
+
+def build_timepoint_pairs(timepoint_order):
+    """All later-vs-earlier (time_a, time_b, tag) pairs from a chronological list.
+
+    For ``['day_0', 'day_5', 'day_10']`` this yields, in order,
+    ``('day_10', 'day_0', 'd10_vs_d0')``, ``('day_10', 'day_5', 'd10_vs_d5')``,
+    ``('day_5', 'day_0', 'd5_vs_d0')`` — the same three pairs (and order) the
+    script used to hard-code. ``time_a`` is the later timepoint (direction is
+    later-vs-earlier).
+    """
+    pairs = []
+    for j in range(len(timepoint_order) - 1, 0, -1):   # later: latest index down to 1
+        for i in range(j):                              # earlier: 0 .. j-1
+            time_a, time_b = timepoint_order[j], timepoint_order[i]
+            tag = f"{timepoint_token(time_a)}_vs_{timepoint_token(time_b)}"
+            pairs.append((time_a, time_b, tag))
+    return pairs
 
 
 def detect_level(df: pd.DataFrame) -> tuple[str, tuple[str, str, str], list, str]:
@@ -170,6 +220,20 @@ def main():
         parts = grp.split("_", 1)
         rep_to_condition[rep] = parts[0]
         rep_to_timepoint[rep] = parts[1] if len(parts) > 1 else grp
+
+    # Declared chronological timepoint order (no automatic sorting — a string sort
+    # would place "day_10" before "day_5"). Drives both the per-timepoint analyses'
+    # output order and the later-vs-earlier comparison pairs (Analyses 3, 6).
+    timepoint_order = parse_timepoints(args.timepoints)
+    present_timepoints = set(rep_to_timepoint.values())
+    missing = [tp for tp in timepoint_order if tp not in present_timepoints]
+    if missing:
+        sys.exit(f"--timepoints lists {missing}, not found among the --groups timepoints "
+                 f"{sorted(present_timepoints)}")
+    undeclared = present_timepoints - set(timepoint_order)
+    if undeclared:
+        logging.warning(f"Timepoints {sorted(undeclared)} are present in --groups but not in "
+                        f"--timepoints; they are excluded from the timepoint analyses.")
 
     # --------------------------------------------------------------
     # Per-replicate counts
@@ -258,14 +322,12 @@ def main():
     if args.between_timepoint_wilcoxon == "true" or args.between_timepoint_fisher == "true":
         print(f"\n{'='*60}\nANALYSIS 3: BETWEEN-TIMEPOINT\n{'='*60}")
 
-        # Mirrors the three pairwise day comparisons in global_codon_occ_stats.py.
-        # Each pair runs (a) Wilcoxon pooled across conditions and (b) Fisher's
-        # within each condition (pooled replicates).
-        timepoint_pairs = [
-            ("day_10", "day_0", "d10_vs_d0"),
-            ("day_10", "day_5", "d10_vs_d5"),
-            ("day_5",  "day_0", "d5_vs_d0"),
-        ]
+        # All later-vs-earlier day-pairs generated from --timepoints (previously a
+        # hard-coded list of three). Each pair runs (a) Wilcoxon pooled across
+        # conditions and (b) Fisher's within each condition (pooled replicates).
+        # For day_0,day_5,day_10 this reproduces the previous d10_vs_d0, d10_vs_d5,
+        # d5_vs_d0 set and order.
+        timepoint_pairs = build_timepoint_pairs(timepoint_order)
 
         for time_a, time_b, tag in timepoint_pairs:
             print(f"\n--- {time_a} vs {time_b} ---")
@@ -316,10 +378,12 @@ def main():
                   "(positive log2 odds ratio = enriched in the first condition)")
         df_fisher = per_timepoint_fisher(
             replicate_counts, rep_to_condition, rep_to_timepoint, feature_col=feature_col,
-            headline_condition=args.headline_condition,
+            headline_condition=args.headline_condition, timepoints=timepoint_order,
         )
-        for tp in sorted(df_fisher["timepoint"].unique()) if not df_fisher.empty else []:
+        for tp in (timepoint_order if not df_fisher.empty else []):
             tp_df = df_fisher[df_fisher["timepoint"] == tp]
+            if tp_df.empty:
+                continue
             n_sig_tp = (tp_df["p_adj"] < 0.05).sum()
             print(f"  [{tp}] {len(tp_df)} tests, {n_sig_tp} significant")
         fisher_path = out_dir / f"per_timepoint_fisher_{suffix}.csv"
@@ -357,7 +421,7 @@ def main():
                   "(positive delta_log2_enrichment = more enriched vs background in the first condition)")
 
         conditions = sorted(set(rep_to_condition.values()))
-        timepoints = sorted(set(rep_to_timepoint.values()))
+        timepoints = timepoint_order
 
         # Map (condition, timepoint) -> group so each per-timepoint comparison pulls
         # that timepoint's own per-group background frequencies.
@@ -404,6 +468,78 @@ def main():
         saved_paths.append(bgdiff_path)
     else:
         print(f"\n{'='*60}\nANALYSIS 5: PER-TIMEPOINT BACKGROUND-AWARE DIFF  [SKIPPED]\n{'='*60}")
+
+    # --------------------------------------------------------------
+    # Analysis 6: Between-timepoint background-aware diff (pooled across conditions)
+    # --------------------------------------------------------------
+    # Background-aware counterpart of the between-timepoint Wilcoxon (Analysis 3a):
+    # both POOL replicates ACROSS CONDITIONS within each timepoint (ignoring the
+    # BWM/control split), but this one normalizes each timepoint to its OWN pooled
+    # background (like Analysis 5), so a shift in the expressed transcriptome across
+    # the time course cannot masquerade as differential stalling. Direction is
+    # later-vs-earlier (time_a vs time_b), independent of --headline-condition (the
+    # comparison is between timepoints, not conditions). One combined CSV across the
+    # three day-pairs, tagged by a `comparison` column.
+    if args.between_timepoint_background_diff == "true":
+        print(f"\n{'='*60}\nANALYSIS 6: BETWEEN-TIMEPOINT BACKGROUND-AWARE DIFF (POOLED ACROSS CONDITIONS)\n"
+              f"  NOTE: enrichment-over-background ratio; pooling replicates is "
+              f"pseudoreplication — interpret cautiously\n{'='*60}")
+
+        timepoints = timepoint_order
+
+        # Count-weighted pooled background per timepoint: sum bg_count across the
+        # groups (conditions) at the timepoint, then renormalize to frequencies, so
+        # the larger-library condition contributes proportionally more — matching
+        # how the foreground stall counts are pooled. group "control_day_0" ->
+        # timepoint "day_0".
+        # Will look like:
+        #   bg_freq_per_timepoint["day_0"] = Series(unit -> pooled bg freq, sums to 1)
+        group_to_timepoint = {grp: grp.split("_", 1)[1] for grp in bg_counts_per_group}
+        bg_freq_per_timepoint = {}
+        bg_total_per_timepoint = {}
+        for tp in timepoints:
+            pooled_counts = None
+            for grp, grp_tp in group_to_timepoint.items():
+                if grp_tp != tp:
+                    continue
+                counts = bg_counts_per_group[grp]
+                pooled_counts = counts.copy() if pooled_counts is None else pooled_counts.add(counts, fill_value=0)
+            if pooled_counts is None:
+                continue
+            total = int(pooled_counts.sum())
+            bg_total_per_timepoint[tp] = total
+            bg_freq_per_timepoint[tp] = pooled_counts / total if total > 0 else pooled_counts * 0.0
+
+        print("  Pooled background totals per timepoint (count-weighted across conditions):")
+        for tp in timepoints:
+            if tp in bg_total_per_timepoint:
+                print(f"    [{tp}] {bg_total_per_timepoint[tp]} total {level}s")
+
+        # Same later-vs-earlier day-pairs as Analysis 3, generated from --timepoints.
+        timepoint_pairs = build_timepoint_pairs(timepoint_order)
+
+        bgtp_frames = []
+        for time_a, time_b, tag in timepoint_pairs:
+            print(f"\n--- {time_a} vs {time_b} ---")
+            df_bgtp = between_timepoint_background_diff(
+                replicate_counts, rep_to_timepoint, bg_freq_per_timepoint,
+                feature_col=feature_col, time_a=time_a, time_b=time_b,
+            )
+            if not df_bgtp.empty:
+                # Tag the comparison as the second column (after "site"), mirroring
+                # Analysis 5's timepoint tag, so the three day-pairs stack into one CSV.
+                df_bgtp.insert(1, "comparison", tag)
+            bgtp_frames.append(df_bgtp)
+
+            n_sig = (df_bgtp["p_adj"] < 0.05).sum() if not df_bgtp.empty else 0
+            print(f"  [{tag}] {len(df_bgtp)} tests, {n_sig} significant")
+
+        df_bgtp_all = pd.concat(bgtp_frames, ignore_index=True) if bgtp_frames else pd.DataFrame()
+        bgtp_path = out_dir / f"between_timepoint_background_diff_{suffix}.csv"
+        df_bgtp_all.to_csv(bgtp_path, index=False)
+        saved_paths.append(bgtp_path)
+    else:
+        print(f"\n{'='*60}\nANALYSIS 6: BETWEEN-TIMEPOINT BACKGROUND-AWARE DIFF (POOLED ACROSS CONDITIONS)  [SKIPPED]\n{'='*60}")
 
     # --------------------------------------------------------------
     # Write summary

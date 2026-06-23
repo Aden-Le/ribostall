@@ -17,6 +17,12 @@
 # Format: "group1:rep1,rep2;group2:rep1,rep2"
 EXP_GROUPS='control_day_0:control_day0_rep2,control_day0_rep3;control_day_5:control_day5_rep2,control_day5_rep3;control_day_10:control_day10_rep2,control_day10_rep3;BWM_day_0:BWM_day0_rep2,BWM_day0_rep3;BWM_day_5:BWM_day5_rep2,BWM_day5_rep3;BWM_day_10:BWM_day10_rep2,BWM_day10_rep3'
 
+# Timepoint labels in chronological order (earliest first). Drives the order of
+# the per-timepoint Fisher (Analysis 4) and the later-vs-earlier between-timepoint
+# pairs (Analysis 3); timepoints are NOT sorted automatically (a string sort
+# places "day_10" before "day_5").
+TIMEPOINTS='day_0,day_5,day_10'
+
 # Must match --out-dir used in run_global_codon_occ.sh
 OUT_DIR="./results/c_elegans/global_occupancy"
 
@@ -66,6 +72,7 @@ echo "Merged output:        $OUT_DIR/analysis/"
 echo "Sites:                ${SITES[*]}"
 echo "Levels:               ${LEVELS[*]}"
 echo "Groups:               $EXP_GROUPS"
+echo "Timepoints:           $TIMEPOINTS"
 echo "Analyses:             within=$RUN_WITHIN_CONDITION  bc_wilcoxon=$RUN_BETWEEN_CONDITION_WILCOXON  bt_wilcoxon=$RUN_BETWEEN_TIMEPOINT_WILCOXON  bt_fisher=$RUN_BETWEEN_TIMEPOINT_FISHER  pt_fisher=$RUN_PER_TIMEPOINT_FISHER"
 echo "=============================================="
 
@@ -81,6 +88,7 @@ for level in "${LEVELS[@]}"; do
     --level "$level" \
     --sites "${SITES[@]}" \
     --groups "$EXP_GROUPS" \
+    --timepoints "$TIMEPOINTS" \
     "${HEADLINE_FLAG[@]}" \
     --within-condition "${RUN_WITHIN_CONDITION:-true}" \
     --between-condition-wilcoxon "${RUN_BETWEEN_CONDITION_WILCOXON:-true}" \

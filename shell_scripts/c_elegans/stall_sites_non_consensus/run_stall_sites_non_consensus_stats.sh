@@ -7,13 +7,18 @@
 # per_group_background_{codon,aa}.csv produced by
 # run_stall_sites_non_consensus.sh and writes within-condition binomial,
 # between-condition Wilcoxon, between-timepoint Wilcoxon + Fisher,
-# per-timepoint Fisher, and per-timepoint background-aware diff result
-# CSVs into $OUT_DIR.
+# per-timepoint Fisher, per-timepoint background-aware diff, and
+# between-timepoint background-aware diff result CSVs into $OUT_DIR.
 #----------------------------------------------------
 
 # ============== CONFIG: edit these ==============
 # Format: "group1:rep1,rep2;group2:rep1,rep2"
 EXP_GROUPS='control_day_0:control_day0_rep2,control_day0_rep3;control_day_5:control_day5_rep2,control_day5_rep3;control_day_10:control_day10_rep2,control_day10_rep3;BWM_day_0:BWM_day0_rep2,BWM_day0_rep3;BWM_day_5:BWM_day5_rep2,BWM_day5_rep3;BWM_day_10:BWM_day10_rep2,BWM_day10_rep3'
+
+# Timepoint labels in chronological order (earliest first). Drives the order of
+# the per-timepoint analyses and the later-vs-earlier comparison pairs; timepoints
+# are NOT sorted automatically (a string sort places "day_10" before "day_5").
+TIMEPOINTS='day_0,day_5,day_10'
 
 # Directory containing stall_sites_{codon,aa}.csv and
 # per_group_background_{codon,aa}.csv from run_stall_sites_non_consensus.sh
@@ -29,8 +34,9 @@ RUN_WITHIN_CONDITION=true               # Analysis 1: within-condition binomial
 RUN_BETWEEN_CONDITION_WILCOXON=true     # Analysis 2: between-condition Wilcoxon
 RUN_BETWEEN_TIMEPOINT_WILCOXON=true     # Analysis 3a: between-timepoint Wilcoxon (pooled)
 RUN_BETWEEN_TIMEPOINT_FISHER=true       # Analysis 3b: between-timepoint Fisher (within condition)
-RUN_PER_TIMEPOINT_FISHER=true           # Analysis 4: per-timepoint Fisher's exact
-RUN_PER_TIMEPOINT_BACKGROUND_DIFF=true  # Analysis 5: per-timepoint background-aware diff
+RUN_PER_TIMEPOINT_FISHER=true             # Analysis 4: per-timepoint Fisher's exact
+RUN_PER_TIMEPOINT_BACKGROUND_DIFF=true    # Analysis 5: per-timepoint background-aware diff
+RUN_BETWEEN_TIMEPOINT_BACKGROUND_DIFF=true # Analysis 6: between-timepoint background-aware diff (pooled across conditions)
 
 # Headline condition for the between-condition tests (Wilcoxon Analysis 2,
 # per-timepoint Fisher Analysis 4, per-timepoint background-aware diff Analysis 5)
@@ -50,10 +56,11 @@ echo "=============================================="
 echo "RIBOSOME STALL SITE ENRICHMENT STATS"
 echo "=============================================="
 echo "Groups: $EXP_GROUPS"
+echo "Timepoints: $TIMEPOINTS"
 echo "Input: $RAW_DIR"
 echo "Output: $OUT_DIR"
 echo "Headline condition: ${HEADLINE_CONDITION:-alphabetical default}"
-echo "Analyses: within=$RUN_WITHIN_CONDITION  bc_wilcoxon=$RUN_BETWEEN_CONDITION_WILCOXON  bt_wilcoxon=$RUN_BETWEEN_TIMEPOINT_WILCOXON  bt_fisher=$RUN_BETWEEN_TIMEPOINT_FISHER  pt_fisher=$RUN_PER_TIMEPOINT_FISHER  pt_bgdiff=$RUN_PER_TIMEPOINT_BACKGROUND_DIFF"
+echo "Analyses: within=$RUN_WITHIN_CONDITION  bc_wilcoxon=$RUN_BETWEEN_CONDITION_WILCOXON  bt_wilcoxon=$RUN_BETWEEN_TIMEPOINT_WILCOXON  bt_fisher=$RUN_BETWEEN_TIMEPOINT_FISHER  pt_fisher=$RUN_PER_TIMEPOINT_FISHER  pt_bgdiff=$RUN_PER_TIMEPOINT_BACKGROUND_DIFF  bt_bgdiff=$RUN_BETWEEN_TIMEPOINT_BACKGROUND_DIFF"
 echo "=============================================="
 
 # Pass --headline-condition only when set, so an empty value falls back to the
@@ -70,6 +77,7 @@ for LEVEL in aa codon; do
     --stall-sites "$RAW_DIR/stall_sites_${LEVEL}.csv" \
     --background "$RAW_DIR/per_group_background_${LEVEL}.csv" \
     --groups "$EXP_GROUPS" \
+    --timepoints "$TIMEPOINTS" \
     --out-dir "$OUT_DIR" \
     "${HEADLINE_FLAG[@]}" \
     --within-condition "${RUN_WITHIN_CONDITION:-true}" \
@@ -77,7 +85,8 @@ for LEVEL in aa codon; do
     --between-timepoint-wilcoxon "${RUN_BETWEEN_TIMEPOINT_WILCOXON:-true}" \
     --between-timepoint-fisher "${RUN_BETWEEN_TIMEPOINT_FISHER:-true}" \
     --per-timepoint-fisher "${RUN_PER_TIMEPOINT_FISHER:-true}" \
-    --per-timepoint-background-diff "${RUN_PER_TIMEPOINT_BACKGROUND_DIFF:-true}"
+    --per-timepoint-background-diff "${RUN_PER_TIMEPOINT_BACKGROUND_DIFF:-true}" \
+    --between-timepoint-background-diff "${RUN_BETWEEN_TIMEPOINT_BACKGROUND_DIFF:-true}"
 done
 
 echo ""

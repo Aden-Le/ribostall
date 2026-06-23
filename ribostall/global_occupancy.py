@@ -373,6 +373,7 @@ def per_timepoint_fisher_occupancy(
     *,
     feature_col: str = "amino_acid",
     headline_condition: Optional[str] = None,
+    timepoints: list,
 ) -> pd.DataFrame:
     """
     For each timepoint, pool reps per condition and run Fisher's exact test
@@ -400,6 +401,11 @@ def per_timepoint_fisher_occupancy(
         numerator), so a positive log2(odds_ratio) means enriched in it. Must
         equal one of the two condition labels. If ``None`` (default), the
         conditions are ordered alphabetically — backward-compatible behaviour.
+    timepoints : list
+        Timepoint labels in the desired (chronological) order, e.g.
+        ``["day_0", "day_5", "day_10"]``. Sets both the iteration order and the
+        order of the timepoint blocks in the output. Timepoints are NOT sorted
+        automatically — a string sort places "day_10" before "day_5".
 
     Returns
     -------
@@ -407,10 +413,9 @@ def per_timepoint_fisher_occupancy(
         timepoint, <feature_col>, {cond_a}_count, {cond_a}_total,
         {cond_b}_count, {cond_b}_total, odds_ratio, p_value, p_adj
     """
-    # Conditions of interest sorted alphabetically (e.g. BWM, Control)
+    # Conditions sorted alphabetically (the headline/direction default).
     conditions = sorted(set(rep_to_condition.values()))
-    # Timepoints of interest sorted alphabetically (e.g. day_0, day_10, day_5)
-    timepoints = sorted(set(rep_to_timepoint.values()))
+    # Timepoints keep the caller-declared order (no sorting).
     first_rep = next(iter(raw_counts_by_exp))
     all_units = sorted(raw_counts_by_exp[first_rep].keys())
 
@@ -474,7 +479,11 @@ def per_timepoint_fisher_occupancy(
 
     # BH-FDR correction per timepoint
     df = apply_bh_fdr(df, ["timepoint"])
-    return df.sort_values(["timepoint", "p_adj"])
+    # Order the timepoint blocks as declared (not lexicographic, where "day_10"
+    # sorts before "day_5"); p_adj ordering within a timepoint is unchanged.
+    tp_rank = {tp: i for i, tp in enumerate(timepoints)}
+    df["_tp_order"] = df["timepoint"].map(tp_rank)
+    return df.sort_values(["_tp_order", "p_adj"]).drop(columns="_tp_order")
 
 
 # ---------------------------------------------------------------------------

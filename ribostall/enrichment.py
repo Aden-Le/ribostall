@@ -38,6 +38,7 @@ __all__ = [
     "per_timepoint_fisher",
     "between_condition_fisher",
     "between_condition_background_diff",
+    "between_timepoint_background_diff",
     "plot_coverage_density",
 ]
 
@@ -432,6 +433,7 @@ def per_timepoint_fisher(
     *,
     feature_col: str = "amino_acid",
     headline_condition: Optional[str] = None,
+    timepoints: list,
 ) -> pd.DataFrame:
     """
     For each timepoint, pool 2 reps per condition and run Fisher's exact test
@@ -459,6 +461,11 @@ def per_timepoint_fisher(
         numerator), so a positive log2(odds_ratio) means enriched in it. Must
         equal one of the two condition labels. If ``None`` (default), the
         conditions are ordered alphabetically — backward-compatible behaviour.
+    timepoints : list
+        Timepoint labels in the desired (chronological) order, e.g.
+        ``["day_0", "day_5", "day_10"]``. Sets both the iteration order and the
+        order of the timepoint blocks in the output. Timepoints are NOT sorted
+        automatically — a string sort places "day_10" before "day_5".
 
     Returns
     -------
@@ -466,9 +473,9 @@ def per_timepoint_fisher(
         timepoint, site, <feature_col>, <cond>_count, <cond>_total,
         odds_ratio, p_value, p_adj
     """
-    # All the conditions and timepoints present in the data, sorted for consistent output
+    # Conditions are sorted alphabetically (the headline/direction default).
+    # Timepoints keep the caller-declared order (no sorting).
     conditions = sorted(set(rep_to_condition.values())) # e.g. ["BWM", "control"]
-    timepoints = sorted(set(rep_to_timepoint.values())) # e.g. ["day_0", "day_5", "day_10"]
 
     # Direction: cond_a is the odds-ratio numerator (positive log2(OR) = enriched
     # in cond_a). headline_condition makes that the headline; default alphabetical.
@@ -540,7 +547,11 @@ def per_timepoint_fisher(
     # BH-FDR correction per (timepoint, site): each E/P/A site within a timepoint
     # is treated as its own family of hypotheses.
     df = apply_bh_fdr(df, ["timepoint", "site"])
-    return df.sort_values(["timepoint", "site", "p_adj"])
+    # Order the timepoint blocks as declared (not lexicographic, where "day_10"
+    # sorts before "day_5"); site/p_adj ordering within a timepoint is unchanged.
+    tp_rank = {tp: i for i, tp in enumerate(timepoints)}
+    df["_tp_order"] = df["timepoint"].map(tp_rank)
+    return df.sort_values(["_tp_order", "site", "p_adj"]).drop(columns="_tp_order")
 
 
 # ---------------------------------------------------------------------------
@@ -806,6 +817,153 @@ def between_condition_background_diff(
         return df
 
     # BH-FDR correction per site: each E/P/A site is its own family of hypotheses.
+    df = apply_bh_fdr(df, ["site"])
+    return df.sort_values(["site", "p_adj"])
+
+
+# ---------------------------------------------------------------------------
+# Analysis 7: Between-timepoint, background-aware (pooled across conditions)
+# ---------------------------------------------------------------------------
+def between_timepoint_background_diff(
+    replicate_counts: dict,
+    rep_to_timepoint: dict,
+    bg_freq_per_timepoint: dict,
+    *,
+    feature_col: str = "amino_acid",
+    time_a: str = "day_10",
+    time_b: str = "day_0",
+) -> pd.DataFrame:
+    """
+    Between-timepoint counterpart of ``between_condition_background_diff``,
+    pooling replicates ACROSS CONDITIONS within each timepoint. For each unit
+    (amino acid or codon) at each E/P/A site it asks whether the unit's
+    enrichment OVER ITS OWN BACKGROUND differs between two timepoints.
+
+    Unlike the between-timepoint Fisher (``between_timepoint_fisher_within_
+    condition``) — which (a) stays within each condition and (b) compares raw
+    stall-site shares — this test pools both conditions' replicates at each
+    timepoint (like ``between_timepoint_wilcoxon``) and normalizes each timepoint
+    to its OWN pooled background, so a shift in the expressed transcriptome across
+    the time course cannot masquerade as differential stalling.
+
+    Each timepoint's enrichment is ``stall_count / (stall_total * bg_freq)`` —
+    exactly Analysis 1's quantity. The effect size ``delta_log2_enrichment`` is
+    the difference of the two within-timepoint log2 enrichments, and the test is
+    the exact conditional binomial for two equal Poisson rates with background as
+    the offset (see ``stats_core.background_diff_row``). The two agree with the
+    Fisher counterpart when the two timepoints' backgrounds match and diverge only
+    when they differ (which is itself the diagnostic).
+
+    NOTE: pooling replicates is pseudoreplication. As with the other pooled
+    tests, this does not model biological-replicate variability, so p-values
+    should be interpreted cautiously.
+
+    Direction: ``delta_log2_enrichment`` > 0 means the unit is more enriched (vs
+    background) at ``time_a``. The two timepoints are compared in the fixed
+    ``time_a`` vs ``time_b`` order, independent of any headline condition (the
+    comparison is between timepoints, not conditions) — mirroring the other
+    ``between_timepoint_*`` tests.
+
+    Parameters
+    ----------
+    replicate_counts : dict
+        {replicate: {"E": Series, "P": Series, "A": Series}}
+    rep_to_timepoint : dict
+        {replicate: "day_0", "day_5", or "day_10"}
+    bg_freq_per_timepoint : dict
+        {timepoint: pd.Series} — pooled-across-conditions background frequencies
+        per timepoint, indexed by the same alphabet as ``replicate_counts``. The
+        caller builds these by count-weighted pooling of the per-group
+        backgrounds at each timepoint (sum bg_count across conditions, then
+        renormalize).
+    feature_col : str
+        Output column name for the feature level (e.g. "amino_acid" or "codon").
+    time_a, time_b : str
+        The two timepoints to compare. ``time_a`` is the enrichment-ratio
+        numerator (positive ``delta_log2_enrichment`` = more enriched at it).
+
+    Returns
+    -------
+    pd.DataFrame with columns:
+        site, time_a, time_b, <feature_col>, count_time_a, total_time_a,
+        bg_freq_time_a, count_time_b, total_time_b, bg_freq_time_b,
+        log2_enrich_time_a, log2_enrich_time_b, delta_log2_enrichment,
+        enrichment_ratio, p_value, p_adj
+
+    The ``time_a`` / ``time_b`` columns carry the timepoint *labels* (e.g.
+    "day_10", "day_0") rather than baking them into the count/total column names,
+    so several day-pairs can be concatenated into one combined CSV with identical
+    columns.
+    """
+    # Unit list from first replicate (assumes all replicates share the same index).
+    first_rep = next(iter(replicate_counts))
+    unit_list = list(replicate_counts[first_rep]["E"].index)
+
+    rows = []
+    for site in ("E", "P", "A"):
+        # Pool counts across ALL replicates at each timepoint (both conditions),
+        # mirroring between_timepoint_wilcoxon's pooling.
+        pooled_by_tp = {}
+        for tp in (time_a, time_b):
+            pooled = None
+            for rep in replicate_counts:
+                if rep_to_timepoint.get(rep) != tp:
+                    continue
+                counts = replicate_counts[rep][site]
+                if pooled is None:
+                    pooled = counts.copy()
+                else:
+                    pooled = pooled.add(counts, fill_value=0)
+            pooled_by_tp[tp] = pooled
+
+        # Skip the site if either timepoint has no replicates.
+        if any(v is None for v in pooled_by_tp.values()):
+            continue
+
+        stall_total_a = int(pooled_by_tp[time_a].sum())
+        stall_total_b = int(pooled_by_tp[time_b].sum())
+        if stall_total_a == 0 or stall_total_b == 0:
+            continue
+
+        for unit in unit_list:
+            stall_count_a = int(pooled_by_tp[time_a].get(unit, 0))
+            stall_count_b = int(pooled_by_tp[time_b].get(unit, 0))
+
+            # Small pseudocount mirrors within_condition_enrichment / the
+            # between-condition diff so a unit absent from a timepoint's
+            # background does not divide by zero.
+            bg_freq_a = float(bg_freq_per_timepoint[time_a].get(unit, 1e-6))
+            bg_freq_b = float(bg_freq_per_timepoint[time_b].get(unit, 1e-6))
+
+            res = background_diff_row(
+                stall_count_a, stall_total_a, bg_freq_a,
+                stall_count_b, stall_total_b, bg_freq_b,
+            )
+
+            rows.append({
+                "site": site,
+                "time_a": time_a,
+                "time_b": time_b,
+                feature_col: unit,
+                "count_time_a": stall_count_a,
+                "total_time_a": stall_total_a,
+                "bg_freq_time_a": bg_freq_a,
+                "count_time_b": stall_count_b,
+                "total_time_b": stall_total_b,
+                "bg_freq_time_b": bg_freq_b,
+                "log2_enrich_time_a": res["log2_enrich_headline"],
+                "log2_enrich_time_b": res["log2_enrich_other"],
+                "delta_log2_enrichment": res["delta_log2_enrichment"],
+                "enrichment_ratio": res["enrichment_ratio"],
+                "p_value": res["p_value"],
+            })
+
+    df = pd.DataFrame(rows)
+    if df.empty:
+        return df
+
+    # BH-FDR correction per site: each E/P/A site is its own family of hypotheses
+    # (mirrors between_timepoint_wilcoxon and between_condition_background_diff).
     df = apply_bh_fdr(df, ["site"])
     return df.sort_values(["site", "p_adj"])
 

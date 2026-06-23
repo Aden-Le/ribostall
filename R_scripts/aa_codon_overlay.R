@@ -84,7 +84,10 @@ args <- parser$parse_args()
 
 # AA_CLASS, CLASS_COLORS, CODON2AA, SITE_LABELS — shared verbatim
 # with the other R_scripts (between_group_*.R / within_condition_*.R).
-source("R_scripts/aa_constants.R")
+# script_dir resolves aa_constants.R (and the test_data/ copies below)
+# whether the script is run from the repo root or from inside R_scripts/.
+script_dir <- if (file.exists("aa_constants.R")) "." else "R_scripts"
+source(file.path(script_dir, "aa_constants.R"))
 
 # Significance legend label depends on the chosen FDR threshold.
 SIG_LABEL  <- sprintf("Significant (FDR < %g)", args$fdr)

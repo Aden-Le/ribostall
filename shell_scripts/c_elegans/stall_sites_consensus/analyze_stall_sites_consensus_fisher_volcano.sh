@@ -17,8 +17,8 @@
 export PATH="$PATH:/c/Program Files/R/R-4.4.2/bin"
 
 # ============== CONFIG: edit these ==============
-INPUT_DIR="./results/c_elegans/stall_sites/enrichment/analysis_stats"
-PLOTS_DIR="./results/c_elegans/stall_sites/plots/between_condition_fisher"
+INPUT_DIR="./results/c_elegans/stall_sites_consensus/analysis"
+PLOTS_DIR="./results/c_elegans/stall_sites_consensus/plots/between_condition_fisher"
 # Shared headline/direction config (same file the stats runner sources) so the
 # comparison label + injected grouping tag match the stats numerator and cannot
 # drift. A positive log2(odds ratio) = enriched in the headline condition.

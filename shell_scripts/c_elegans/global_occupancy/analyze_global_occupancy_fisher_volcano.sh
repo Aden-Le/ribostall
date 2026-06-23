@@ -10,7 +10,7 @@
 export PATH="$PATH:/c/Program Files/R/R-4.4.2/bin"
 
 # ============== CONFIG: edit these ==============
-INPUT_DIR="./results/c_elegans/global_occupancy/analysis_corrected"
+INPUT_DIR="./results/c_elegans/global_occupancy/analysis"
 PLOTS_DIR="./results/c_elegans/global_occupancy/plots"
 # Shared headline/direction config (same file the stats runner sources) so the
 # per-timepoint BWM-vs-Control label matches the stats numerator and cannot drift.

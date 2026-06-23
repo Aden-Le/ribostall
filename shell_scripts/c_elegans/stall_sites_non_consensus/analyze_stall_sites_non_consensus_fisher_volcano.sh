@@ -8,8 +8,8 @@
 export PATH="$PATH:/c/Program Files/R/R-4.4.2/bin"
 
 # ── CONFIG ───────────────────────────────────────────────────
-INPUT_DIR="./results/c_elegans/stall_sites/enrichment/analysis_stats"
-PLOTS_DIR="./results/c_elegans/stall_sites/plots"
+INPUT_DIR="./results/c_elegans/stall_sites_non_consensus/analysis"
+PLOTS_DIR="./results/c_elegans/stall_sites_non_consensus/plots"
 # Shared headline/direction config (same file the stats runner sources) so the
 # per-timepoint BWM-vs-Control label matches the stats numerator and cannot drift.
 source "$(dirname "${BASH_SOURCE[0]}")/_headline_config.sh"

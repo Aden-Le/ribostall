@@ -26,8 +26,8 @@
 export PATH="$PATH:/c/Program Files/R/R-4.4.2/bin"
 
 # ============== CONFIG: edit these ==============
-INPUT_DIR="./results/c_elegans/stall_sites/enrichment/analysis_stats"
-PLOTS_DIR="./results/c_elegans/stall_sites/plots/between_condition_background_diff"
+INPUT_DIR="./results/c_elegans/stall_sites_consensus/analysis"
+PLOTS_DIR="./results/c_elegans/stall_sites_consensus/plots/between_condition_background_diff"
 # Shared headline/direction config (same file the stats runner sources). The
 # comparison label, x-axis direction (enrichment ratio, headline / other), and
 # injected grouping tag are derived from the headline there, so they match the

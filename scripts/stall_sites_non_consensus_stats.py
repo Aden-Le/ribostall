@@ -71,7 +71,7 @@ def parse_args():
                         help="Experimental groups, e.g. 'groupA:rep1,rep2;groupB:rep3,rep4'")
     parser.add_argument("--background", required=True,
                         help="Path to per_group_background_{level}.csv written by the call script.")
-    parser.add_argument("--out-dir", default="results/stall_sites/enrichment",
+    parser.add_argument("--out-dir", default="results/stall_sites_non_consensus/analysis",
                         help="Output directory for enrichment CSVs")
     parser.add_argument("--headline-condition", default=None,
                         help="Condition treated as the headline (numerator / direction reference) in "

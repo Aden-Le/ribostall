@@ -32,14 +32,14 @@ def parse_args():
     p = argparse.ArgumentParser(
         description="Run statistical tests on the global occupancy CSVs for ONE level "
                     "(codon or AA), processing all E/P/A sites in a single invocation. "
-                    "Writes the merged analysis_corrected/ tree (the E/P/A per-site frames "
+                    "Writes the merged analysis/ tree (the E/P/A per-site frames "
                     "concatenated with a prepended 'site' column). The per-site frames are an "
                     "internal intermediate and are NOT exported."
     )
     p.add_argument("--raw-dir", default="results/global_occupancy/raw",
                    help="Directory of raw occupancy CSVs from global_codon_occ.py "
                         "(reads {level}_occupancy_{site}.csv).")
-    p.add_argument("--corrected-dir", default="results/global_occupancy/analysis_corrected",
+    p.add_argument("--analysis-dir", default="results/global_occupancy/analysis",
                    help="Directory for the merged CSVs (one per analysis, with a 'site' column).")
     p.add_argument("--level", required=True, choices=["codon", "aa"],
                    help="Occupancy level to process.")
@@ -58,7 +58,7 @@ def parse_args():
     # defaults to true (the analysis runs); pass e.g. --per-timepoint-fisher false
     # to skip it. The between-timepoint block (Analysis 3) is split into its two
     # sub-tests so each can be skipped independently. A skipped analysis is not
-    # computed and is therefore absent from the merged analysis_corrected/ tree.
+    # computed and is therefore absent from the merged analysis/ tree.
     p.add_argument("--within-condition", choices=["true", "false"], default="true",
                    help="Analysis 1: within-condition binomial occupancy. "
                         "Default: true (set false to skip).")
@@ -279,14 +279,14 @@ def main():
     args = parse_args()
 
     raw_dir = Path(args.raw_dir)
-    corrected_dir = Path(args.corrected_dir)
-    corrected_dir.mkdir(parents=True, exist_ok=True)
+    analysis_dir = Path(args.analysis_dir)
+    analysis_dir.mkdir(parents=True, exist_ok=True)
 
     # The per-site analysis CSVs are an internal intermediate, not an export: they
     # are written to a temp dir, re-read from disk for the byte-exact merge (the
     # disk round-trip reproduces the old 2-step pipeline — see the merge note
-    # below), then discarded. Only the merged analysis_corrected/ tree is kept.
-    analysis_dir = Path(tempfile.mkdtemp(prefix="occ_per_site_"))
+    # below), then discarded. Only the merged analysis/ tree is kept.
+    per_site_dir = Path(tempfile.mkdtemp(prefix="occ_per_site_"))
 
     # groups is a dict: group_name -> list of replicates, e.g. control_day_0 -> [control_day0_rep1, control_day0_rep2]
     groups = parse_groups(args.groups)
@@ -309,7 +309,7 @@ def main():
     all_basenames = []
     for site in args.sites:
         input_csv = raw_dir / f"{args.level}_occupancy_{site}.csv"
-        site_out_dir = analysis_dir / site
+        site_out_dir = per_site_dir / site
 
         print(f"\n{'#'*60}")
         print(f"SITE {site}  |  LEVEL {args.level}")
@@ -329,7 +329,7 @@ def main():
             all_basenames = basenames
 
     # -----------------------------------------------------------------
-    # Merge the per-site analysis CSVs into analysis_corrected/ (folds the old
+    # Merge the per-site analysis CSVs into analysis/ (folds the old
     # merge_global_occupancy_analysis.py step). For each analysis, RE-READ the
     # per-site CSVs from disk, prepend a 'site' column, and concatenate in
     # --sites order (E -> P -> A). Re-reading (rather than reusing the in-memory
@@ -337,25 +337,25 @@ def main():
     # parser round-trips the written values identically to the 2-step pipeline.
     # -----------------------------------------------------------------
     print(f"\n{'='*60}")
-    print(f"MERGE: per-site analysis -> {corrected_dir}")
+    print(f"MERGE: per-site analysis -> {analysis_dir}")
     print(f"{'='*60}")
 
     for basename in all_basenames:
         merged_parts = []
         for site in args.sites:
-            part = pd.read_csv(analysis_dir / site / basename)
+            part = pd.read_csv(per_site_dir / site / basename)
             part.insert(0, "site", site)
             merged_parts.append(part)
         merged = pd.concat(merged_parts, ignore_index=True)
-        out_path = corrected_dir / basename
+        out_path = analysis_dir / basename
         merged.to_csv(out_path, index=False)
         logging.info(f"Wrote {out_path}  ({len(merged)} rows from {len(merged_parts)} sites)")
 
     # Discard the per-site intermediate; only the merged tree is exported.
-    shutil.rmtree(analysis_dir, ignore_errors=True)
+    shutil.rmtree(per_site_dir, ignore_errors=True)
 
     print(f"\n{'='*60}")
-    print(f"Done. Merged results in {corrected_dir.resolve()}")
+    print(f"Done. Merged results in {analysis_dir.resolve()}")
     print(f"{'='*60}")
 
 

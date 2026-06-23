@@ -41,7 +41,7 @@ PSITE_OFFSET=0       # codon offset applied to each stall index before deriving 
 
 # Output directory for stats-ready stall-site CSVs
 # (stall_sites_{codon,aa}.csv + per_group_background_{codon,aa}.csv)
-OUT_DIR="results/c_elegans/stall_sites/enrichment"
+OUT_DIR="results/c_elegans/stall_sites_consensus/raw"
 
 # ===============================================
 

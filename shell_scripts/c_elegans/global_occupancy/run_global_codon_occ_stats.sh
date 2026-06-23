@@ -6,7 +6,7 @@
 #
 # The Python script processes all 3 sites (E/P/A) for one
 # level per invocation and writes the merged CSVs to
-# out_dir/analysis_corrected/ (the E/P/A per-site frames
+# out_dir/analysis/ (the E/P/A per-site frames
 # concatenated with a 'site' column — the old
 # merge_global_occupancy_analysis.py step is folded in). The
 # per-site frames are an internal intermediate and are NOT
@@ -27,7 +27,7 @@ LEVELS=(codon aa)
 # --- Which analyses to run -------------------------------------------------
 # Each analysis defaults to true (runs). Set one to false to skip it; leaving it
 # true (or unset) runs it. A skipped analysis writes no per-site CSV and is
-# therefore absent from the merged analysis_corrected/ tree. The between-timepoint
+# therefore absent from the merged analysis/ tree. The between-timepoint
 # block (Analysis 3) is split into its two sub-tests so each toggles independently.
 RUN_WITHIN_CONDITION=true            # Analysis 1: within-condition binomial
 RUN_BETWEEN_CONDITION_WILCOXON=true  # Analysis 2: between-condition Wilcoxon
@@ -62,7 +62,7 @@ echo "GLOBAL CODON & AMINO ACID OCCUPANCY — STEP 2"
 echo "Statistical tests on base CSVs"
 echo "=============================================="
 echo "Raw directory:        $OUT_DIR/raw/"
-echo "Merged output:        $OUT_DIR/analysis_corrected/"
+echo "Merged output:        $OUT_DIR/analysis/"
 echo "Sites:                ${SITES[*]}"
 echo "Levels:               ${LEVELS[*]}"
 echo "Groups:               $EXP_GROUPS"
@@ -77,7 +77,7 @@ for level in "${LEVELS[@]}"; do
 
   CMD=(python3 scripts/global_codon_occ_stats.py \
     --raw-dir "$OUT_DIR/raw" \
-    --corrected-dir "$OUT_DIR/analysis_corrected" \
+    --analysis-dir "$OUT_DIR/analysis" \
     --level "$level" \
     --sites "${SITES[@]}" \
     --groups "$EXP_GROUPS" \
@@ -94,6 +94,6 @@ done
 
 echo ""
 echo "=============================================="
-echo "Done. Merged CSVs in $OUT_DIR/analysis_corrected/"
+echo "Done. Merged CSVs in $OUT_DIR/analysis/"
 date
 echo "=============================================="

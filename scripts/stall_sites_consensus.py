@@ -78,7 +78,7 @@ def main():
                         help="Drop stall windows whose E/P/A site hits a stop codon "
                              "(TAA/TAG/TGA) from the output CSVs. Default: True; pass "
                              "'--drop-stop-codons False' to keep them.")
-    parser.add_argument("--out-dir", default="results/stall_sites/enrichment",
+    parser.add_argument("--out-dir", default="results/stall_sites_consensus/raw",
                         help="Output directory for stall-site CSVs")
 
     args = parser.parse_args()

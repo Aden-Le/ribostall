@@ -20,8 +20,8 @@ EXP_GROUPS='control:control;treatment:treatment'
 
 # Directory containing stall_sites_{codon,aa}.csv and
 # per_group_background_{codon,aa}.csv from run_stall_sites_consensus.sh
-OUT_ENRICHMENT="./results/c_elegans/stall_sites/enrichment"
-OUT_DIR="./results/c_elegans/stall_sites/enrichment/analysis_stats"
+RAW_DIR="./results/c_elegans/stall_sites_consensus/raw"
+OUT_DIR="./results/c_elegans/stall_sites_consensus/analysis"
 
 # --- Which analyses to run -------------------------------------------------
 # Each analysis defaults to true (runs). Set one to false to skip it; leaving it
@@ -47,7 +47,7 @@ echo "=============================================="
 echo "CONSENSUS STALL SITE ENRICHMENT STATS"
 echo "=============================================="
 echo "Groups: $EXP_GROUPS"
-echo "Input: $OUT_ENRICHMENT"
+echo "Input: $RAW_DIR"
 echo "Output: $OUT_DIR"
 echo "Headline condition: ${HEADLINE_CONDITION:-alphabetical default}"
 echo "Analyses: within=$RUN_WITHIN_CONDITION  fisher=$RUN_BETWEEN_CONDITION_FISHER  bgdiff=$RUN_BETWEEN_CONDITION_BACKGROUND_DIFF"
@@ -66,8 +66,8 @@ HEADLINE_FLAG=()
 # running, matching the CONFIG defaults above.
 for LEVEL in aa codon; do
   python3 scripts/stall_sites_consensus_stats.py \
-    --stall-sites "$OUT_ENRICHMENT/stall_sites_${LEVEL}.csv" \
-    --background "$OUT_ENRICHMENT/per_group_background_${LEVEL}.csv" \
+    --stall-sites "$RAW_DIR/stall_sites_${LEVEL}.csv" \
+    --background "$RAW_DIR/per_group_background_${LEVEL}.csv" \
     --groups "$EXP_GROUPS" \
     --out-dir "$OUT_DIR" \
     "${HEADLINE_FLAG[@]}" \

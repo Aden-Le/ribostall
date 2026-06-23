@@ -4,7 +4,7 @@
 # (stall_sites_non_consensus_call.py)
 #
 # Produces stall_sites_{codon,aa}.csv and
-# per_group_background_{codon,aa}.csv in $OUT_ENRICHMENT.
+# per_group_background_{codon,aa}.csv in $RAW_DIR.
 # Run run_stall_sites_non_consensus_stats.sh afterwards for the
 # enrichment tests — it is ribopy-free and consumes
 # only those CSVs.
@@ -48,7 +48,7 @@ PSITE_OFFSET=0
 REFERENCE_FILE="./reference/appris_celegans_v1_selected_new.fa"
 
 # Output files
-OUT_ENRICHMENT="./results/c_elegans/stall_sites/enrichment"
+RAW_DIR="./results/c_elegans/stall_sites_non_consensus/raw"
 
 # ===============================================
 
@@ -77,7 +77,7 @@ echo "Reference: $REFERENCE_FILE"
 echo "Groups: $EXP_GROUPS"
 echo "Parameters: min_z=$MIN_Z, min_reads=$MIN_READS, trim_start=$TRIM_START, trim_stop=$TRIM_STOP"
 echo "E/P/A geometry: basis=$BASIS, psite_offset=$PSITE_OFFSET"
-echo "Output enrichment: $OUT_ENRICHMENT"
+echo "Output raw CSVs: $RAW_DIR"
 echo "=============================================="
 
 python3 scripts/stall_sites_non_consensus_call.py \
@@ -94,7 +94,7 @@ python3 scripts/stall_sites_non_consensus_call.py \
   --pseudocount "$PSEUDOCOUNT" \
   --basis "$BASIS" \
   --psite-offset "$PSITE_OFFSET" \
-  --out-dir "$OUT_ENRICHMENT"
+  --out-dir "$RAW_DIR"
 
 echo ""
 echo "=============================================="

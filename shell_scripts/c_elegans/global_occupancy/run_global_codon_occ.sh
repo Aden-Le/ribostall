@@ -18,6 +18,11 @@ EXP_GROUPS='control_day_0:control_day0_rep2,control_day0_rep3;control_day_5:cont
 TRIM_START=20
 TRIM_STOP=10
 
+# Output filtering: exclude stop codons (TAA/TAG/TGA) before computing occupancy
+# ("True"/"False"). Default True drops them from background, totals, rates,
+# proportions, and rpm. Pass "False" to keep them.
+DROP_STOP_CODONS="True"
+
 # Reference file
 REFERENCE_FILE="./reference/appris_celegans_v1_selected_new.fa"
 
@@ -50,7 +55,7 @@ echo "Coverage pickle: $PICKLE"
 echo "Ribo file:       $RIBO_FILE"
 echo "Reference:       $REFERENCE_FILE"
 echo "Groups:          $EXP_GROUPS"
-echo "Parameters:      trim_start=$TRIM_START, trim_stop=$TRIM_STOP"
+echo "Parameters:      trim_start=$TRIM_START, trim_stop=$TRIM_STOP, drop_stop_codons=$DROP_STOP_CODONS"
 echo "Output directory: $OUT_DIR"
 echo "=============================================="
 
@@ -61,6 +66,7 @@ CMD=(python3 scripts/global_codon_occ.py \
   --groups "$EXP_GROUPS" \
   --trim-start "$TRIM_START" \
   --trim-stop "$TRIM_STOP" \
+  --drop-stop-codons "$DROP_STOP_CODONS" \
   --out-dir "$OUT_DIR")
 
 echo "Running: ${CMD[@]}"

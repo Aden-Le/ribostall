@@ -49,6 +49,11 @@ REFERENCE_FILE="./reference/appris_mouse_v2_selected.fa.gz"
 BASIS="P"            # register for E/P/A offsets (P or A)
 PSITE_OFFSET=0       # codon offset applied to each stall index before deriving E/P/A
 
+# Output filtering: drop stall windows whose E/P/A site hits a stop codon
+# (TAA/TAG/TGA) from the output CSVs ("True"/"False"). Default True; pass
+# "False" to keep them.
+DROP_STOP_CODONS="True"
+
 # Output directory for stats-ready stall-site CSVs
 # (stall_sites_{codon,aa}.csv + per_group_background_{codon,aa}.csv)
 OUT_DIR="results/mouse/stall_sites_consensus_intersection/raw"
@@ -84,6 +89,7 @@ echo "Groups: $EXP_GROUPS"
 echo "Parameters: min_z=$MIN_Z, min_reads=$MIN_READS, trim_start=$TRIM_START, trim_stop=$TRIM_STOP, pseudocount=$PSEUDOCOUNT"
 echo "Consensus: per-group min_reps=$STALL_MIN_REPS_PER_GROUP, tol=$TOL, min_sep=$MIN_SEP"
 echo "E/P/A: basis=$BASIS, psite_offset=$PSITE_OFFSET"
+echo "Output filter: drop_stop_codons=$DROP_STOP_CODONS"
 echo "Output dir: $OUT_DIR"
 echo "=============================================="
 
@@ -104,6 +110,7 @@ CMD=(python3 scripts/stall_sites_consensus_intersection.py \
   --min_sep "$MIN_SEP" \
   --basis "$BASIS" \
   --psite-offset "$PSITE_OFFSET" \
+  --drop-stop-codons "$DROP_STOP_CODONS" \
   --out-dir "$OUT_DIR")
 
 echo "Running: ${CMD[@]}"

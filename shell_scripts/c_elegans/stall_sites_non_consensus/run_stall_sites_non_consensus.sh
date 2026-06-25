@@ -44,6 +44,11 @@ PSEUDOCOUNT=0.5
 BASIS="P"
 PSITE_OFFSET=0
 
+# Output filtering: drop stall windows whose E/P/A site hits a stop codon
+# (TAA/TAG/TGA) from the output CSVs ("True"/"False"). Default True; pass
+# "False" to keep them.
+DROP_STOP_CODONS="True"
+
 # Reference file (required for enrichment analysis)
 REFERENCE_FILE="./reference/appris_celegans_v1_selected_new.fa"
 
@@ -77,6 +82,7 @@ echo "Reference: $REFERENCE_FILE"
 echo "Groups: $EXP_GROUPS"
 echo "Parameters: min_z=$MIN_Z, min_reads=$MIN_READS, trim_start=$TRIM_START, trim_stop=$TRIM_STOP"
 echo "E/P/A geometry: basis=$BASIS, psite_offset=$PSITE_OFFSET"
+echo "Output filter: drop_stop_codons=$DROP_STOP_CODONS"
 echo "Output raw CSVs: $RAW_DIR"
 echo "=============================================="
 
@@ -94,6 +100,7 @@ python3 scripts/stall_sites_non_consensus.py \
   --pseudocount "$PSEUDOCOUNT" \
   --basis "$BASIS" \
   --psite-offset "$PSITE_OFFSET" \
+  --drop-stop-codons "$DROP_STOP_CODONS" \
   --out-dir "$RAW_DIR"
 
 echo ""

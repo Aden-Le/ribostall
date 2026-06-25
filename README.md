@@ -87,7 +87,7 @@ The two stats scripts run **disjoint analysis sets**, enforced structurally by s
 1. **Transcript filtering**: For each transcript, the average reads per nucleotide is computed. Transcripts with coverage below `--tx_threshold` in fewer than `--tx_min_rep` are excluded.
 2. **Codonize read counts**: An array of the number of reads per codon. `0` corresponds to the start codon.
 3. **z-score calculation**: The first and last `--trim_edges` codons (initiation ramp and termination region) are dropped first, so their pileups don't inflate the null. The remaining elongation body is converted to `log2(x + pseudocount)` to stabilize variance and handle zeros, and transcript-wide z-scores are computed on that trimmed body. Codons with z-scores ≥ `--min_z` and reads ≥ `--min_reads` are considered candidate stalls.
-4. **Consensus stall sites**: A site must appear in at least `--min-support` replicates to be reported. If there are >1 stall sites within `--min_sep` codons, the most downstream stall site is reported.
+4. **Consensus stall sites**: A site must appear in at least `--min-support` replicates to be reported. `--min_sep` is intended to collapse consensus sites that fall within that many codons of each other, but it only takes effect under a non-default conflict-resolution mode; the scripts use the default `keep_both`, which keeps all sites and ignores `--min_sep`. The shell runners therefore set `--min_sep 0` (no collapsing).
 5. **Output**: List of stall sites `{"group": "group", "transcript": "transcript", "tx_id": "tx_id", "gene": "gene", "pos_codon", 1}`
 
 Optional: `--motif` finds amino acid enrichment around stall sites. This is done by:
@@ -107,7 +107,7 @@ Optional: `--motif` finds amino acid enrichment around stall sites. This is done
 | `--min_reads`    | int    | 2       | ❌       | Min reads to call stall site |
 | `--stall_min_reps_per_group` | str | — | ✅ | Per-group min replicates to support a stall site; must name every declared group, e.g. `control:2;treatment:1` |
 | `--trim_edges`   | int    | 10      | ❌       | Exclude codons at CDS ends |
-| `--min_sep`      | int    | 7       | ❌       | Minimum separation between consensus sites; prefer downstream when closer than this |
+| `--min_sep`      | int    | 7       | ❌       | Min codon separation to collapse nearby consensus sites — **only active under a non-default conflict-resolution mode; the scripts use `keep_both`, which ignores `--min_sep` (shell runners pass `0`)** |
 | `--pseudocount`   | float  | 0.5     | ❌       | Small value added to all amino acid counts before calculating enrichment, to avoid division by zero and stabilize log2 ratios |
 | `--out-json`     | path   | `stalls.jsonl` | ❌ | JSON output file |
 | `--motif`        | flag   | off     | ❌       | Run amino acid motif analysis |

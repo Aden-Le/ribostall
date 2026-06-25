@@ -17,15 +17,22 @@ RIBO_FILE="$RIBO_DIR/C_elegan_all_02_04_2026.ribo"
 #   EXP_GROUPS='control:control_rep1,control_rep2;treatment:treatment_rep1,treatment_rep2'
 # Timepoint-bearing design example (pass --timepoints in the stats runner too):
 #   EXP_GROUPS='control_day_0:control_day0_rep1,control_day0_rep2;control_day_5:control_day5_rep1,control_day5_rep2;treatment_day_0:treatment_day0_rep1,treatment_day0_rep2;treatment_day_5:treatment_day5_rep1,treatment_day5_rep2'
-EXP_GROUPS='control:control_rep1,control_rep2;treatment:treatment_rep1,treatment_rep2'
+# Real C. elegans design (matches run_stall_sites_non_consensus.sh): 6 (condition,timepoint)
+# cells, replicates rep2/rep3. Pass --timepoints to the stats runner.
+EXP_GROUPS='control_day_0:control_day0_rep2,control_day0_rep3;control_day_5:control_day5_rep2,control_day5_rep3;control_day_10:control_day10_rep2,control_day10_rep3;BWM_day_0:BWM_day0_rep2,BWM_day0_rep3;BWM_day_5:BWM_day5_rep2,BWM_day5_rep3;BWM_day_10:BWM_day10_rep2,BWM_day10_rep3'
 
 # Transcript filtering thresholds
-TX_THRESHOLD=1.0
+# Parameter set v2 (2026-04-27): TX_THRESHOLD lowered 1.0 -> 0.5 to retain more
+# transcripts in low-coverage groups (BWM_day_0, BWM_day_10 had only 51 / 36 tx
+# under v1). See docs/analysis_interpretation/parameter_decisions.md.
+TX_THRESHOLD=0.5
 TX_MIN_REPS=2
 
 # Stall site calling thresholds
+# Parameter set v2 (2026-04-27): MIN_READS raised 2 -> 5 (move off the noise floor).
+# TRIM_START already at 20 (v2). See docs/analysis_interpretation/parameter_decisions.md.
 MIN_Z=1.0
-MIN_READS=2
+MIN_READS=5
 TRIM_START=20
 TRIM_STOP=10
 PSEUDOCOUNT=0.5
@@ -35,9 +42,11 @@ PSEUDOCOUNT=0.5
 # For a flat design: STALL_MIN_REPS_PER_GROUP='control:2;treatment:1'
 # For a timepoint design: name every (condition, timepoint) cell, e.g.
 #   STALL_MIN_REPS_PER_GROUP='control_day_0:2;control_day_5:2;treatment_day_0:2;treatment_day_5:2'
-STALL_MIN_REPS_PER_GROUP='control:2;treatment:1'
+STALL_MIN_REPS_PER_GROUP='control_day_0:2;control_day_5:2;control_day_10:2;BWM_day_0:2;BWM_day_5:2;BWM_day_10:2'
 TOL=0
-MIN_SEP=7
+# MIN_SEP: min codon separation to collapse nearby consensus sites. Inert under the
+# default "keep_both" conflict resolution the scripts use, so set to 0 (no collapsing).
+MIN_SEP=0
 
 # Reference file (required for E/P/A annotation)
 REFERENCE_FILE="./reference/appris_celegans_v1_selected_new.fa"

@@ -96,7 +96,7 @@ Union runs A1/A4/A7 (within-condition + background-aware); intersection runs A1/
 
 ## R-plot launchers (`analyze_*.sh`)
 
-These drive the 3 unified R plotting scripts in `R_scripts/`. Output goes to `results/<organism>/<pipeline>/plots/` (e.g. `results/c_elegans/stall_sites_non_consensus/plots/`) — all pipelines share the same 5-folder layout:
+These drive the 3 unified R plotting scripts in `R_scripts/`. Output goes to `results/<organism>/<pipeline>/plots/` (e.g. `results/c_elegans/global_occupancy/plots/`). Each pipeline produces only the subset of folders matching the tests it runs; the full layout (global occupancy) is:
 
 ```
 plots/
@@ -109,30 +109,14 @@ plots/
 
 Each comparison dir contains AA plots at its root and codon plots under a `codon/` subdir.
 
-### Stall_sites
+### Stall_sites (non-consensus)
 
-Fisher's exact test volcano plots (per-timepoint BWM-vs-Control + within-condition timepoint comparisons):
-
-```powershell
-& "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/stall_sites_non_consensus/analyze_stall_sites_non_consensus_fisher_volcano.sh
-```
-
-Per-timepoint **background-aware** between-condition volcano plots (enrichment-over-background ratio, BWM vs Control — the background-aware counterpart of the per-timepoint Fisher plot above):
-
-```powershell
-& "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/stall_sites_non_consensus/analyze_stall_sites_non_consensus_background_diff_volcano.sh
-```
+The non-consensus pipeline runs only the two per-replicate Wilcoxon tests (A2 between-condition + A5 between-timepoint); the count-collapsing tests (Fisher, background-aware, within-condition binomial) live in the consensus pipelines below, so this stage has a single plot launcher.
 
 Wilcoxon rank-sum bar plots (between-condition BWM-vs-Control + between-timepoint comparisons):
 
 ```powershell
 & "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/stall_sites_non_consensus/analyze_stall_sites_non_consensus_wilcoxon.sh
-```
-
-Within-condition binomial enrichment volcano plots (with Beta-Jeffreys CIs):
-
-```powershell
-& "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/stall_sites_non_consensus/analyze_stall_sites_non_consensus_within_condition_enrichment.sh
 ```
 
 ### Stall_sites (consensus — union)
@@ -189,15 +173,12 @@ Within-condition binomial enrichment volcano plots (with all-groups mega-composi
 
 ---
 
-## Run all 7 R-plot shells in sequence
+## Run all 4 R-plot shells in sequence
 
 For a full plot regeneration after a stats rerun (PowerShell uses `;` between commands, not `&&`):
 
 ```powershell
-& "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/stall_sites_non_consensus/analyze_stall_sites_non_consensus_fisher_volcano.sh;
-& "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/stall_sites_non_consensus/analyze_stall_sites_non_consensus_background_diff_volcano.sh;
 & "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/stall_sites_non_consensus/analyze_stall_sites_non_consensus_wilcoxon.sh;
-& "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/stall_sites_non_consensus/analyze_stall_sites_non_consensus_within_condition_enrichment.sh;
 & "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/global_occupancy/analyze_global_occupancy_fisher_volcano.sh;
 & "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/global_occupancy/analyze_global_occupancy_wilcoxon.sh;
 & "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/global_occupancy/analyze_global_occupancy_within_condition.sh

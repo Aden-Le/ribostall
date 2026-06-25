@@ -23,7 +23,9 @@ EXP_GROUPS='control_day_0:control_day0_rep2,control_day0_rep3;control_day_5:cont
 # transcripts in low-coverage groups (BWM_day_0, BWM_day_10 had only 51 / 36 tx
 # under v1). See docs/analysis_interpretation/parameter_decisions.md.
 TX_THRESHOLD=0.5
-TX_MIN_REPS=2
+# Per-group transcript-filter support (replaces the old global TX_MIN_REPS): must
+# name EVERY declared group, no global fallback. Format 'group:int;group:int'.
+TX_MIN_REPS_PER_GROUP='control_day_0:2;control_day_5:2;control_day_10:2;BWM_day_0:2;BWM_day_5:2;BWM_day_10:2'
 
 # Stall site calling thresholds
 # Parameter set v2 (2026-04-27):
@@ -92,7 +94,7 @@ python3 scripts/stall_sites_non_consensus.py \
   --reference "$REFERENCE_FILE" \
   --groups "$EXP_GROUPS" \
   --tx_threshold "$TX_THRESHOLD" \
-  --tx_min_reps "$TX_MIN_REPS" \
+  --tx_min_reps_per_group "$TX_MIN_REPS_PER_GROUP" \
   --min_z "$MIN_Z" \
   --min_reads "$MIN_READS" \
   --trim-start "$TRIM_START" \

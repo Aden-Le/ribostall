@@ -21,10 +21,12 @@ EXP_GROUPS='control:AA_3,AA_4;treatment:Ch_WAA2'
 # Aligned with the C. elegans non-consensus "Parameter set v2 (2026-04-27)":
 # TX_THRESHOLD 1.0 -> 0.5 to retain more transcripts in low-coverage groups.
 TX_THRESHOLD=0.5
-# Global gate (no per-group override exists). MUST be 1 here: the 1-rep treatment
-# group can never reach 2, so a value of 2 would leave it with zero transcripts.
-# Trade-off: this also relaxes the 2-rep control filter to ">=1 of 2 reps".
-TX_MIN_REPS=1
+# Per-group transcript-filter support (replaces the old global TX_MIN_REPS): must
+# name EVERY declared group, no global fallback. Same 'group:int;...' format as
+# STALL_MIN_REPS_PER_GROUP. The per-group knob removes the old compromise where a
+# global gate of 1 (forced by the 1-rep treatment) also relaxed the 2-rep control
+# filter to ">=1 of 2": control now requires both reps, treatment its single rep.
+TX_MIN_REPS_PER_GROUP='control:2;treatment:1'
 
 # Stall site calling thresholds
 # Aligned with the C. elegans non-consensus v2 set: MIN_READS 2 -> 5 (off the
@@ -99,7 +101,7 @@ CMD=(python3 scripts/stall_sites_consensus_intersection.py \
   --reference "$REFERENCE_FILE" \
   --groups "$EXP_GROUPS" \
   --tx_threshold "$TX_THRESHOLD" \
-  --tx_min_reps "$TX_MIN_REPS" \
+  --tx_min_reps_per_group "$TX_MIN_REPS_PER_GROUP" \
   --min_z "$MIN_Z" \
   --min_reads "$MIN_READS" \
   --trim-start "$TRIM_START" \

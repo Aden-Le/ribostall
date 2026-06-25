@@ -53,8 +53,9 @@ def main():
                         help="Experimental groups, e.g. 'groupA:rep1,rep2;groupB:rep3,rep4'")
     parser.add_argument("--tx_threshold", type=float, default=1.0,
                         help="Minimum reads/nt (in CDS) for filtering transcripts")
-    parser.add_argument("--tx_min_reps", type=int, default=2,
-                        help="Minimum number of replicates passing threshold for filtering transcripts")
+    parser.add_argument("--tx_min_reps_per_group", required=True,
+                        help="Per-group minimum replicates passing --tx_threshold for transcript "
+                             "filtering; must name every declared group, e.g. 'control:2;treatment:1'.")
     parser.add_argument("--min_z", type=float, default=1.0,
                         help="Minimum z-score to pass as stall site")
     parser.add_argument("--min_reads", type=int, default=2,
@@ -135,6 +136,34 @@ def main():
                 f"consensus will be empty."
             )
     logging.info(f"Per-group min_support: {min_support_by_group}")
+
+    # -------------------------------------------------------------------------
+    # Per-group tx_min_reps: like --stall_min_reps_per_group, every declared
+    # group must be named explicitly (there is no global fallback).
+    # -------------------------------------------------------------------------
+    tx_min_reps_by_group = parse_min_support(args.tx_min_reps_per_group)
+    unknown = set(tx_min_reps_by_group) - set(groups)
+    if unknown:
+        raise ValueError(
+            f"--tx_min_reps_per_group names unknown group(s) {sorted(unknown)}; "
+            f"declared groups are {sorted(groups)}"
+        )
+    missing = set(groups) - set(tx_min_reps_by_group)
+    if missing:
+        raise ValueError(
+            f"--tx_min_reps_per_group must name every declared group; "
+            f"missing {sorted(missing)} (declared groups are {sorted(groups)})"
+        )
+    # Warn if any group's tx_min_reps exceeds its replicate count (which would
+    # make every transcript fail the filter → empty tx set for that group).
+    for group, reps in groups.items():
+        if tx_min_reps_by_group[group] > len(reps):
+            logging.warning(
+                f"tx_min_reps={tx_min_reps_by_group[group]} for group '{group}' exceeds its "
+                f"{len(reps)} replicate(s); no transcript can reach that support and the "
+                f"group's filtered transcript set will be empty."
+            )
+    logging.info(f"Per-group tx_min_reps: {tx_min_reps_by_group}")
 
     # -------------------------------------------------------------------------
     # Load coverage data
@@ -218,7 +247,7 @@ def main():
     # Per-group transcript universe — first filter each group independently,
     # then (this is the intersection variant) collapse to the common core.
     filt_tx_dict = {
-        group: filter_tx(cov, reps, min_reps=args.tx_min_reps, threshold=args.tx_threshold,
+        group: filter_tx(cov, reps, min_reps=tx_min_reps_by_group[group], threshold=args.tx_threshold,
                          trim_start=args.trim_start, trim_stop=args.trim_stop)
         for group, reps in groups.items()
     }

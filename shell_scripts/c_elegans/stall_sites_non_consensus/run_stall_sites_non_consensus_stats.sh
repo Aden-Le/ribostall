@@ -1,49 +1,49 @@
 #!/bin/bash
 #----------------------------------------------------
-# Bash script: enrichment tests on the stall-site CSVs
+# Bash script: per-replicate Wilcoxon tests on the stall-site CSVs
 # (stall_sites_non_consensus_stats.py)
 #
-# Ribopy-free. Consumes stall_sites_{codon,aa}.csv and
-# per_group_background_{codon,aa}.csv produced by
-# run_stall_sites_non_consensus.sh and writes within-condition binomial,
-# between-condition Wilcoxon, between-timepoint Wilcoxon + Fisher,
-# per-timepoint Fisher, per-timepoint background-aware diff, and
-# between-timepoint background-aware diff result CSVs into $OUT_DIR.
+# Ribopy-free. Consumes stall_sites_{codon,aa}.csv produced by
+# run_stall_sites_non_consensus.sh and writes:
+#   A2 — between-condition Wilcoxon (per-replicate frequencies)
+#   A5 — between-timepoint Wilcoxon (per-replicate, one CSV per day-pair;
+#         only emitted when --timepoints is given with >=2 timepoints)
+#
+# The count-collapsing tests (A1 within-condition binomial, A3/A4
+# between-condition Fisher + background-diff, A6/A7 between-timepoint
+# Fisher + background-diff) pool biological replicates, which is
+# pseudoreplication on per-replicate data. They live exclusively in the
+# consensus stats runners (run_stall_sites_consensus_union_stats.sh for
+# A1/A4/A7, run_stall_sites_consensus_intersection_stats.sh for A1/A3/A6),
+# which run them at n=1 per cell on reproducibility-filtered sets. The split is
+# structural — this script contains no count-collapsing code — so
+# pseudoreplication is impossible by construction, not merely disabled.
 #----------------------------------------------------
 
 # ============== CONFIG: edit these ==============
 # Format: "group1:rep1,rep2;group2:rep1,rep2"
 EXP_GROUPS='control_day_0:control_day0_rep2,control_day0_rep3;control_day_5:control_day5_rep2,control_day5_rep3;control_day_10:control_day10_rep2,control_day10_rep3;BWM_day_0:BWM_day0_rep2,BWM_day0_rep3;BWM_day_5:BWM_day5_rep2,BWM_day5_rep3;BWM_day_10:BWM_day10_rep2,BWM_day10_rep3'
 
-# Timepoint labels in chronological order (earliest first). Drives the order of
-# the per-timepoint analyses and the later-vs-earlier comparison pairs; timepoints
-# are NOT sorted automatically (a string sort places "day_10" before "day_5").
+# Timepoint labels in chronological order (earliest first). Drives the
+# later-vs-earlier day-pairs for A5; timepoints are NOT sorted automatically
+# (a string sort places "day_10" before "day_5"). Leave empty to skip A5.
 TIMEPOINTS='day_0,day_5,day_10'
 
-# Directory containing stall_sites_{codon,aa}.csv and
-# per_group_background_{codon,aa}.csv from run_stall_sites_non_consensus.sh
+# Directory containing stall_sites_{codon,aa}.csv from run_stall_sites_non_consensus.sh
 RAW_DIR="./results/c_elegans/stall_sites_non_consensus/raw"
 OUT_DIR="./results/c_elegans/stall_sites_non_consensus/analysis"
 
 # --- Which analyses to run -------------------------------------------------
 # Each analysis defaults to true (runs). Set one to false to skip it; leaving it
-# true (or unset) runs it. A skipped analysis writes no output CSV. The
-# between-timepoint block (Analysis 3) is split into its two sub-tests so each
-# can be toggled independently.
-RUN_WITHIN_CONDITION=true               # Analysis 1: within-condition binomial
-RUN_BETWEEN_CONDITION_WILCOXON=true     # Analysis 2: between-condition Wilcoxon
-RUN_BETWEEN_TIMEPOINT_WILCOXON=true     # Analysis 3a: between-timepoint Wilcoxon (pooled)
-RUN_BETWEEN_TIMEPOINT_FISHER=true       # Analysis 3b: between-timepoint Fisher (within condition)
-RUN_PER_TIMEPOINT_FISHER=true             # Analysis 4: per-timepoint Fisher's exact
-RUN_PER_TIMEPOINT_BACKGROUND_DIFF=true    # Analysis 5: per-timepoint background-aware diff
-RUN_BETWEEN_TIMEPOINT_BACKGROUND_DIFF=true # Analysis 6: between-timepoint background-aware diff (pooled across conditions)
+# true (or unset) runs it. A skipped analysis writes no output CSV.
+RUN_BETWEEN_CONDITION_WILCOXON=true     # A2: between-condition Wilcoxon
+RUN_BETWEEN_TIMEPOINT_WILCOXON=true     # A5: between-timepoint Wilcoxon (pooled across conditions)
 
-# Headline condition for the between-condition tests (Wilcoxon Analysis 2,
-# per-timepoint Fisher Analysis 4, per-timepoint background-aware diff Analysis 5)
-# lives in the shared _headline_config.sh, which the plot launchers also source —
-# so the stats direction and the plot labels come from ONE place and cannot drift.
-# A positive effect (log2_FC / log2 odds ratio / delta_log2_enrichment) means
-# enriched in HEADLINE_CONDITION. Leave it empty there to fall back to alphabetical.
+# Headline condition for the between-condition Wilcoxon (A2) lives in the shared
+# _headline_config.sh, which the plot launchers also source — so the stats
+# direction and the plot labels come from ONE place and cannot drift.
+# A positive log2_FC means enriched in HEADLINE_CONDITION.
+# Leave it empty there to fall back to alphabetical.
 source "$(dirname "${BASH_SOURCE[0]}")/_headline_config.sh"
 
 # ===============================================
@@ -60,7 +60,7 @@ echo "Timepoints: $TIMEPOINTS"
 echo "Input: $RAW_DIR"
 echo "Output: $OUT_DIR"
 echo "Headline condition: ${HEADLINE_CONDITION:-alphabetical default}"
-echo "Analyses: within=$RUN_WITHIN_CONDITION  bc_wilcoxon=$RUN_BETWEEN_CONDITION_WILCOXON  bt_wilcoxon=$RUN_BETWEEN_TIMEPOINT_WILCOXON  bt_fisher=$RUN_BETWEEN_TIMEPOINT_FISHER  pt_fisher=$RUN_PER_TIMEPOINT_FISHER  pt_bgdiff=$RUN_PER_TIMEPOINT_BACKGROUND_DIFF  bt_bgdiff=$RUN_BETWEEN_TIMEPOINT_BACKGROUND_DIFF"
+echo "Analyses: bc_wilcoxon=$RUN_BETWEEN_CONDITION_WILCOXON  bt_wilcoxon=$RUN_BETWEEN_TIMEPOINT_WILCOXON"
 echo "=============================================="
 
 # Pass --headline-condition only when set, so an empty value falls back to the
@@ -75,18 +75,12 @@ HEADLINE_FLAG=()
 for LEVEL in aa codon; do
   python3 scripts/stall_sites_non_consensus_stats.py \
     --stall-sites "$RAW_DIR/stall_sites_${LEVEL}.csv" \
-    --background "$RAW_DIR/per_group_background_${LEVEL}.csv" \
     --groups "$EXP_GROUPS" \
     --timepoints "$TIMEPOINTS" \
     --out-dir "$OUT_DIR" \
     "${HEADLINE_FLAG[@]}" \
-    --within-condition "${RUN_WITHIN_CONDITION:-true}" \
     --between-condition-wilcoxon "${RUN_BETWEEN_CONDITION_WILCOXON:-true}" \
-    --between-timepoint-wilcoxon "${RUN_BETWEEN_TIMEPOINT_WILCOXON:-true}" \
-    --between-timepoint-fisher "${RUN_BETWEEN_TIMEPOINT_FISHER:-true}" \
-    --per-timepoint-fisher "${RUN_PER_TIMEPOINT_FISHER:-true}" \
-    --per-timepoint-background-diff "${RUN_PER_TIMEPOINT_BACKGROUND_DIFF:-true}" \
-    --between-timepoint-background-diff "${RUN_BETWEEN_TIMEPOINT_BACKGROUND_DIFF:-true}"
+    --between-timepoint-wilcoxon "${RUN_BETWEEN_TIMEPOINT_WILCOXON:-true}"
 done
 
 echo ""

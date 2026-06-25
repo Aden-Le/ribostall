@@ -1,7 +1,7 @@
 #!/bin/bash
 #----------------------------------------------------
 # Bash script: per-replicate stall calling
-# (stall_sites_non_consensus_call.py)
+# (stall_sites_non_consensus.py)
 #
 # Produces stall_sites_{codon,aa}.csv and
 # per_group_background_{codon,aa}.csv in $RAW_DIR.
@@ -80,7 +80,7 @@ echo "E/P/A geometry: basis=$BASIS, psite_offset=$PSITE_OFFSET"
 echo "Output raw CSVs: $RAW_DIR"
 echo "=============================================="
 
-python3 scripts/stall_sites_non_consensus_call.py \
+python3 scripts/stall_sites_non_consensus.py \
   --pickle "$PICKLE" \
   --ribo "$RIBO_FILE" \
   --reference "$REFERENCE_FILE" \

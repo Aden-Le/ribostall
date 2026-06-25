@@ -1,44 +1,48 @@
 #!/bin/bash
 #----------------------------------------------------
-# Bash script: run stall_sites_consensus.py with
-# consensus stall site calling across replicates
+# Bash script: run stall_sites_consensus_union.py with
+# consensus stall site calling across replicates (UNION variant:
+# each group keeps its own filtered transcript set)
 #----------------------------------------------------
 
 # ============== CONFIG: edit these ==============
 # Path to directory containing _coverage.pkl.gz files
 RIBO_DIR="./all_ribo_file"
-RIBO_FILE="$RIBO_DIR/C_elegan_all_02_04_2026.ribo"
+RIBO_FILE="$RIBO_DIR/mouse_all.ribo"
 
 # Format: "group1:rep1,rep2;group2:rep1,rep2"
-# Consensus sets replicate == group (each group becomes its own "replicate" in
-# the stats output). Flat design example (no timepoints):
-#   EXP_GROUPS='control:control_rep1,control_rep2;treatment:treatment_rep1,treatment_rep2'
-# Timepoint-bearing design example (pass --timepoints in the stats runner too):
-#   EXP_GROUPS='control_day_0:control_day0_rep1,control_day0_rep2;control_day_5:control_day5_rep1,control_day5_rep2;treatment_day_0:treatment_day0_rep1,treatment_day0_rep2;treatment_day_5:treatment_day5_rep1,treatment_day5_rep2'
-EXP_GROUPS='control:control_rep1,control_rep2;treatment:treatment_rep1,treatment_rep2'
+# Flat control-vs-treatment design (no timepoints). Replicate names must match
+# the experiments in the coverage pickle; group labels are free-form.
+# Mouse run: 2-vs-1 design — control has 2 reps (AA_3, AA_4), treatment has 1 (Ch_WAA2).
+EXP_GROUPS='control:AA_3,AA_4;treatment:Ch_WAA2'
 
 # Transcript filtering thresholds
-TX_THRESHOLD=1.0
-TX_MIN_REPS=2
+# Aligned with the C. elegans non-consensus "Parameter set v2 (2026-04-27)":
+# TX_THRESHOLD 1.0 -> 0.5 to retain more transcripts in low-coverage groups.
+TX_THRESHOLD=0.5
+# Global gate (no per-group override exists). MUST be 1 here: the 1-rep treatment
+# group can never reach 2, so a value of 2 would leave it with zero transcripts.
+# Trade-off: this also relaxes the 2-rep control filter to ">=1 of 2 reps".
+TX_MIN_REPS=1
 
 # Stall site calling thresholds
+# Aligned with the C. elegans non-consensus v2 set: MIN_READS 2 -> 5 (off the
+# noise floor); TRIM_START already 20. Keeps consensus comparable to non-consensus.
 MIN_Z=1.0
-MIN_READS=2
+MIN_READS=5
 TRIM_START=20
 TRIM_STOP=10
 PSEUDOCOUNT=0.5
 
 # Consensus calling parameters
 # Per-group consensus support: must name EVERY declared group (no global fallback).
-# For a flat design: STALL_MIN_REPS_PER_GROUP='control:2;treatment:1'
-# For a timepoint design: name every (condition, timepoint) cell, e.g.
-#   STALL_MIN_REPS_PER_GROUP='control_day_0:2;control_day_5:2;treatment_day_0:2;treatment_day_5:2'
+# control needs both reps; treatment has only 1 rep.
 STALL_MIN_REPS_PER_GROUP='control:2;treatment:1'
 TOL=0
-MIN_SEP=7
+MIN_SEP=0
 
 # Reference file (required for E/P/A annotation)
-REFERENCE_FILE="./reference/appris_celegans_v1_selected_new.fa"
+REFERENCE_FILE="./reference/appris_mouse_v2_selected.fa.gz"
 
 # E/P/A annotation parameters
 BASIS="P"            # register for E/P/A offsets (P or A)
@@ -46,7 +50,7 @@ PSITE_OFFSET=0       # codon offset applied to each stall index before deriving 
 
 # Output directory for stats-ready stall-site CSVs
 # (stall_sites_{codon,aa}.csv + per_group_background_{codon,aa}.csv)
-OUT_DIR="results/c_elegans/stall_sites_consensus/raw"
+OUT_DIR="results/mouse/stall_sites_consensus_union/raw"
 
 # ===============================================
 
@@ -54,20 +58,23 @@ OUT_DIR="results/c_elegans/stall_sites_consensus/raw"
 source ${HOME}/miniconda3/etc/profile.d/conda.sh
 conda activate ribostall_env
 
-# Navigate to repo root (two levels up from shell_scripts/<subdir>/)
+# Navigate to repo root (three levels up from shell_scripts/<organism>/<subdir>/)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/../../.."
 
-# Find coverage pickle
-PICKLE=$(ls "$RIBO_DIR"/*_coverage.pkl.gz 2>/dev/null | head -1)
+# Coverage pickle for the exact ribo file above (not a directory glob).
+# adj_coverage.py writes <basename>_coverage.pkl.gz next to the .ribo, so derive
+# it from RIBO_FILE. With multiple *_coverage.pkl.gz present (e.g. C. elegans +
+# mouse), a glob would pick the wrong one.
+PICKLE="${RIBO_DIR}/$(basename "$RIBO_FILE" .ribo)_coverage.pkl.gz"
 
-if [ -z "$PICKLE" ]; then
-  echo "Error: No coverage pickle files found in $RIBO_DIR"
+if [ ! -f "$PICKLE" ]; then
+  echo "Error: coverage pickle not found: $PICKLE"
   exit 1
 fi
 
 echo "=============================================="
-echo "RIBOSOME STALL SITE CONSENSUS ANALYSIS"
+echo "RIBOSOME STALL SITE CONSENSUS (UNION) ANALYSIS"
 echo "=============================================="
 echo "Coverage pickle: $PICKLE"
 echo "Ribo file: $RIBO_FILE"
@@ -79,7 +86,7 @@ echo "E/P/A: basis=$BASIS, psite_offset=$PSITE_OFFSET"
 echo "Output dir: $OUT_DIR"
 echo "=============================================="
 
-CMD=(python3 scripts/stall_sites_consensus.py \
+CMD=(python3 scripts/stall_sites_consensus_union.py \
   --pickle "$PICKLE" \
   --ribo "$RIBO_FILE" \
   --reference "$REFERENCE_FILE" \

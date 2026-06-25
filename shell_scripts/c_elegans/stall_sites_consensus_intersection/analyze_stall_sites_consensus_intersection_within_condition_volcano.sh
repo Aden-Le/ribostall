@@ -1,8 +1,8 @@
 #!/bin/bash
 #----------------------------------------------------
-# Within-Condition Enrichment Volcano Plots (CONSENSUS stall_sites)
+# Within-Condition Enrichment Volcano Plots (CONSENSUS INTERSECTION stall_sites)
 # Drives R_scripts/within_condition_volcano.R on the within-condition
-# binomial CSVs emitted by stall_sites_consensus_stats.py:
+# binomial CSVs emitted by stall_sites_consensus_intersection_stats.py:
 #   within_condition_binomial_{aa,codon}.csv
 #
 # The consensus within-condition CSV already carries site/group/condition/
@@ -15,10 +15,10 @@ export PATH="$PATH:/c/Program Files/R/R-4.4.2/bin"
 
 # ============== CONFIG: edit these ==============
 # Input directory (containing within_condition_binomial_{aa,codon}.csv)
-INPUT_DIR="./results/c_elegans/stall_sites_consensus/analysis"
+INPUT_DIR="./results/c_elegans/stall_sites_consensus_intersection/analysis"
 
 # Output directory for plots
-OUTPUT_DIR="./results/c_elegans/stall_sites_consensus/plots/within_condition"
+OUTPUT_DIR="./results/c_elegans/stall_sites_consensus_intersection/plots/within_condition"
 
 # Enrichment type: "unweighted", "weighted", or "both"
 ENRICHMENT_TYPE="both"
@@ -42,7 +42,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/../../.."
 
 echo "=============================================="
-echo "CONSENSUS STALL SITES WITHIN-CONDITION VOLCANO PLOTS"
+echo "CONSENSUS INTERSECTION STALL SITES WITHIN-CONDITION VOLCANO PLOTS"
 echo "=============================================="
 echo "Input directory:  $INPUT_DIR"
 echo "Output directory: $OUTPUT_DIR"

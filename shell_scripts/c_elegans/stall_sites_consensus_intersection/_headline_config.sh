@@ -1,9 +1,9 @@
 #!/bin/bash
 #----------------------------------------------------
-# Shared headline / direction config — CONSENSUS stall-sites pipeline.
+# Shared headline / direction config — CONSENSUS INTERSECTION stall-sites pipeline.
 #
-# Sourced by BOTH the stats runner (run_stall_sites_consensus_stats.sh, which
-# passes the numerator to --headline-condition) AND the analyze_*.sh plot
+# Sourced by BOTH the stats runner (run_stall_sites_consensus_intersection_stats.sh,
+# which passes the numerator to --headline-condition) AND the analyze_*.sh plot
 # launchers (which derive every between-condition plot label from these values).
 # Because the stats direction and the plot labels come from this ONE file, they
 # cannot drift out of sync: change the headline here and everything downstream
@@ -13,15 +13,15 @@
 #----------------------------------------------------
 
 # The headline condition = numerator / direction reference. A positive effect
-# (log2 odds ratio / delta_log2_enrichment) means "enriched in this condition".
-# Must be one of the two group labels in the runner's EXP_GROUPS. The consensus
-# design is flat control-vs-treatment, so this is just the bare condition name.
+# (log2 odds ratio) means "enriched in this condition". Must be one of the two
+# group labels in the runner's EXP_GROUPS. The consensus design is flat
+# control-vs-treatment, so this is just the bare condition name.
 HEADLINE_CONDITION="treatment"
 # The other condition (denominator).
 OTHER_CONDITION="control"
 
 # --- Derived (do not edit): labels follow the headline so they cannot drift ---
-# Used as fisher/background-diff --comparison-label and in titles.
+# Used as fisher --comparison-label and in titles.
 COMPARISON_LABEL="${HEADLINE_CONDITION} vs ${OTHER_CONDITION}"
 # Injected grouping-column value / plot file prefix (consensus CSVs have no
 # timepoint/condition column, so the launchers add a constant one).

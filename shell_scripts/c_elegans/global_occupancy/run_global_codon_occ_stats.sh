@@ -33,13 +33,16 @@ LEVELS=(codon aa)
 # --- Which analyses to run -------------------------------------------------
 # Each analysis defaults to true (runs). Set one to false to skip it; leaving it
 # true (or unset) runs it. A skipped analysis writes no per-site CSV and is
-# therefore absent from the merged analysis/ tree. The between-timepoint
-# block (Analysis 3) is split into its two sub-tests so each toggles independently.
-RUN_WITHIN_CONDITION=true            # Analysis 1: within-condition binomial
-RUN_BETWEEN_CONDITION_WILCOXON=true  # Analysis 2: between-condition Wilcoxon
-RUN_BETWEEN_TIMEPOINT_WILCOXON=true  # Analysis 3a: between-timepoint Wilcoxon (pooled)
-RUN_BETWEEN_TIMEPOINT_FISHER=true    # Analysis 3b: between-timepoint Fisher (within condition)
-RUN_PER_TIMEPOINT_FISHER=true        # Analysis 4: per-timepoint Fisher's exact
+# therefore absent from the merged analysis/ tree.
+# A4/A7 always print [N/A] for occupancy (single shared background — no per-group
+# background CSVs to diff against). Set false to suppress the N/A message.
+RUN_WITHIN_CONDITION=true                   # A1: within-condition binomial
+RUN_BETWEEN_CONDITION_WILCOXON=true         # A2: between-condition Wilcoxon
+RUN_BETWEEN_CONDITION_FISHER=true           # A3: between-condition Fisher (flat) or per-tp (with --timepoints)
+RUN_BETWEEN_CONDITION_BACKGROUND_DIFF=true  # A4: N/A for occupancy (no per-group backgrounds)
+RUN_BETWEEN_TIMEPOINT_WILCOXON=true         # A5: between-timepoint Wilcoxon (pooled, tp only)
+RUN_BETWEEN_TIMEPOINT_FISHER=true           # A6: between-timepoint Fisher within condition (tp only)
+RUN_BETWEEN_TIMEPOINT_BACKGROUND_DIFF=true  # A7: N/A for occupancy (no per-group backgrounds)
 
 # Headline condition for the between-condition tests (Wilcoxon Analysis 2,
 # per-timepoint Fisher Analysis 4) lives in the shared _headline_config.sh, which
@@ -72,9 +75,13 @@ echo "Merged output:        $OUT_DIR/analysis/"
 echo "Sites:                ${SITES[*]}"
 echo "Levels:               ${LEVELS[*]}"
 echo "Groups:               $EXP_GROUPS"
-echo "Timepoints:           $TIMEPOINTS"
-echo "Analyses:             within=$RUN_WITHIN_CONDITION  bc_wilcoxon=$RUN_BETWEEN_CONDITION_WILCOXON  bt_wilcoxon=$RUN_BETWEEN_TIMEPOINT_WILCOXON  bt_fisher=$RUN_BETWEEN_TIMEPOINT_FISHER  pt_fisher=$RUN_PER_TIMEPOINT_FISHER"
+echo "Timepoints:           ${TIMEPOINTS:-none (flat design)}"
+echo "Analyses:             within=$RUN_WITHIN_CONDITION  bc_wilcoxon=$RUN_BETWEEN_CONDITION_WILCOXON  bc_fisher=$RUN_BETWEEN_CONDITION_FISHER  bc_bgdiff=$RUN_BETWEEN_CONDITION_BACKGROUND_DIFF  bt_wilcoxon=$RUN_BETWEEN_TIMEPOINT_WILCOXON  bt_fisher=$RUN_BETWEEN_TIMEPOINT_FISHER  bt_bgdiff=$RUN_BETWEEN_TIMEPOINT_BACKGROUND_DIFF"
 echo "=============================================="
+
+# Pass --timepoints only when TIMEPOINTS is non-empty.
+TIMEPOINTS_FLAG=()
+[ -n "$TIMEPOINTS" ] && TIMEPOINTS_FLAG=(--timepoints "$TIMEPOINTS")
 
 for level in "${LEVELS[@]}"; do
   echo ""
@@ -88,13 +95,15 @@ for level in "${LEVELS[@]}"; do
     --level "$level" \
     --sites "${SITES[@]}" \
     --groups "$EXP_GROUPS" \
-    --timepoints "$TIMEPOINTS" \
+    "${TIMEPOINTS_FLAG[@]}" \
     "${HEADLINE_FLAG[@]}" \
     --within-condition "${RUN_WITHIN_CONDITION:-true}" \
     --between-condition-wilcoxon "${RUN_BETWEEN_CONDITION_WILCOXON:-true}" \
+    --between-condition-fisher "${RUN_BETWEEN_CONDITION_FISHER:-true}" \
+    --between-condition-background-diff "${RUN_BETWEEN_CONDITION_BACKGROUND_DIFF:-true}" \
     --between-timepoint-wilcoxon "${RUN_BETWEEN_TIMEPOINT_WILCOXON:-true}" \
     --between-timepoint-fisher "${RUN_BETWEEN_TIMEPOINT_FISHER:-true}" \
-    --per-timepoint-fisher "${RUN_PER_TIMEPOINT_FISHER:-true}")
+    --between-timepoint-background-diff "${RUN_BETWEEN_TIMEPOINT_BACKGROUND_DIFF:-true}")
 
   echo "Running: ${CMD[@]}"
   "${CMD[@]}"

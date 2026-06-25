@@ -1,7 +1,9 @@
 #!/bin/bash
 #----------------------------------------------------
-# Bash script: run stall_sites_consensus.py with
-# consensus stall site calling across replicates
+# Bash script: run stall_sites_consensus_intersection.py with
+# consensus stall site calling across replicates (INTERSECTION variant:
+# every group is restricted to the transcripts that pass filtering in ALL
+# groups, so all conditions share one transcript universe)
 #----------------------------------------------------
 
 # ============== CONFIG: edit these ==============
@@ -49,7 +51,7 @@ PSITE_OFFSET=0       # codon offset applied to each stall index before deriving 
 
 # Output directory for stats-ready stall-site CSVs
 # (stall_sites_{codon,aa}.csv + per_group_background_{codon,aa}.csv)
-OUT_DIR="results/mouse/stall_sites_consensus/raw"
+OUT_DIR="results/mouse/stall_sites_consensus_intersection/raw"
 
 # ===============================================
 
@@ -73,7 +75,7 @@ if [ ! -f "$PICKLE" ]; then
 fi
 
 echo "=============================================="
-echo "RIBOSOME STALL SITE CONSENSUS ANALYSIS"
+echo "RIBOSOME STALL SITE CONSENSUS (INTERSECTION) ANALYSIS"
 echo "=============================================="
 echo "Coverage pickle: $PICKLE"
 echo "Ribo file: $RIBO_FILE"
@@ -85,7 +87,7 @@ echo "E/P/A: basis=$BASIS, psite_offset=$PSITE_OFFSET"
 echo "Output dir: $OUT_DIR"
 echo "=============================================="
 
-CMD=(python3 scripts/stall_sites_consensus.py \
+CMD=(python3 scripts/stall_sites_consensus_intersection.py \
   --pickle "$PICKLE" \
   --ribo "$RIBO_FILE" \
   --reference "$REFERENCE_FILE" \

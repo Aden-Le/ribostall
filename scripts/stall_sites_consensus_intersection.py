@@ -41,7 +41,9 @@ logging.basicConfig(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Detect ribosome stall sites with cross-replicate consensus and emit stats-ready E/P/A CSVs"
+        description="Detect ribosome stall sites with cross-replicate consensus (INTERSECTION variant: "
+                    "every group is restricted to the transcripts that pass filtering in ALL groups, so "
+                    "all conditions share one transcript universe) and emit stats-ready E/P/A CSVs"
     )
     parser.add_argument("--pickle", required=True, help="Path to coverage pickle.gz file")
     parser.add_argument("--ribo", required=True, help="Path to ribo file")
@@ -78,7 +80,7 @@ def main():
                         help="Drop stall windows whose E/P/A site hits a stop codon "
                              "(TAA/TAG/TGA) from the output CSVs. Default: True; pass "
                              "'--drop-stop-codons False' to keep them.")
-    parser.add_argument("--out-dir", default="results/stall_sites_consensus/raw",
+    parser.add_argument("--out-dir", default="results/stall_sites_consensus_intersection/raw",
                         help="Output directory for stall-site CSVs")
 
     args = parser.parse_args()
@@ -184,12 +186,12 @@ def main():
         print("Warning: the following replicates are missing from coverage:", ", ".join(missing))
 
     # -------------------------------------------------------------------------
-    # Transcript filtering (per-group, no intersection)
+    # Transcript filtering (per-group, then cross-group intersection)
     # -------------------------------------------------------------------------
     # --- logging only ---
     n_before = len(next(iter(cov.values())))
     print(f"\n{'='*60}")
-    print(f"TRANSCRIPT FILTERING (per-group, no intersection)")
+    print(f"TRANSCRIPT FILTERING (per-group, then cross-group intersection)")
     print(f"{'='*60}")
     print(f"Transcripts before filtering: {n_before}")
     print(f"\n  {'Replicate':<25} {'Group':<15} {'Avg cov/tx (reads/nt)':>22} {'SD':>10} {'Total coverage':>16}")
@@ -213,8 +215,8 @@ def main():
                           trim_start=args.trim_start, trim_stop=args.trim_stop)
     logging.info(f"Saved coverage density plot to {args.out_dir}/coverage_density.png")
 
-    # Per-group transcript universe — each group keeps its own filtered tx set
-    # (mirrors stall_sites_non_consensus.py; no cross-group intersection).
+    # Per-group transcript universe — first filter each group independently,
+    # then (this is the intersection variant) collapse to the common core.
     filt_tx_dict = {
         group: filter_tx(cov, reps, min_reps=args.tx_min_reps, threshold=args.tx_threshold,
                          trim_start=args.trim_start, trim_stop=args.trim_stop)
@@ -223,6 +225,25 @@ def main():
     # --- logging only ---
     for group, txs in filt_tx_dict.items():
         print(f"  Per-group filter [{group}]: {len(txs)} transcripts  (lost {n_before - len(txs)})")
+    # --- end logging ---
+
+    # INTERSECTION: restrict every group to the transcripts that passed filtering
+    # in ALL groups, so all conditions are called on one shared transcript
+    # universe. This makes the between-condition stall counts apples-to-apples
+    # and (because the background is computed from the same transcript set for
+    # every group below) makes the per-group backgrounds identical.
+    common_txs = (
+        sorted(set.intersection(*(set(txs) for txs in filt_tx_dict.values())))
+        if filt_tx_dict else []
+    )
+    if not common_txs:
+        logging.warning(
+            "Cross-group transcript intersection is empty; no stall sites will be called."
+        )
+    filt_tx_dict = {group: list(common_txs) for group in filt_tx_dict}
+    # --- logging only ---
+    print(f"  Cross-group intersection: {len(common_txs)} transcripts shared by all "
+          f"{len(groups)} group(s)  (each group restricted to this common set)")
     print(f"{'='*60}\n")
     # --- end logging ---
 

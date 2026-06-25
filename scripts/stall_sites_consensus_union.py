@@ -41,7 +41,8 @@ logging.basicConfig(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Detect ribosome stall sites with cross-replicate consensus and emit stats-ready E/P/A CSVs"
+        description="Detect ribosome stall sites with cross-replicate consensus (UNION variant: each "
+                    "group keeps its own filtered transcript set) and emit stats-ready E/P/A CSVs"
     )
     parser.add_argument("--pickle", required=True, help="Path to coverage pickle.gz file")
     parser.add_argument("--ribo", required=True, help="Path to ribo file")
@@ -78,7 +79,7 @@ def main():
                         help="Drop stall windows whose E/P/A site hits a stop codon "
                              "(TAA/TAG/TGA) from the output CSVs. Default: True; pass "
                              "'--drop-stop-codons False' to keep them.")
-    parser.add_argument("--out-dir", default="results/stall_sites_consensus/raw",
+    parser.add_argument("--out-dir", default="results/stall_sites_consensus_union/raw",
                         help="Output directory for stall-site CSVs")
 
     args = parser.parse_args()

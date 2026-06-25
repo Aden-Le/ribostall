@@ -56,10 +56,6 @@ source "$(dirname "${BASH_SOURCE[0]}")/_headline_config.sh"
 
 # ===============================================
 
-# Activate conda/env if you use one
-source ${HOME}/miniconda3/etc/profile.d/conda.sh
-conda activate ribostall_env
-
 # Navigate to repo root (three levels up from shell_scripts/<organism>/<subdir>/)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/../../.."

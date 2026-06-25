@@ -20,20 +20,23 @@ config), then by pipeline stage:
 
 ```
 shell_scripts/
-├── c_elegans/                    # C. elegans analysis (all current scripts)
-│   ├── adj_coverage/             # Step 1 — CDS-aligned coverage
-│   ├── stall_sites_consensus/    # Step 2a — consensus stall calling
-│   ├── stall_sites_non_consensus/# Step 2b — per-replicate calling, stats, and R plots
-│   └── global_occupancy/         # Step 3 — occupancy base CSVs, stats, and R plots
-└── mouse/                        # Mouse analysis (same stage layout, scripts added as written)
-    ├── adj_coverage/             # Step 1 — run_adj_coverage_all.sh (mouse_all.ribo)
-    └── stall_sites_consensus/    # Step 2a — run_stall_sites_consensus.sh (2-vs-1 design)
+├── c_elegans/                              # C. elegans analysis (all current scripts)
+│   ├── adj_coverage/                       # Step 1 — CDS-aligned coverage
+│   ├── stall_sites_consensus_union/        # Step 2a (union) — consensus calling + A1/A4/A7 stats + bg-diff/within plots
+│   ├── stall_sites_consensus_intersection/ # Step 2a (intersection) — consensus calling + A1/A3/A6 stats + fisher/within plots
+│   ├── stall_sites_non_consensus/          # Step 2b — per-replicate calling, stats, and R plots
+│   └── global_occupancy/                   # Step 3 — occupancy base CSVs, stats, and R plots
+└── mouse/                                  # Mouse analysis (same stage layout, scripts added as written)
+    ├── adj_coverage/                       # Step 1 — run_adj_coverage_all.sh (mouse_all.ribo)
+    ├── stall_sites_consensus_union/        # Step 2a (union) — run_stall_sites_consensus_union.sh (2-vs-1 design)
+    └── stall_sites_consensus_intersection/ # Step 2a (intersection) — run_stall_sites_consensus_intersection.sh (2-vs-1 design)
 ```
 
-> Only the two stages above have mouse scripts so far; the remaining stages
-> (`stall_sites_non_consensus`, `global_occupancy`) are not yet present. Add a
-> mouse script under the matching stage folder when one exists — there is no
-> requirement to mirror every C. elegans script.
+> Only the stages above have mouse scripts so far, and only the call step (no
+> mouse stats/plot runners yet). The remaining stages (`stall_sites_non_consensus`,
+> `global_occupancy`) are not yet present. Add a mouse script under the matching
+> stage folder when one exists — there is no requirement to mirror every
+> C. elegans script.
 
 ---
 
@@ -47,10 +50,22 @@ These drive the Python pipeline in `scripts/`. Run in order for a full end-to-en
 & "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/adj_coverage/run_adj_coverage_all.sh
 ```
 
-### Step 2a — Consensus stall-site calling
+### Step 2a — Consensus stall-site calling (union + intersection)
+
+Two calling variants; run whichever you need (or both). They differ only in transcript handling: union keeps each group's own filtered set, intersection restricts to the transcripts passing in all groups.
 
 ```powershell
-& "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/stall_sites_consensus/run_stall_sites_consensus.sh
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/stall_sites_consensus_union/run_stall_sites_consensus_union.sh
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/stall_sites_consensus_intersection/run_stall_sites_consensus_intersection.sh
+```
+
+### Step 2a-stats — Enrichment tests on consensus stall-site CSVs
+
+Union runs A1/A4/A7 (within-condition + background-aware); intersection runs A1/A3/A6 (within-condition + Fisher).
+
+```powershell
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/stall_sites_consensus_union/run_stall_sites_consensus_union_stats.sh
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/stall_sites_consensus_intersection/run_stall_sites_consensus_intersection_stats.sh
 ```
 
 ### Step 2b-call — Per-replicate stall calling (non-consensus)
@@ -120,26 +135,36 @@ Within-condition binomial enrichment volcano plots (with Beta-Jeffreys CIs):
 & "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/stall_sites_non_consensus/analyze_stall_sites_non_consensus_within_condition_enrichment.sh
 ```
 
-### Stall_sites (consensus)
+### Stall_sites (consensus — union)
 
-These drive the volcano scripts on the **consensus** stats CSVs (flat control-vs-treatment, no timepoints) in `results/c_elegans/stall_sites_consensus/analysis/`.
+These drive the volcano scripts on the **consensus union** stats CSVs (flat control-vs-treatment, no timepoints) in `results/c_elegans/stall_sites_consensus_union/analysis/`. The union variant runs the background-aware + within-condition tests (no Fisher).
 
-Between-condition Fisher volcano plots (raw stall-site share, Treatment vs Control):
-
-```powershell
-& "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/stall_sites_consensus/analyze_stall_sites_consensus_fisher_volcano.sh
-```
-
-Between-condition **background-aware** volcano plots (enrichment-over-background ratio, Treatment vs Control — the background-aware counterpart of the Fisher plot above):
+Between-condition **background-aware** volcano plots (enrichment-over-background ratio, Treatment vs Control):
 
 ```powershell
-& "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/stall_sites_consensus/analyze_stall_sites_consensus_background_diff_volcano.sh
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/stall_sites_consensus_union/analyze_stall_sites_consensus_union_background_diff_volcano.sh
 ```
 
 Within-condition binomial enrichment volcano plots (per group, with Beta-Jeffreys CIs):
 
 ```powershell
-& "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/stall_sites_consensus/analyze_stall_sites_consensus_within_condition_volcano.sh
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/stall_sites_consensus_union/analyze_stall_sites_consensus_union_within_condition_volcano.sh
+```
+
+### Stall_sites (consensus — intersection)
+
+These drive the volcano scripts on the **consensus intersection** stats CSVs in `results/c_elegans/stall_sites_consensus_intersection/analysis/`. The intersection variant runs the Fisher + within-condition tests (no background-aware diff).
+
+Between-condition Fisher volcano plots (raw stall-site share, Treatment vs Control):
+
+```powershell
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/stall_sites_consensus_intersection/analyze_stall_sites_consensus_intersection_fisher_volcano.sh
+```
+
+Within-condition binomial enrichment volcano plots (per group, with Beta-Jeffreys CIs):
+
+```powershell
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/stall_sites_consensus_intersection/analyze_stall_sites_consensus_intersection_within_condition_volcano.sh
 ```
 
 ### Global occupancy
@@ -184,10 +209,11 @@ The within-condition shells are the slowest (~3 minutes each); the others finish
 
 ## Mouse
 
-The mouse analysis has runners for two pipeline stages so far. Their `CONFIG`
-blocks point at `mouse_all.ribo` and `reference/appris_mouse_v2_selected.fa.gz`;
-the consensus runner uses a 2-vs-1 design (`control:AA_3,AA_4;treatment:Ch_WAA2`).
-Edit the `CONFIG` block at the top of each script before running.
+The mouse analysis has call runners for the coverage and consensus stages so
+far. Their `CONFIG` blocks point at `mouse_all.ribo` and
+`reference/appris_mouse_v2_selected.fa.gz`; the consensus runners use a 2-vs-1
+design (`control:AA_3,AA_4;treatment:Ch_WAA2`). Edit the `CONFIG` block at the
+top of each script before running.
 
 ### Step 1 — Extract CDS-aligned coverage
 
@@ -195,8 +221,9 @@ Edit the `CONFIG` block at the top of each script before running.
 & "C:\Program Files\Git\bin\bash.exe" shell_scripts/mouse/adj_coverage/run_adj_coverage_all.sh
 ```
 
-### Step 2a — Consensus stall-site calling
+### Step 2a — Consensus stall-site calling (union + intersection)
 
 ```powershell
-& "C:\Program Files\Git\bin\bash.exe" shell_scripts/mouse/stall_sites_consensus/run_stall_sites_consensus.sh
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/mouse/stall_sites_consensus_union/run_stall_sites_consensus_union.sh
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/mouse/stall_sites_consensus_intersection/run_stall_sites_consensus_intersection.sh
 ```

@@ -56,9 +56,34 @@ python scripts/adj_coverage.py  \
 
 # 2. Get stall sites
 
-Stall-site analysis is split into two scripts. `stall_sites_non_consensus_call.py` calls stall sites and annotates each with its E/P/A codon and amino acid, producing two tidy CSVs (`stall_sites_codon.csv` and `stall_sites_aa.csv`) plus matching per-group background CSVs (`per_group_background_codon.csv`, `per_group_background_aa.csv`). All ribopy / FASTA work happens in the call script so the stats half can run on a machine without the `.ribo` file. `stall_sites_non_consensus_stats.py` consumes one stall-sites CSV at a time and runs three enrichment tests — run it twice, once per CSV, to get codon-level and AA-level results side-by-side (`within_condition_enrichment_{codon,aa}.csv`, `between_condition_wilcoxon_{codon,aa}.csv`, `per_timepoint_fisher_{codon,aa}.csv`). See [[stall_sites_non_consensus_call_explained]] and [[stall_sites_non_consensus_stats_explained]] for the full walkthroughs.
+Stall-site analysis is split into two call/stats pairs. `stall_sites_non_consensus.py` calls stall sites and annotates each with its E/P/A codon and amino acid, producing two tidy CSVs (`stall_sites_codon.csv` and `stall_sites_aa.csv`) plus matching per-group background CSVs (`per_group_background_codon.csv`, `per_group_background_aa.csv`). All ribopy / FASTA work happens in the call scripts so the stats halves run on a machine without the `.ribo` file. `stall_sites_non_consensus_stats.py` consumes one stall-sites CSV at a time and runs **two per-replicate Wilcoxon tests only** — run it twice (once per level) to get codon-level and AA-level outputs side-by-side: `between_condition_wilcoxon_{codon,aa}.csv`; and, when `--timepoints` is given, `between_timepoint_wilcoxon_{tag}_{codon,aa}.csv` per day-pair. It takes no `--background` argument (the Wilcoxons read only per-replicate frequencies, never a background CSV).
 
-`stall_sites_consensus.py` is the sibling consensus-based pipeline; it finds stall sites from coverage data with applied P-site offsets. This is done by:
+The consensus pipeline has **two stats counterparts**, one per calling variant, each running a disjoint subset of the count tests (see the rationale below):
+
+- `stall_sites_consensus_union_stats.py` reads the outputs of `stall_sites_consensus_union.py` and runs the **background-aware tests**: within-condition binomial (A1), between-condition background-aware diff (A4), and — with `--timepoints` — between-timepoint background-aware diff (A7).
+- `stall_sites_consensus_intersection_stats.py` reads the outputs of `stall_sites_consensus_intersection.py` and runs the **Fisher tests**: within-condition binomial (A1), between-condition Fisher (A3), and — with `--timepoints` — between-timepoint Fisher within condition (A6).
+
+Each reads the `stall_sites_{codon,aa}.csv` and `per_group_background_{codon,aa}.csv` outputs from its call script. Without `--timepoints`, A3/A4 emit one flat between-condition comparison each (`between_condition_fisher_{level}.csv`, `between_condition_background_diff_{level}.csv`); with it, A3/A4 slice into per-timepoint files and A6/A7 run over every later-vs-earlier day-pair.
+
+**Why split Fisher (intersection) from background-aware (union)?** The two calling variants differ only after transcript filtering: *union* lets each group keep its own filtered transcript set, while *intersection* restricts every group to the transcripts that pass filtering in **all** groups. In the intersection variant all conditions share one transcript universe, so raw stall-site shares are apples-to-apples (Fisher is fair) and the per-group backgrounds are identical (the background-aware diff degenerates to the same raw-share comparison Fisher already makes). In the union variant the per-group backgrounds differ, so each condition must be normalized to its own background (the background-aware diff is the valid comparison) and a raw Fisher would be confounded by the differing transcript sets. The within-condition binomial (A1) is a per-group enrichment and runs in both.
+
+### Test-by-pipeline division
+
+The two stats scripts run **disjoint analysis sets**, enforced structurally by separate scripts:
+
+| Script | Analyses | Tests |
+|--------|----------|-------|
+| `stall_sites_non_consensus_stats.py` | A2, A5 | per-replicate Wilcoxon (between-condition; between-timepoint with `--timepoints`) |
+| `stall_sites_consensus_union_stats.py` | A1, A4, A7 | within-condition binomial; background-aware diff (A7 with `--timepoints`) |
+| `stall_sites_consensus_intersection_stats.py` | A1, A3, A6 | within-condition binomial; Fisher's exact (A6 with `--timepoints`) |
+
+**Why separate?** The count-collapsing tests (A1/A3/A4/A6/A7, including the within-condition binomial) pool biological replicates within a group into a single aggregate count — pseudoreplication that is invalid on per-replicate (non-consensus) data. The Wilcoxons (A2/A5) keep each replicate as an independent observation and never collapse counts. The split is enforced **structurally**: the non-consensus script contains no count-collapsing code at all, so pooling is impossible by construction (there is no toggle to flip back on). The consensus stats scripts (union + intersection) hold the count tests and run them at n=1 per (condition, timepoint) cell on reproducibility-filtered stall sets — pooling a single set is a no-op, not a pseudoreplicate.
+
+**Caveat:** the consensus (intersection) Fisher ≠ the unfiltered pooled Fisher that the non-consensus inputs would yield. Consensus applies a reproducibility filter first (a site must appear in ≥ `--min-support` replicates), so the consensus count tests operate on a filtered set. Dropping the non-consensus pooled tests is therefore a deliberate choice of the filtered view, not a redundant no-op cleanup.
+
+**Occupancy** (`global_codon_occ_stats.py`) still runs pooled Fisher and background-aware tests — the no-pseudoreplication rule applies to the stall-site pipelines only and has not yet been extended to occupancy.
+
+`stall_sites_consensus_union.py` and `stall_sites_consensus_intersection.py` are the sibling consensus-based call scripts; they find stall sites from coverage data with applied P-site offsets. They take identical arguments and run the identical pipeline, differing in exactly one step: after per-group transcript filtering, the **union** script lets each group keep its own filtered transcript set, while the **intersection** script restricts every group to the transcripts that pass filtering in all groups (so all conditions share one transcript universe and the per-group backgrounds become identical). The examples below use the union script; substitute `stall_sites_consensus_intersection.py` for the intersection variant. The pipeline is:
 1. **Transcript filtering**: For each transcript, the average reads per nucleotide is computed. Transcripts with coverage below `--tx_threshold` in fewer than `--tx_min_rep` are excluded.
 2. **Codonize read counts**: An array of the number of reads per codon. `0` corresponds to the start codon.
 3. **z-score calculation**: The first and last `--trim_edges` codons (initiation ramp and termination region) are dropped first, so their pileups don't inflate the null. The remaining elongation body is converted to `log2(x + pseudocount)` to stabilize variance and handle zeros, and transcript-wide z-scores are computed on that trimmed body. Codons with z-scores ≥ `--min_z` and reads ≥ `--min_reads` are considered candidate stalls.
@@ -94,7 +119,7 @@ Optional: `--motif` finds amino acid enrichment around stall sites. This is done
 
 Example input to check filter thresholds:
 ```
-python scripts/stall_sites_consensus.py \
+python scripts/stall_sites_consensus_union.py \
 --pickle "../bxc/cov_di.pkl.gz" \
 --ribo "../bxc/bxc_disome.ribo" \
 --groups "kidney:kidney_rep1,kidney_rep2,kidney_rep3;liver:liver_rep1,liver_rep2,liver_rep3;lung:lung_rep1,lung_rep2,lung_rep3" \
@@ -104,7 +129,7 @@ python scripts/stall_sites_consensus.py \
 
 Example input for motif analysis:
 ```
-python scripts/stall_sites_consensus.py \
+python scripts/stall_sites_consensus_union.py \
 --pickle "../bxc/cov_di.pkl.gz" \
 --ribo "../bxc/bxc_disome.ribo" \
 --groups "kidney:kidney_rep1,kidney_rep2,kidney_rep3;liver:liver_rep1,liver_rep2,liver_rep3;lung:lung_rep1,lung_rep2,lung_rep3" \
@@ -147,7 +172,7 @@ Successful run of `adj_coverage.py`:
 
 Successful run of `stall_sites.py`:
 ```
-(ribo) (base) uwusers-imac:ribostall chunglab$ python scripts/stall_sites_consensus.py --pickle "../Gatfield_Share/cov_di.pkl.gz" --ribo "../Gatfield_Share/bxc_disome.ribo" --groups "kidney:kidney_rep1,kidney_rep2,kidney_rep3;liver:liver_rep1,liver_rep2,liver_rep3;lung:lung_rep1,lung_rep2,lung_rep3" --tx_threshold 0.3 --min_z 1.0 --motif --reference "../Gatfield_Share/appris_mouse_v2_selected.fa.gz" --flank-left 20 --flank-right 10
+(ribo) (base) uwusers-imac:ribostall chunglab$ python scripts/stall_sites_consensus_union.py --pickle "../Gatfield_Share/cov_di.pkl.gz" --ribo "../Gatfield_Share/bxc_disome.ribo" --groups "kidney:kidney_rep1,kidney_rep2,kidney_rep3;liver:liver_rep1,liver_rep2,liver_rep3;lung:lung_rep1,lung_rep2,lung_rep3" --tx_threshold 0.3 --min_z 1.0 --motif --reference "../Gatfield_Share/appris_mouse_v2_selected.fa.gz" --flank-left 20 --flank-right 10
 Number of filtered transcripts: 122
 Number of total stall sites per group: {'kidney': 902, 'liver': 942, 'lung': 853}
 2025-09-30 13:40:32,099  INFO  MainProcess  Saved JSON to ../ribostall_results/stall_sites.jsonl

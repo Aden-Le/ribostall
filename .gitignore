@@ -15,3 +15,6 @@ scripts/_*.md
 __pycache__/
 *.pyc
 Rplots.pdf
+shell_scripts/mouse/global_occupancy/.gitkeep
+shell_scripts/mouse/adj_coverage/.gitkeep
+presentation/

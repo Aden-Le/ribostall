@@ -1,11 +1,13 @@
 """
 Statistical tests for global codon and amino acid occupancy analysis.
 
-Four analyses:
-  1. Within-condition enrichment (binomial test vs transcriptome background)
-  2. Between-condition overall (Wilcoxon rank-sum, BWM vs Control, n=6 vs n=6)
-  3. Between-timepoint (Wilcoxon pooled across conditions + Fisher's within condition)
-  4. Per-timepoint between-condition (Fisher's exact test)
+Analyses (A1–A7 unified catalog — A4/A7 are N/A for occupancy):
+  A1: Within-condition enrichment (binomial test vs transcriptome background)
+  A2: Between-condition Wilcoxon (per-replicate rank-sum)
+  A3: Between-condition Fisher — ``per_timepoint_fisher_occupancy`` when
+      ``--timepoints`` is given; ``between_condition_fisher_occupancy`` otherwise
+  A5: Between-timepoint Wilcoxon (pooled across conditions)
+  A6: Between-timepoint Fisher within each condition
 
 Each test is run independently for codon-level and amino acid-level occupancy.
 """
@@ -22,6 +24,10 @@ from ribostall.stats_core import (
     wilcoxon_row,
     fisher_row,
 )
+# parse_groups now lives in the shared CLI helpers module (one source of truth).
+# Re-exported here so existing `from ribostall.global_occupancy import parse_groups`
+# callers (global_codon_occ.py, global_codon_occ_stats.py) keep working.
+from ribostall.stats_cli import parse_groups
 
 
 # ---------------------------------------------------------------------------
@@ -364,7 +370,104 @@ def between_timepoint_fisher_within_condition(
 
 
 # ---------------------------------------------------------------------------
-# Analysis 4: Per-timepoint between-condition (Fisher's exact test)
+# Analysis 3 (no-tp): Between-condition pooled Fisher's exact test
+# ---------------------------------------------------------------------------
+def between_condition_fisher_occupancy(
+    raw_counts_by_exp: dict,
+    rep_to_condition: dict,
+    *,
+    feature_col: str = "amino_acid",
+    headline_condition: Optional[str] = None,
+) -> pd.DataFrame:
+    """
+    Pool all replicates per condition and run Fisher's exact test on each
+    codon/AA. This is the no-timepoint variant of per_timepoint_fisher_occupancy
+    — a single pooled bucket instead of one bucket per timepoint.
+
+    NOTE: pooling biological replicates is pseudoreplication. P-values
+    should be interpreted cautiously.
+
+    Direction: the 2x2 odds ratio is computed as (odds in ``cond_a``) /
+    (odds in ``cond_b``), so a positive log2(odds_ratio) means the unit is
+    enriched in ``cond_a``. ``cond_a`` is the *headline* condition.
+
+    Parameters
+    ----------
+    raw_counts_by_exp : dict
+        {experiment: {unit: raw_read_sum}}
+    rep_to_condition : dict
+        {replicate: condition_label}
+    feature_col : str
+        Output column name for the feature level (e.g. "amino_acid" or "codon").
+    headline_condition : str or None
+        Which condition is the headline (``cond_a``, the odds-ratio numerator).
+        If ``None`` (default), the conditions are ordered alphabetically.
+
+    Returns
+    -------
+    pd.DataFrame with columns:
+        <feature_col>, {cond_a}_count, {cond_a}_total,
+        {cond_b}_count, {cond_b}_total, odds_ratio, p_value, p_adj
+    """
+    conditions = sorted(set(rep_to_condition.values()))
+    if len(conditions) != 2:
+        raise ValueError(f"Expected exactly 2 conditions, got {conditions}")
+
+    if headline_condition is not None:
+        if headline_condition not in conditions:
+            raise ValueError(
+                f"headline_condition {headline_condition!r} is not one of the "
+                f"conditions {conditions}"
+            )
+        cond_a = headline_condition
+        cond_b = next(c for c in conditions if c != headline_condition)
+    else:
+        cond_a, cond_b = conditions[0], conditions[1]
+
+    first_rep = next(iter(raw_counts_by_exp))
+    all_units = sorted(raw_counts_by_exp[first_rep].keys())
+
+    # Pool all replicates counts for each unit per condition
+    pooled = {}
+    for cond in conditions:
+        pooled[cond] = {}
+        for unit in all_units:
+            pooled[cond][unit] = sum(
+                raw_counts_by_exp.get(rep, {}).get(unit, 0.0)
+                for rep in raw_counts_by_exp
+                if rep_to_condition.get(rep) == cond
+            )
+
+    # Compute the total counts for each condition
+    totals = {cond: sum(pooled[cond].values()) for cond in conditions}
+    if any(t == 0 for t in totals.values()):
+        return pd.DataFrame()
+    # Convert totals to integers
+    totals_int = {cond: int(round(totals[cond])) for cond in conditions}
+
+    rows = []
+    for unit in all_units:
+        counts = {cond: int(round(pooled[cond][unit])) for cond in conditions}
+        res = fisher_row(counts[cond_a], totals_int[cond_a], counts[cond_b], totals_int[cond_b])
+        row = {
+            feature_col: unit,
+            "odds_ratio": res["odds_ratio"],
+            "p_value": res["p_value"],
+        }
+        for cond in conditions:
+            row[f"{cond}_count"] = counts[cond]
+            row[f"{cond}_total"] = totals_int[cond]
+        rows.append(row)
+
+    df = pd.DataFrame(rows)
+    if df.empty:
+        return df
+    df = apply_bh_fdr(df)
+    return df.sort_values("p_adj")
+
+
+# ---------------------------------------------------------------------------
+# Analysis 3 (with-tp): Per-timepoint between-condition (Fisher's exact test)
 # ---------------------------------------------------------------------------
 def per_timepoint_fisher_occupancy(
     raw_counts_by_exp: dict,
@@ -589,15 +692,6 @@ def iter_trimmed_site_counts(
         # Count is the ribosome's P-site signal — same value no matter what
         count = float(cov[cds_nt_idx:cds_nt_idx + 3].sum())
         yield site_codon, count
-
-
-def parse_groups(groups_arg: str) -> dict:
-    """Parse CLI group string into dict: {group_name: [rep1, rep2, ...]}."""
-    groups = {}
-    for block in groups_arg.split(";"):
-        name, reps = block.split(":")
-        groups[name] = reps.split(",")
-    return groups
 
 
 def aggregate_to_aa(codon_dict: dict) -> dict:

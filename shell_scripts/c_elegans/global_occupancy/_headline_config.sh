@@ -7,11 +7,10 @@
 # (which derive the between-condition plot labels from these values). Because the
 # stats direction and the plot labels come from this ONE file, they cannot drift.
 #
-# NOTE: global occupancy has no background-aware-diff analysis (it normalizes
-# every condition to a single shared transcriptome background, which would make
-# such a test collapse into the per-timepoint Fisher), so there is no enrichment-
-# ratio x-label here — only the Wilcoxon (Analysis 2) and per-timepoint Fisher
-# (Analysis 4) directions are headline-driven.
+# NOTE: global occupancy normalizes every condition to a single shared
+# transcriptome background, so there is no enrichment-ratio x-label here — only
+# the Wilcoxon (Analysis 2) and per-timepoint Fisher (Analysis 3) directions are
+# headline-driven.
 #
 # Edit ONLY the two condition names below. The "Derived" block follows them.
 #----------------------------------------------------

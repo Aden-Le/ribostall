@@ -14,9 +14,9 @@
 
 # The headline condition = numerator / direction reference. A positive effect
 # (delta_log2_enrichment) means "enriched vs background in this condition".
-# Must be one of the two group labels in the runner's EXP_GROUPS. The consensus
-# design is flat control-vs-treatment, so this is just the bare condition name.
-HEADLINE_CONDITION="treatment"
+# Must be one of the two condition labels in the runner's EXP_GROUPS (the part
+# before the first underscore, e.g. BWM or control).
+HEADLINE_CONDITION="BWM"
 # The other condition (denominator).
 OTHER_CONDITION="control"
 

@@ -18,9 +18,9 @@
 EXP_GROUPS='control_day_0:control_day0_rep2,control_day0_rep3;control_day_5:control_day5_rep2,control_day5_rep3;control_day_10:control_day10_rep2,control_day10_rep3;BWM_day_0:BWM_day0_rep2,BWM_day0_rep3;BWM_day_5:BWM_day5_rep2,BWM_day5_rep3;BWM_day_10:BWM_day10_rep2,BWM_day10_rep3'
 
 # Timepoint labels in chronological order (earliest first). Drives the order of
-# the per-timepoint Fisher (Analysis 4) and the later-vs-earlier between-timepoint
-# pairs (Analysis 3); timepoints are NOT sorted automatically (a string sort
-# places "day_10" before "day_5").
+# the per-timepoint Fisher (A3) and the later-vs-earlier between-timepoint pairs
+# (A5/A6); timepoints are NOT sorted automatically (a string sort places
+# "day_10" before "day_5").
 TIMEPOINTS='day_0,day_5,day_10'
 
 # Must match --out-dir used in run_global_codon_occ.sh
@@ -34,18 +34,14 @@ LEVELS=(codon aa)
 # Each analysis defaults to true (runs). Set one to false to skip it; leaving it
 # true (or unset) runs it. A skipped analysis writes no per-site CSV and is
 # therefore absent from the merged analysis/ tree.
-# A4/A7 always print [N/A] for occupancy (single shared background — no per-group
-# background CSVs to diff against). Set false to suppress the N/A message.
 RUN_WITHIN_CONDITION=true                   # A1: within-condition binomial
 RUN_BETWEEN_CONDITION_WILCOXON=true         # A2: between-condition Wilcoxon
 RUN_BETWEEN_CONDITION_FISHER=true           # A3: between-condition Fisher (flat) or per-tp (with --timepoints)
-RUN_BETWEEN_CONDITION_BACKGROUND_DIFF=true  # A4: N/A for occupancy (no per-group backgrounds)
 RUN_BETWEEN_TIMEPOINT_WILCOXON=true         # A5: between-timepoint Wilcoxon (pooled, tp only)
 RUN_BETWEEN_TIMEPOINT_FISHER=true           # A6: between-timepoint Fisher within condition (tp only)
-RUN_BETWEEN_TIMEPOINT_BACKGROUND_DIFF=true  # A7: N/A for occupancy (no per-group backgrounds)
 
-# Headline condition for the between-condition tests (Wilcoxon Analysis 2,
-# per-timepoint Fisher Analysis 4) lives in the shared _headline_config.sh, which
+# Headline condition for the between-condition tests (Wilcoxon A2,
+# per-timepoint Fisher A3) lives in the shared _headline_config.sh, which
 # the plot launchers also source — so the stats direction and the plot labels come
 # from ONE place and cannot drift. A positive effect (log2_FC / log2 odds ratio)
 # means enriched in HEADLINE_CONDITION. Leave it empty there for alphabetical.
@@ -76,7 +72,7 @@ echo "Sites:                ${SITES[*]}"
 echo "Levels:               ${LEVELS[*]}"
 echo "Groups:               $EXP_GROUPS"
 echo "Timepoints:           ${TIMEPOINTS:-none (flat design)}"
-echo "Analyses:             within=$RUN_WITHIN_CONDITION  bc_wilcoxon=$RUN_BETWEEN_CONDITION_WILCOXON  bc_fisher=$RUN_BETWEEN_CONDITION_FISHER  bc_bgdiff=$RUN_BETWEEN_CONDITION_BACKGROUND_DIFF  bt_wilcoxon=$RUN_BETWEEN_TIMEPOINT_WILCOXON  bt_fisher=$RUN_BETWEEN_TIMEPOINT_FISHER  bt_bgdiff=$RUN_BETWEEN_TIMEPOINT_BACKGROUND_DIFF"
+echo "Analyses:             within=$RUN_WITHIN_CONDITION  bc_wilcoxon=$RUN_BETWEEN_CONDITION_WILCOXON  bc_fisher=$RUN_BETWEEN_CONDITION_FISHER  bt_wilcoxon=$RUN_BETWEEN_TIMEPOINT_WILCOXON  bt_fisher=$RUN_BETWEEN_TIMEPOINT_FISHER"
 echo "=============================================="
 
 # Pass --timepoints only when TIMEPOINTS is non-empty.
@@ -100,10 +96,8 @@ for level in "${LEVELS[@]}"; do
     --within-condition "${RUN_WITHIN_CONDITION:-true}" \
     --between-condition-wilcoxon "${RUN_BETWEEN_CONDITION_WILCOXON:-true}" \
     --between-condition-fisher "${RUN_BETWEEN_CONDITION_FISHER:-true}" \
-    --between-condition-background-diff "${RUN_BETWEEN_CONDITION_BACKGROUND_DIFF:-true}" \
     --between-timepoint-wilcoxon "${RUN_BETWEEN_TIMEPOINT_WILCOXON:-true}" \
-    --between-timepoint-fisher "${RUN_BETWEEN_TIMEPOINT_FISHER:-true}" \
-    --between-timepoint-background-diff "${RUN_BETWEEN_TIMEPOINT_BACKGROUND_DIFF:-true}")
+    --between-timepoint-fisher "${RUN_BETWEEN_TIMEPOINT_FISHER:-true}")
 
   echo "Running: ${CMD[@]}"
   "${CMD[@]}"

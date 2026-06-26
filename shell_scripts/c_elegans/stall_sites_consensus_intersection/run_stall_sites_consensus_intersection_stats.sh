@@ -31,13 +31,14 @@
 # ============== CONFIG: edit these ==============
 # Format: "group1:rep1,rep2;group2:rep1,rep2"
 # Consensus sets replicate == group, so each group's "rep" is the group name.
-EXP_GROUPS='control:control;treatment:treatment'
+# Timepoint design: one group per (condition, timepoint) cell, replicate == group.
+EXP_GROUPS='control_day_0:control_day_0;control_day_5:control_day_5;control_day_10:control_day_10;BWM_day_0:BWM_day_0;BWM_day_5:BWM_day_5;BWM_day_10:BWM_day_10'
 
-# Timepoint labels in chronological order (earliest first). Leave empty for a
-# flat control-vs-treatment design (today's C. elegans consensus setup). Set to
-# a comma-separated list when groups carry timepoints (e.g. treatment_day_0).
-# Timepoints are NOT sorted automatically (a string sort places "day_10" before "day_5").
-TIMEPOINTS=''
+# Timepoint labels in chronological order (earliest first). Set when the groups
+# carry timepoints (e.g. BWM_day_0); leave empty for a flat control-vs-treatment
+# design. Timepoints are NOT sorted automatically (a string sort places "day_10"
+# before "day_5").
+TIMEPOINTS='day_0,day_5,day_10'
 
 # Directory containing stall_sites_{codon,aa}.csv and
 # per_group_background_{codon,aa}.csv from run_stall_sites_consensus_intersection.sh

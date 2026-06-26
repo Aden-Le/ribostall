@@ -71,6 +71,32 @@ source("R_scripts/aa_constants.R")
 
 level_label <- ifelse(args$level == "aa", "Amino Acid", "Codon")
 
+# Subtitle with a direction cue. Split the comparison into its two sides
+# ("BWM_vs_control" -> BWM / control; "Day_10_vs_Day_0" -> Day 10 / Day 0) so the
+# subtitle states what the fold-change sign means: bars rise toward the
+# numerator (enriched there) and fall toward the denominator. The ↑ ↓ → arrows
+# are drawn with symbol() so they typeset from the math engine and render in
+# every device (incl. cairo_pdf), matching the log[2] subscript on the y-axis.
+# Each side is gsub-cleaned of underscores the same way the title is, so a
+# multi-word label like "Day_10" reads as "Day 10" rather than leaking the
+# path-safe underscore. A --comparison without a "_vs_" split falls back to the
+# plain sort note.
+comparison_sides <- strsplit(args$comparison, "_vs_", fixed = TRUE)[[1]]
+if (length(comparison_sides) == 2) {
+  num_label <- gsub("_", " ", comparison_sides[1])
+  den_label <- gsub("_", " ", comparison_sides[2])
+  subtitle_expr <- bquote(
+    symbol("\255") * " enriched in " * .(num_label) * "      " *
+    symbol("\257") * " enriched in " * .(den_label) * "      (sorted high " *
+    symbol("\256") * " low)"
+  )
+} else {
+  subtitle_expr <- bquote(
+    "Bars sorted by " * log[2] * " fold-change (highest " *
+    symbol("\256") * " lowest)"
+  )
+}
+
 # ============================================================
 # Read and Prepare Data
 # ============================================================
@@ -177,7 +203,7 @@ make_barplot <- function(plot_data, title, y_limits, y_breaks,
 
     labs(
       title    = title,
-      subtitle = paste0("Bars sorted by log₂ fold-change (highest → lowest)"),
+      subtitle = subtitle_expr,
       x        = level_label,
       y        = bquote(bold(log[2]~"Fold-Change"))
     ) +
@@ -212,8 +238,12 @@ make_barplot <- function(plot_data, title, y_limits, y_breaks,
 
 save_plot <- function(p, filepath, width, height, format, dpi) {
   if (format %in% c("pdf", "both")) {
+    # Use cairo_pdf rather than the classic "pdf" device so Unicode glyphs in
+    # titles/axes/subtitles (e.g. the → arrow, the ₂ subscript, the – en-dash)
+    # embed correctly. The base PostScript fonts drop them on Windows
+    # (the "mbcsToSbcs ... substituted for <U+....>" warning at render time).
     ggsave(paste0(filepath, ".pdf"), plot = p,
-           width = width, height = height, units = "in", device = "pdf")
+           width = width, height = height, units = "in", device = cairo_pdf)
   }
   if (format %in% c("png", "both")) {
     ggsave(paste0(filepath, ".png"), plot = p,

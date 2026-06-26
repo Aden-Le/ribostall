@@ -64,7 +64,10 @@ echo "Running: ${CMD[@]}"
 BT_OUT="$PLOTS_DIR/between_timepoint"
 
 for comparison in d10_vs_d0 d10_vs_d5 d5_vs_d0; do
-  pretty=$(echo "$comparison" | sed 's/d\([0-9]\+\)/Day\1/g')
+  # Underscore between "Day" and the number keeps the value path-safe for
+  # filenames while the barplot R script's gsub("_"," ") renders the title as
+  # "Day 10 vs Day 0" (spaced), matching the Fisher launcher's labels.
+  pretty=$(echo "$comparison" | sed 's/d\([0-9]\+\)/Day_\1/g')
 
   echo ""
   echo "--- AA: $pretty ---"

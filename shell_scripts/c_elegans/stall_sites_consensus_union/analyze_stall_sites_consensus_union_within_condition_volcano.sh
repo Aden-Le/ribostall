@@ -1,13 +1,15 @@
 #!/bin/bash
 #----------------------------------------------------
-# Within-Condition Enrichment Volcano Plots (CONSENSUS UNION stall_sites)
+# Within-Condition Enrichment Volcano Plots (CONSENSUS UNION stall_sites) — TIMEPOINT MODE
 # Drives R_scripts/within_condition_volcano.R on the within-condition
 # binomial CSVs emitted by stall_sites_consensus_union_stats.py:
 #   within_condition_binomial_{aa,codon}.csv
 #
-# The consensus within-condition CSV already carries site/group/condition/
-# timepoint columns (timepoint == condition for this flat control-vs-treatment
-# design), so the R script consumes it directly with no preprocessing.
+# Run with --timepoints, the stats carry REAL timepoints, so the CSV's
+# site/group/condition/timepoint columns span condition x timepoint
+# (BWM/control x day_0/5/10). The R script consumes it directly with no
+# preprocessing and builds the by-condition and by-day composites (NOT the flat
+# per-group layout — so --flat-design is intentionally omitted here).
 #----------------------------------------------------
 
 # Add R to PATH (Windows)
@@ -54,11 +56,11 @@ echo "Y-axis cap:       ${Y_CAP:-default}"
 echo "=============================================="
 
 # Build optional flags.
-# --flat-design: the consensus stats output is a flat control-vs-treatment
-# design with no timepoint axis (group == condition, timepoint == condition).
-# It tells within_condition_volcano.R to build composites per group rather than
-# over the condition x timepoint cross-product (which would be empty here).
-OPTIONAL_FLAGS=(--mega-composite --flat-design)
+# --mega-composite: also emit the all-groups grid (rows = condition x timepoint,
+# cols = sites). NO --flat-design: the stats are run with --timepoints, so the
+# CSV spans condition x timepoint and the R script builds the by-condition and
+# by-day composites over that cross-product.
+OPTIONAL_FLAGS=(--mega-composite)
 [ -n "$SHOW_CI" ] && OPTIONAL_FLAGS+=("$SHOW_CI")
 [ -n "$Y_CAP" ]   && OPTIONAL_FLAGS+=(--y-cap "$Y_CAP")
 

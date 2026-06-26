@@ -70,6 +70,10 @@ parser$add_argument("--title-test-label",
                     default = "Fisher's Test",
                     help = "Test name used in the composite plot title, formatted as '<level> <label> (<comparison>)'. Default \"Fisher's Test\". Pass e.g. 'Background-Aware Enrichment' for the background-aware between-condition test.")
 
+parser$add_argument("--composite-tag",
+                    default = "fisher",
+                    help = "Test token embedded in the composite plot FILENAME ('<level>_<tag>_composite'). Default 'fisher' (Fisher's exact test). Pass 'binomial' for the background-aware between-group test (a conditional binomial), so the filename reflects the test that produced it. The composite TITLE text is controlled separately by --title-test-label.")
+
 parser$add_argument("--format",
                     default = "both",
                     choices = c("pdf", "png", "both"),
@@ -273,8 +277,12 @@ make_volcano <- function(plot_data, x_lim, y_max, title,
 
 save_plot <- function(p, filepath, width, height, format, dpi) {
   if (format %in% c("pdf", "both")) {
+    # Use cairo_pdf rather than the classic "pdf" device so Unicode glyphs in
+    # titles/axes/subtitles (e.g. the → arrow, the ₂ subscript, the – en-dash)
+    # embed correctly. The base PostScript fonts drop them on Windows
+    # (the "mbcsToSbcs ... substituted for <U+....>" warning at render time).
     ggsave(paste0(filepath, ".pdf"), plot = p,
-           width = width, height = height, units = "in", device = "pdf")
+           width = width, height = height, units = "in", device = cairo_pdf)
   }
   if (format %in% c("png", "both")) {
     ggsave(paste0(filepath, ".png"), plot = p,
@@ -381,7 +389,7 @@ composite <- wrap_plots(plot_list, ncol = n_sites, nrow = n_groups) +
   theme(legend.position = "bottom")
 
 filepath <- file.path(args$outdir, "composite",
-                      paste0(args$level, "_fisher_composite"))
+                      paste0(args$level, "_", args$composite_tag, "_composite"))
 save_plot(composite, filepath,
           width  = 6 * n_sites,
           height = 5.5 * n_groups + 1.5,

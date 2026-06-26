@@ -16,7 +16,10 @@ INPUT_DIR="./results/c_elegans/global_occupancy/analysis"
 OUTPUT_DIR="./results/c_elegans/global_occupancy/plots/within_condition"
 
 # Enrichment type: "unweighted", "weighted", or "both"
-ENRICHMENT_TYPE="both"
+# Global occupancy normalizes every condition to one shared transcriptome
+# background, so the frequency-weighted enrichment adds little here — keep it
+# unweighted-only (the weighted volcanoes were dropped from the global reports).
+ENRICHMENT_TYPE="unweighted"
 
 # Output format: "pdf", "png", or "both"
 FORMAT="both"

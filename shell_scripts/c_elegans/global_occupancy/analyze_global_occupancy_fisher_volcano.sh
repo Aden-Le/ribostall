@@ -42,6 +42,7 @@ CMD=(Rscript R_scripts/between_group_volcano.R \
   --level aa \
   --group-col "timepoint" \
   --comparison-label "$COMPARISON_LABEL" \
+  --composite-tag "fisher" \
   --format "$FORMAT" --dpi "$DPI")
 echo "Running: ${CMD[@]}"
 "${CMD[@]}"
@@ -54,6 +55,7 @@ CMD=(Rscript R_scripts/between_group_volcano.R \
   --level codon \
   --group-col "timepoint" \
   --comparison-label "$COMPARISON_LABEL" \
+  --composite-tag "fisher" \
   --format "$FORMAT" --dpi "$DPI")
 echo "Running: ${CMD[@]}"
 "${CMD[@]}"
@@ -76,7 +78,8 @@ for comparison in d10_vs_d0 d10_vs_d5 d5_vs_d0; do
     --level aa \
     --group-col "condition" \
     --comparison-label "$pretty" \
-    --format "$FORMAT" --dpi "$DPI")
+    --composite-tag "fisher" \
+  --format "$FORMAT" --dpi "$DPI")
   echo "Running: ${CMD[@]}"
   "${CMD[@]}"
 
@@ -88,7 +91,8 @@ for comparison in d10_vs_d0 d10_vs_d5 d5_vs_d0; do
     --level codon \
     --group-col "condition" \
     --comparison-label "$pretty" \
-    --format "$FORMAT" --dpi "$DPI")
+    --composite-tag "fisher" \
+  --format "$FORMAT" --dpi "$DPI")
   echo "Running: ${CMD[@]}"
   "${CMD[@]}"
 done

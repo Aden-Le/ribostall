@@ -309,8 +309,12 @@ make_overlay_plot <- function(aa_sub, codon_sub, title,
 
 save_plot <- function(p, filepath, width, height, format, dpi) {
   if (format %in% c("pdf", "both")) {
+    # Use cairo_pdf rather than the classic "pdf" device so Unicode glyphs in
+    # titles/axes/subtitles (e.g. the → arrow, the ₂ subscript, the – en-dash)
+    # embed correctly. The base PostScript fonts drop them on Windows
+    # (the "mbcsToSbcs ... substituted for <U+....>" warning at render time).
     ggsave(paste0(filepath, ".pdf"), plot = p,
-           width = width, height = height, units = "in", device = "pdf")
+           width = width, height = height, units = "in", device = cairo_pdf)
   }
   if (format %in% c("png", "both")) {
     ggsave(paste0(filepath, ".png"), plot = p,

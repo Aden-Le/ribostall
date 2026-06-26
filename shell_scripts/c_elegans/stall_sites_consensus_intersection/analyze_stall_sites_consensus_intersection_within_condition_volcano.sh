@@ -2,12 +2,16 @@
 #----------------------------------------------------
 # Within-Condition Enrichment Volcano Plots (CONSENSUS INTERSECTION stall_sites)
 # Drives R_scripts/within_condition_volcano.R on the within-condition
-# binomial CSVs emitted by stall_sites_consensus_intersection_stats.py:
+# binomial CSVs (A1) emitted by stall_sites_consensus_intersection_stats.py:
 #   within_condition_binomial_{aa,codon}.csv
 #
-# The consensus within-condition CSV already carries site/group/condition/
-# timepoint columns (timepoint == condition for this flat control-vs-treatment
-# design), so the R script consumes it directly with no preprocessing.
+# Under the current timepoint stats run (TIMEPOINTS='day_0,day_5,day_10') this
+# CSV is a full condition x timepoint design: it carries distinct site/group/
+# condition/timepoint columns (e.g. group BWM_day_0, condition BWM, timepoint
+# day_0). The R script consumes it directly with no preprocessing and builds the
+# by-condition and by-day composites over the condition x timepoint grid — so
+# this launcher must NOT pass --flat-design (that flag is for a flat, no-timepoint
+# control-vs-treatment run where group == condition and there is no day axis).
 #----------------------------------------------------
 
 # Add R to PATH (Windows)
@@ -54,11 +58,10 @@ echo "Y-axis cap:       ${Y_CAP:-default}"
 echo "=============================================="
 
 # Build optional flags.
-# --flat-design: the consensus stats output is a flat control-vs-treatment
-# design with no timepoint axis (group == condition, timepoint == condition).
-# It tells within_condition_volcano.R to build composites per group rather than
-# over the condition x timepoint cross-product (which would be empty here).
-OPTIONAL_FLAGS=(--mega-composite --flat-design)
+# --mega-composite: also emit an all-groups grid (rows = condition x timepoint,
+# cols = sites). The by-condition and by-day composites are built unconditionally
+# from the timepoint design — do NOT pass --flat-design here (see header).
+OPTIONAL_FLAGS=(--mega-composite)
 [ -n "$SHOW_CI" ] && OPTIONAL_FLAGS+=("$SHOW_CI")
 [ -n "$Y_CAP" ]   && OPTIONAL_FLAGS+=(--y-cap "$Y_CAP")
 

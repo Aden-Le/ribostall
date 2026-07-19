@@ -1,181 +1,249 @@
-# Overview
+# ribostall
 
-`ribostall` provides a Python-based pipeline for:
-- Extracting read coverage from `.ribo` files with applied P-site offsets  
-- Detecting candidate ribosome stall sites across replicates  
-- Performing amino acid enrichment analysis around stall sites
+*A pipeline for finding where ribosomes stall on mRNA, what amino-acid and codon contexts those stalls sit in, and how codon occupancy shifts across the transcriptome — from ribosome-profiling (Ribo-seq) data.*
 
-# Installation
+Welcome. This README is the **cover and table of contents** for the whole project. It
+tells the story of what ribostall does and how the pieces fit together, then points you
+into a per-folder README for the in-depth "how it works under the hood." Read this page
+first; open a folder's README when you want the mechanics of that layer.
 
-Clone repository:
+---
+
+## Table of contents
+
+- [What ribostall does](#what-ribostall-does)
+- [The pipeline, end to end](#the-pipeline-end-to-end)
+- [How the statistics are organized (A1–A7)](#how-the-statistics-are-organized-a1a7)
+- [Repository map — where to read next](#repository-map--where-to-read-next)
+- [Inputs](#inputs)
+- [Installation](#installation)
+- [Quick start](#quick-start)
+- [A note on outputs](#a-note-on-outputs)
+
+---
+
+## What ribostall does
+
+A ribosome profiling experiment sequences the mRNA fragments that ribosomes are sitting
+on at the moment of cell lysis. The density of those footprints along a transcript is a
+snapshot of translation: places where ribosomes pile up are places where elongation is
+slow — **stall sites**. ribostall takes the footprint data and answers three questions:
+
+1. **Where are the stalls?** It calls positions where codon-level occupancy is unusually
+   high relative to the rest of the transcript, and (optionally) requires agreement
+   across replicates.
+2. **What sequence context do stalls prefer?** For every stall it reads out the codons and
+   amino acids sitting in the ribosome's **E, P, and A sites**, and tests which of them are
+   enriched — within a condition, between conditions, and across timepoints.
+3. **How does codon usage shift globally?** Separately from discrete stall sites, it
+   measures transcriptome-wide **codon/amino-acid occupancy** at each ribosomal site and
+   compares it across conditions and time.
+
+The whole thing is built to compare experimental groups (e.g. a treatment vs a control,
+or a developmental time course) rigorously, with careful attention to *not* fabricating
+statistical power from pooled replicates (see [the statistics section](#how-the-statistics-are-organized-a1a7)).
+
+---
+
+## The pipeline, end to end
+
+Everything flows from one ingestion step into two parallel analysis tracks, each of which
+ends in statistics and plots:
+
+```
+        .ribo (RiboFlow)  +  reference FASTA
+                     │
+                     ▼
+        ┌────────────────────────────┐
+        │  Step 1  adj_coverage.py    │   P-site offset + CDS-aligned, length-summed
+        │  → coverage pickle (.pkl.gz)│   per-transcript coverage
+        └────────────────────────────┘
+                     │
+         ┌───────────┴─────────────────────────────┐
+         ▼                                          ▼
+  ┌───────────────────────┐              ┌──────────────────────────┐
+  │ Step 2  Stall sites   │              │ Step 3  Global occupancy │
+  │ call → annotate E/P/A  │              │ count E/P/A codon/AA      │
+  │ → base CSVs            │              │ occupancy → base CSVs     │
+  └───────────────────────┘              └──────────────────────────┘
+         │                                          │
+         ▼                                          ▼
+  ┌───────────────────────┐              ┌──────────────────────────┐
+  │ *_stats.py            │              │ global_codon_occ_stats.py │
+  │ enrichment tests       │              │ enrichment tests          │
+  │ → analysis CSVs        │              │ → merged E/P/A analysis   │
+  └───────────────────────┘              └──────────────────────────┘
+         │                                          │
+         └──────────────┬───────────────────────────┘
+                        ▼
+              ┌────────────────────┐
+              │ R plots (volcano,  │   driven by analyze_*.sh
+              │ bar, overlay)      │
+              └────────────────────┘
+```
+
+- **Step 1 — coverage.** `adj_coverage.py` reads the `.ribo` file, applies a per-read-length
+  P-site offset (so each footprint is attributed to the codon in the ribosome's P-site),
+  sums coverage within the CDS, and serializes a compact `{experiment: {transcript: array}}`
+  pickle. Every later step reads this pickle instead of touching the big `.ribo` again.
+
+- **Step 2 — stall sites.** The coverage is codonized, transcripts are filtered for adequate
+  depth, and per-codon **z-scores** on the trimmed elongation body flag high-occupancy
+  positions. Each stall is annotated with the codons/amino acids in its E, P, and A sites.
+  This step comes in **two philosophies** (below), and the calling ("base CSVs") is
+  deliberately separated from the statistics so the stats can run on a machine that never
+  sees the `.ribo`.
+
+- **Step 3 — global occupancy.** Independently of discrete stalls, ribostall tallies how
+  much ribosome density sits on each codon/amino acid at the E, P, and A sites across the
+  whole transcriptome, normalized several ways (rate, proportion, RPM).
+
+- **Stats + plots.** Each track runs a family of enrichment tests and the R scripts turn the
+  resulting CSVs into volcano plots, bar plots, and amino-acid/codon overlays.
+
+### Two philosophies for stall calling
+
+The Step-2 track exists in three sibling forms that differ in how they treat replicates:
+
+- **Consensus (union)** and **consensus (intersection)** collapse replicates into one
+  reproducible stall set per group (a site must recur in enough replicates). The two
+  variants differ only in transcript handling: **union** lets each group keep its own
+  filtered transcript set; **intersection** restricts every group to the transcripts that
+  pass filtering in *all* groups.
+- **Non-consensus** keeps every replicate as an independent observation and never collapses.
+
+Why it matters is entirely about the statistics that follow.
+
+---
+
+## How the statistics are organized (A1–A7)
+
+The tests carry short labels (A1–A7). The important idea is **which test is valid on which
+kind of data**, and that is enforced structurally by splitting the code into separate stats
+scripts rather than by a flag you could flip the wrong way.
+
+| Label | Test | Runs on |
+|-------|------|---------|
+| **A1** | Within-condition binomial (observed vs background) | consensus (both variants) |
+| **A2** | Between-condition Wilcoxon rank-sum (per replicate) | non-consensus |
+| **A3** | Between-condition Fisher's exact | consensus **intersection** |
+| **A4** | Between-condition background-aware diff | consensus **union** |
+| **A5** | Between-timepoint Wilcoxon (per replicate) | non-consensus |
+| **A6** | Between-timepoint Fisher within condition | consensus **intersection** |
+| **A7** | Between-timepoint background-aware diff | consensus **union** |
+
+Two design decisions explain this table:
+
+- **No pseudoreplication.** The count-collapsing tests (binomial/Fisher/background-aware)
+  pool biological replicates into a single aggregate count. Doing that on per-replicate data
+  would manufacture significance. So those tests live **only** in the consensus stats scripts,
+  where each group is already a single reproducibility-filtered set (pooling one set is a
+  no-op). The non-consensus script contains no count-collapsing code at all — it runs only the
+  Wilcoxons (A2/A5), which treat each replicate as one independent observation. The split is
+  structural: there is no toggle to turn pooling back on.
+
+- **Fisher vs background-aware.** In the **intersection** variant every condition shares one
+  transcript universe, so the per-group backgrounds are identical and raw stall-site shares
+  are directly comparable → **Fisher** (A3/A6) is fair. In the **union** variant the per-group
+  backgrounds differ, so each condition must be normalized to its own background before
+  comparison → the **background-aware diff** (A4/A7) is the valid test, and a raw Fisher would
+  be confounded. (When backgrounds happen to be equal, the background-aware diff mathematically
+  converges to Fisher.)
+
+Global occupancy runs its own within-condition binomial, Wilcoxon, and Fisher tests; the
+no-pseudoreplication rule currently applies to the stall-site tracks only.
+
+The full derivations, function-by-function, live in
+[ribostall/README.md](ribostall/README.md); the per-script argument tables live in
+[scripts/README.md](scripts/README.md).
+
+---
+
+## Repository map — where to read next
+
+Each top-level folder is a self-contained chapter. Start here, then drill in.
+
+| Folder | What it is | Chapter |
+|--------|-----------|---------|
+| **scripts/** | The Python CLI entry points — one per pipeline step (coverage, stall calling, stall stats, occupancy, occupancy stats, plus a supplementary internal-stop scan). Every argument, and the step-by-step control flow of each script, is documented here. | [scripts/README.md](scripts/README.md) |
+| **ribostall/** | The shared Python package the scripts import — sequence/FASTA handling, codon & amino-acid tables, stall calling, the E/P/A machinery, and the statistical kernels (`stats_core`) reused across both analysis tracks. Function reference + import graph. | [ribostall/README.md](ribostall/README.md) |
+| **R_scripts/** | The unified R visualizers (volcano, bar, AA/codon overlay) that turn the stats CSVs into figures, plus their shared constants and test fixtures. | [R_scripts/README.md](R_scripts/README.md) |
+| **shell_scripts/** | The orchestration layer: small, editable bash wrappers that hold your dataset's arguments and run the Python/R commands for you, grouped by organism and stage. This is what you actually run. | [shell_scripts/README.md](shell_scripts/README.md) |
+| **reference/** | The reference transcriptome FASTA files (C. elegans, mouse) used for CDS sequence lookup and motif backgrounds. | [reference/README.md](reference/README.md) |
+| **all_ribo_file/** | A sample RiboFlow `.ribo` input (mouse). | [all_ribo_file/README.md](all_ribo_file/README.md) |
+
+> **This repository is the clean pipeline template.** Only the code and reference data needed
+> to run it are tracked. Dataset-specific outputs and working directories — `results/`,
+> `docs/`, `changelog/`, `plans/` — are git-ignored and created per analysis.
+
+---
+
+## Inputs
+
+ribostall consumes two files per dataset:
+
+- **A `.ribo` file** — a RiboFlow ([riboflow](https://github.com/ribosomeprofiling/riboflow))
+  HDF5 container of RPM-normalized read coverage per experiment, read length, and transcript,
+  plus CDS metadata. Read via `ribopy`. See [all_ribo_file/README.md](all_ribo_file/README.md).
+- **A reference FASTA** — the transcriptome (CDS) sequences, used to translate E/P/A codons and
+  to compute motif backgrounds. Gzip is auto-detected. See [reference/README.md](reference/README.md).
+
+Example `.ribo` and reference files (human/mouse) are available in
+[ribograph_sampledata](https://github.com/ribosomeprofiling/ribograph_sampledata).
+
+**Supported platforms:** Python 3.9–3.11 on Linux/macOS (the pipeline scripts). The shell
+launchers include PowerShell invocation examples for Windows via Git for Windows' bash.
+
+---
+
+## Installation
+
 ```bash
 git clone https://github.com/reikostachibana/ribostall
-```
-
-Install dependencies:
-```
+cd ribostall
 pip install -r requirements.txt
 ```
 
-Input Requirements
-* `.ribo` file generated by [RiboFlow](https://github.com/ribosomeprofiling/riboflow)
-* Reference fasta file
-Example `.ribo` files and reference files (human and mouse) can be found in [ribograph_sample_data](https://github.com/ribosomeprofiling/ribograph_sampledata?tab=readme-ov-file)
+The R plotting scripts additionally need R with `ggplot2`, `optparse`, and (for logos)
+the usual tidy plotting stack; see [R_scripts/README.md](R_scripts/README.md).
 
-Supported platforms & versions
-* Python: 3.9–3.11
-* OS: Linux/macOS
+---
 
-# 1. Generate coverage dictionary
+## Quick start
 
-`adj_coverage.py` creates a gzipped pickle file of coverage data with applied P-site offset within the CDS.
+The intended way to run any step is through its shell wrapper: edit the `CONFIG` block at
+the top for your data, then run it. From the repo root on Windows/PowerShell:
 
-| Argument      | Type   | Default | Required | Description |
-|---------------|--------|---------|----------|-------------|
-| `--ribo`      | path   | —       | ✅       | Input `.ribo` file |
-| `--site-type` | str    | —       | ✅       | `"start"` (monosome) or `"stop"` (disome) for P-site offset |
-| `--min-len`   | int    | —       | ✅       | Minimum read length (inclusive) |
-| `--max-len`   | int    | —       | ✅       | Maximum read length (inclusive) |
-| `--procs`     | int    | 1       | ❌       | Number of parallel processes |
-| `--out`       | path   | `cov.pkl.gz` | ✅ | Output gzipped pickle file |
-| `--alias`       | flag   | off  | ❌ | DO NOT USE  |
-
-Output:
-* Gzipped pickle of dictionary `{replicate: {transcript: coverage_array}}`)
-
-Example input:
-```
-python scripts/adj_coverage.py  \
---ribo "../bxc/bxc_disome.ribo" \
---site-type "stop" \
---min-len 57 \
---max-len 65 \
---procs 9 \
---out "../bxc/cov_di.pkl.gz"
+```powershell
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/c_elegans/adj_coverage/run_adj_coverage_all.sh
 ```
 
-# 2. Get stall sites
+From Git Bash / Linux / macOS:
 
-Stall-site analysis is split into two call/stats pairs. `stall_sites_non_consensus.py` calls stall sites and annotates each with its E/P/A codon and amino acid, producing two tidy CSVs (`stall_sites_codon.csv` and `stall_sites_aa.csv`) plus matching per-group background CSVs (`per_group_background_codon.csv`, `per_group_background_aa.csv`). All ribopy / FASTA work happens in the call scripts so the stats halves run on a machine without the `.ribo` file. `stall_sites_non_consensus_stats.py` consumes one stall-sites CSV at a time and runs **two per-replicate Wilcoxon tests only** — run it twice (once per level) to get codon-level and AA-level outputs side-by-side: `between_condition_wilcoxon_{codon,aa}.csv`; and, when `--timepoints` is given, `between_timepoint_wilcoxon_{tag}_{codon,aa}.csv` per day-pair. It takes no `--background` argument (the Wilcoxons read only per-replicate frequencies, never a background CSV).
-
-The consensus pipeline has **two stats counterparts**, one per calling variant, each running a disjoint subset of the count tests (see the rationale below):
-
-- `stall_sites_consensus_union_stats.py` reads the outputs of `stall_sites_consensus_union.py` and runs the **background-aware tests**: within-condition binomial (A1), between-condition background-aware diff (A4), and — with `--timepoints` — between-timepoint background-aware diff (A7).
-- `stall_sites_consensus_intersection_stats.py` reads the outputs of `stall_sites_consensus_intersection.py` and runs the **Fisher tests**: within-condition binomial (A1), between-condition Fisher (A3), and — with `--timepoints` — between-timepoint Fisher within condition (A6).
-
-Each reads the `stall_sites_{codon,aa}.csv` and `per_group_background_{codon,aa}.csv` outputs from its call script. Without `--timepoints`, A3/A4 emit one flat between-condition comparison each (`between_condition_fisher_{level}.csv`, `between_condition_background_diff_{level}.csv`); with it, A3/A4 slice into per-timepoint files and A6/A7 run over every later-vs-earlier day-pair.
-
-**Why split Fisher (intersection) from background-aware (union)?** The two calling variants differ only after transcript filtering: *union* lets each group keep its own filtered transcript set, while *intersection* restricts every group to the transcripts that pass filtering in **all** groups. In the intersection variant all conditions share one transcript universe, so raw stall-site shares are apples-to-apples (Fisher is fair) and the per-group backgrounds are identical (the background-aware diff degenerates to the same raw-share comparison Fisher already makes). In the union variant the per-group backgrounds differ, so each condition must be normalized to its own background (the background-aware diff is the valid comparison) and a raw Fisher would be confounded by the differing transcript sets. The within-condition binomial (A1) is a per-group enrichment and runs in both.
-
-### Test-by-pipeline division
-
-The two stats scripts run **disjoint analysis sets**, enforced structurally by separate scripts:
-
-| Script | Analyses | Tests |
-|--------|----------|-------|
-| `stall_sites_non_consensus_stats.py` | A2, A5 | per-replicate Wilcoxon (between-condition; between-timepoint with `--timepoints`) |
-| `stall_sites_consensus_union_stats.py` | A1, A4, A7 | within-condition binomial; background-aware diff (A7 with `--timepoints`) |
-| `stall_sites_consensus_intersection_stats.py` | A1, A3, A6 | within-condition binomial; Fisher's exact (A6 with `--timepoints`) |
-
-**Why separate?** The count-collapsing tests (A1/A3/A4/A6/A7, including the within-condition binomial) pool biological replicates within a group into a single aggregate count — pseudoreplication that is invalid on per-replicate (non-consensus) data. The Wilcoxons (A2/A5) keep each replicate as an independent observation and never collapse counts. The split is enforced **structurally**: the non-consensus script contains no count-collapsing code at all, so pooling is impossible by construction (there is no toggle to flip back on). The consensus stats scripts (union + intersection) hold the count tests and run them at n=1 per (condition, timepoint) cell on reproducibility-filtered stall sets — pooling a single set is a no-op, not a pseudoreplicate.
-
-**Caveat:** the consensus (intersection) Fisher ≠ the unfiltered pooled Fisher that the non-consensus inputs would yield. Consensus applies a reproducibility filter first (a site must appear in ≥ `--min-support` replicates), so the consensus count tests operate on a filtered set. Dropping the non-consensus pooled tests is therefore a deliberate choice of the filtered view, not a redundant no-op cleanup.
-
-**Occupancy** (`global_codon_occ_stats.py`) still runs pooled Fisher and background-aware tests — the no-pseudoreplication rule applies to the stall-site pipelines only and has not yet been extended to occupancy.
-
-`stall_sites_consensus_union.py` and `stall_sites_consensus_intersection.py` are the sibling consensus-based call scripts; they find stall sites from coverage data with applied P-site offsets. They take identical arguments and run the identical pipeline, differing in exactly one step: after per-group transcript filtering, the **union** script lets each group keep its own filtered transcript set, while the **intersection** script restricts every group to the transcripts that pass filtering in all groups (so all conditions share one transcript universe and the per-group backgrounds become identical). The examples below use the union script; substitute `stall_sites_consensus_intersection.py` for the intersection variant. The pipeline is:
-1. **Transcript filtering**: For each transcript, the average reads per nucleotide is computed. Transcripts with coverage below `--tx_threshold` in fewer than `--tx_min_rep` are excluded.
-2. **Codonize read counts**: An array of the number of reads per codon. `0` corresponds to the start codon.
-3. **z-score calculation**: The first and last `--trim_edges` codons (initiation ramp and termination region) are dropped first, so their pileups don't inflate the null. The remaining elongation body is converted to `log2(x + pseudocount)` to stabilize variance and handle zeros, and transcript-wide z-scores are computed on that trimmed body. Codons with z-scores ≥ `--min_z` and reads ≥ `--min_reads` are considered candidate stalls.
-4. **Consensus stall sites**: A site must appear in at least `--min-support` replicates to be reported. `--min_sep` is intended to collapse consensus sites that fall within that many codons of each other, but it only takes effect under a non-default conflict-resolution mode; the scripts use the default `keep_both`, which keeps all sites and ignores `--min_sep`. The shell runners therefore set `--min_sep 0` (no collapsing).
-5. **Output**: List of stall sites `{"group": "group", "transcript": "transcript", "tx_id": "tx_id", "gene": "gene", "pos_codon", 1}`
-
-Optional: `--motif` finds amino acid enrichment around stall sites. This is done by:
-1. **Count amino acids across all stall windows**: Within  `--flank-left` and `--flank-right` around the P-site at stall sites, count the amino acids at each position.
-2. **Calculate background frequency**: Compute the overall frequency of each amino acid across all codons in the same set of transcripts (not just stall sites). This ensures enrichment is relative to the transcriptome composition of the analyzed set.
-3. **Convert counts into probabilities**: Add `--pseudocount` to every amino acid count and normalize to get probabilities per position.
-4. **Position weight matrix**: Compare probability of amino acid at that position to the background frequency by calculating log2 enrichment `log2 ( probabilities / background frequency )`. Multiply the log2 enrichment with the probability to get *position weight matrix*. Enriched > 0, depleted < 0. 
-
-| Argument         | Type   | Default | Required | Description |
-|------------------|--------|---------|----------|-------------|
-| `--pickle`       | path   | —       | ✅       | Coverage pickle (`.pkl.gz`) |
-| `--ribo`         | path   | —       | ✅       | Input `.ribo` file |
-| `--groups`       | str    | —       | ✅       | group1:rep1,rep2,rep3;group2:rep1,rep2,rep3;group3... |
-| `--tx_threshold` | float  | 1.0     | ❌       | Min avg reads/nt to keep transcript |
-| `--tx_min_rep`    | int    | 2       | ❌       | Min replicates to support transcript |
-| `--min_z`        | float  | 1.0     | ❌       | Min z-score to call stall site |
-| `--min_reads`    | int    | 2       | ❌       | Min reads to call stall site |
-| `--stall_min_reps_per_group` | str | — | ✅ | Per-group min replicates to support a stall site; must name every declared group, e.g. `control:2;treatment:1` |
-| `--trim_edges`   | int    | 10      | ❌       | Exclude codons at CDS ends |
-| `--min_sep`      | int    | 7       | ❌       | Min codon separation to collapse nearby consensus sites — **only active under a non-default conflict-resolution mode; the scripts use `keep_both`, which ignores `--min_sep` (shell runners pass `0`)** |
-| `--pseudocount`   | float  | 0.5     | ❌       | Small value added to all amino acid counts before calculating enrichment, to avoid division by zero and stabilize log2 ratios |
-| `--out-json`     | path   | `stalls.jsonl` | ❌ | JSON output file |
-| `--motif`        | flag   | off     | ❌       | Run amino acid motif analysis |
-| `--reference`    | path   | —       | if `--motif` | Reference FASTA file |
-| `--flank-left`   | int    | 10      | ❌       | Codons left of P-site for motif |
-| `--flank-right`  | int    | 6       | ❌       | Codons right of P-site for motif |
-| `--out-png`      | path   | `motif.png`    | ❌ | Motif plot |
-| `--out-csv`      | path   | `motif_csv/`   | ❌ | CSV outputs for motif enrichment |
-
-Example input to check filter thresholds:
-```
-python scripts/stall_sites_consensus_union.py \
---pickle "../bxc/cov_di.pkl.gz" \
---ribo "../bxc/bxc_disome.ribo" \
---groups "kidney:kidney_rep1,kidney_rep2,kidney_rep3;liver:liver_rep1,liver_rep2,liver_rep3;lung:lung_rep1,lung_rep2,lung_rep3" \
---tx_threshold 0.3 \
---min_z 1.0
+```bash
+bash shell_scripts/c_elegans/adj_coverage/run_adj_coverage_all.sh
 ```
 
-Example input for motif analysis:
-```
-python scripts/stall_sites_consensus_union.py \
---pickle "../bxc/cov_di.pkl.gz" \
---ribo "../bxc/bxc_disome.ribo" \
---groups "kidney:kidney_rep1,kidney_rep2,kidney_rep3;liver:liver_rep1,liver_rep2,liver_rep3;lung:lung_rep1,lung_rep2,lung_rep3" \
---tx_threshold 0.3 \
---min_z 1.0 \
---motif \
---reference "../reference_files/appris_mouse_v2_selected.fa.gz" \
---flank-left 20 \
---flank-right 10
-```
+The full run order (coverage → stall calling/occupancy → stats → plots) and every
+launcher are in [shell_scripts/README.md](shell_scripts/README.md) and the per-organism
+chapters it links to. To call the Python scripts directly instead, see the argument tables
+in [scripts/README.md](scripts/README.md).
 
-# Troubleshooting
+---
 
-Successful run of `adj_coverage.py`:
-```
-2025-09-29 14:10:03,451  INFO  MainProcess  Experiments: ['kidney_rep1', 'kidney_rep2', 'kidney_rep3', 'liver_rep1', 'liver_rep2', 'liver_rep3', 'lung_rep1', 'lung_rep2', 'lung_rep3']
-2025-09-29 14:10:03,451  INFO  MainProcess  Transcripts: 21568 total
-2025-09-29 14:10:03,451  INFO  MainProcess  Lengths: 57..65
-2025-09-29 14:10:03,451  INFO  MainProcess  Processes: 9, batch_size: 0
-2025-09-29 14:10:20,026  INFO  SpawnPoolWorker-1  [kidney_rep1] start: lengths 57..65
-2025-09-29 14:10:20,026  INFO  SpawnPoolWorker-2  [kidney_rep2] start: lengths 57..65
-2025-09-29 14:10:20,026  INFO  SpawnPoolWorker-3  [kidney_rep3] start: lengths 57..65
-2025-09-29 14:10:20,027  INFO  SpawnPoolWorker-6  [liver_rep3] start: lengths 57..65
-2025-09-29 14:10:20,026  INFO  SpawnPoolWorker-5  [liver_rep2] start: lengths 57..65
-2025-09-29 14:10:20,027  INFO  SpawnPoolWorker-7  [lung_rep1] start: lengths 57..65
-2025-09-29 14:10:20,026  INFO  SpawnPoolWorker-4  [liver_rep1] start: lengths 57..65
-2025-09-29 14:10:20,027  INFO  SpawnPoolWorker-8  [lung_rep2] start: lengths 57..65
-2025-09-29 14:10:20,114  INFO  SpawnPoolWorker-9  [lung_rep3] start: lengths 57..65
-2025-09-29 14:10:29,574  INFO  SpawnPoolWorker-4  [liver_rep1] done in 9.55s
-2025-09-29 14:10:29,647  INFO  SpawnPoolWorker-3  [kidney_rep3] done in 9.62s
-2025-09-29 14:10:29,652  INFO  SpawnPoolWorker-1  [kidney_rep1] done in 9.63s
-2025-09-29 14:10:29,664  INFO  SpawnPoolWorker-2  [kidney_rep2] done in 9.64s
-2025-09-29 14:10:30,774  INFO  SpawnPoolWorker-8  [lung_rep2] done in 10.75s
-2025-09-29 14:10:30,780  INFO  SpawnPoolWorker-6  [liver_rep3] done in 10.75s
-2025-09-29 14:10:30,786  INFO  SpawnPoolWorker-7  [lung_rep1] done in 10.76s
-2025-09-29 14:10:30,802  INFO  SpawnPoolWorker-5  [liver_rep2] done in 10.77s
-2025-09-29 14:10:30,850  INFO  SpawnPoolWorker-9  [lung_rep3] done in 10.74s
-2025-09-29 14:11:57,981  INFO  MainProcess  Saved coverage to ../bxc/cov_di.pkl.gz
-```
+## A note on outputs
 
-Successful run of `stall_sites.py`:
-```
-(ribo) (base) uwusers-imac:ribostall chunglab$ python scripts/stall_sites_consensus_union.py --pickle "../Gatfield_Share/cov_di.pkl.gz" --ribo "../Gatfield_Share/bxc_disome.ribo" --groups "kidney:kidney_rep1,kidney_rep2,kidney_rep3;liver:liver_rep1,liver_rep2,liver_rep3;lung:lung_rep1,lung_rep2,lung_rep3" --tx_threshold 0.3 --min_z 1.0 --motif --reference "../Gatfield_Share/appris_mouse_v2_selected.fa.gz" --flank-left 20 --flank-right 10
-Number of filtered transcripts: 122
-Number of total stall sites per group: {'kidney': 902, 'liver': 942, 'lung': 853}
-2025-09-30 13:40:32,099  INFO  MainProcess  Saved JSON to ../ribostall_results/stall_sites.jsonl
-2025-09-30 13:40:52,687  INFO  MainProcess  Saved image to ../ribostall_results/motif.png
-2025-09-30 13:40:52,708  INFO  MainProcess  Saved csv to ../ribostall_results/motif_csv/lung_pwm_log2_enrichment.csv
-```
+Every stage writes into a git-ignored `results/<organism>/<stage>/` tree with a consistent
+three-part layout: `raw/` (base CSVs before statistics), `analysis/` (the stats-result
+CSVs), and `plots/` (the R figures). Nothing in `results/` is version-controlled — it is
+regenerated per analysis from the tracked code and your input data.
+
+---
+
+### Chapters
+
+- [scripts/README.md](scripts/README.md) — Python CLI entry points
+- [ribostall/README.md](ribostall/README.md) — shared analysis package
+- [R_scripts/README.md](R_scripts/README.md) — R visualizers
+- [shell_scripts/README.md](shell_scripts/README.md) — orchestration layer
+- [reference/README.md](reference/README.md) · [all_ribo_file/README.md](all_ribo_file/README.md) — inputs

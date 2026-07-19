@@ -26,17 +26,23 @@ shell_scripts/
 │   ├── stall_sites_consensus_intersection/ # Step 2a (intersection) — consensus calling + A1/A3/A6 stats + fisher/within plots
 │   ├── stall_sites_non_consensus/          # Step 2b — per-replicate calling, stats, and R plots
 │   └── global_occupancy/                   # Step 3 — occupancy base CSVs, stats, and R plots
-└── mouse/                                  # Mouse analysis (same stage layout, scripts added as written)
+└── mouse/                                  # Mouse analysis — FLAT 2-vs-1 design (control:AA_3,AA_4;treatment:Ch_WAA2), no timepoints
     ├── adj_coverage/                       # Step 1 — run_adj_coverage_all.sh (mouse_all.ribo)
-    ├── stall_sites_consensus_union/        # Step 2a (union) — run_stall_sites_consensus_union.sh (2-vs-1 design)
-    └── stall_sites_consensus_intersection/ # Step 2a (intersection) — run_stall_sites_consensus_intersection.sh (2-vs-1 design)
+    ├── stall_sites_consensus_union/        # Step 2a (union) — call + stats + within-condition & background-diff volcano launchers
+    ├── stall_sites_consensus_intersection/ # Step 2a (intersection) — call + stats + within-condition & fisher volcano launchers
+    ├── stall_sites_non_consensus/          # Step 2b — call + stats (no plot launcher: A2 Wilcoxon needs ≥2 reps/group; treatment has 1)
+    └── global_occupancy/                   # Step 3 — base CSVs + stats + within-condition & fisher volcano launchers
 ```
 
-> Only the stages above have mouse scripts so far, and only the call step (no
-> mouse stats/plot runners yet). The remaining stages (`stall_sites_non_consensus`,
-> `global_occupancy`) are not yet present. Add a mouse script under the matching
-> stage folder when one exists — there is no requirement to mirror every
-> C. elegans script.
+> The mouse run is a **flat control-vs-treatment design with no timepoints**, so
+> its stats emit the flat CSVs (`between_condition_fisher_*`,
+> `between_condition_background_diff_*`, one `within_condition_binomial_*` per
+> group) and the plot launchers pass `--flat-design` (one composite row of A/P/E
+> site panels, no day axis). The two Wilcoxon bar-plot launchers from the
+> C. elegans set are intentionally **omitted** for mouse: the between-condition
+> Wilcoxon (A2) needs ≥2 replicates per group and treatment has only one
+> (`Ch_WAA2`), and there are no timepoints for the between-timepoint Wilcoxon.
+> There is no requirement to mirror every C. elegans script.
 
 ---
 
@@ -208,3 +214,39 @@ top of each script before running.
 & "C:\Program Files\Git\bin\bash.exe" shell_scripts/mouse/stall_sites_consensus_union/run_stall_sites_consensus_union.sh
 & "C:\Program Files\Git\bin\bash.exe" shell_scripts/mouse/stall_sites_consensus_intersection/run_stall_sites_consensus_intersection.sh
 ```
+
+### Step 2b / Step 3 — Per-replicate calling + global occupancy (base CSVs)
+
+```powershell
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/mouse/stall_sites_non_consensus/run_stall_sites_non_consensus.sh
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/mouse/global_occupancy/run_global_codon_occ.sh
+```
+
+### Stats — Enrichment tests (run before the plot launchers below)
+
+```powershell
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/mouse/stall_sites_consensus_union/run_stall_sites_consensus_union_stats.sh;
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/mouse/stall_sites_consensus_intersection/run_stall_sites_consensus_intersection_stats.sh;
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/mouse/global_occupancy/run_global_codon_occ_stats.sh
+```
+
+### R-plot launchers (`analyze_*.sh`, flat design)
+
+All pass `--flat-design`: one composite row of A/P/E site panels per comparison
+(no timepoint axis). Output goes to `results/mouse/<pipeline>/plots/`.
+
+```powershell
+# Consensus union — within-condition binomial + background-aware diff volcano
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/mouse/stall_sites_consensus_union/analyze_stall_sites_consensus_union_within_condition_volcano.sh;
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/mouse/stall_sites_consensus_union/analyze_stall_sites_consensus_union_background_diff_volcano.sh;
+# Consensus intersection — within-condition binomial + Fisher volcano
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/mouse/stall_sites_consensus_intersection/analyze_stall_sites_consensus_intersection_within_condition_volcano.sh;
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/mouse/stall_sites_consensus_intersection/analyze_stall_sites_consensus_intersection_fisher_volcano.sh;
+# Global occupancy — within-condition binomial + between-condition Fisher volcano
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/mouse/global_occupancy/analyze_global_occupancy_within_condition.sh;
+& "C:\Program Files\Git\bin\bash.exe" shell_scripts/mouse/global_occupancy/analyze_global_occupancy_fisher_volcano.sh
+```
+
+> No Wilcoxon bar-plot launchers for mouse (see the flat-design note under "Folder
+> layout"): treatment has a single replicate, so A2 between-condition Wilcoxon is
+> infeasible and A5 between-timepoint Wilcoxon has no timepoints.

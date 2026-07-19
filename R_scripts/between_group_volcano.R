@@ -49,6 +49,11 @@ parser$add_argument("--group-col",
                     default = "timepoint",
                     help = "Column to group by for individual/composite plots (e.g. timepoint or condition)")
 
+parser$add_argument("--flat-design",
+                    action = "store_true",
+                    default = FALSE,
+                    help = "Flat single-comparison input (e.g. a between-condition Fisher or background-aware diff run WITHOUT --timepoints): the CSV carries no grouping column, only `site`. Plot one composite row of A/P/E site panels for the single comparison and ignore --group-col. Mirrors within_condition_volcano.R's --flat-design. Default FALSE (faceted by --group-col).")
+
 parser$add_argument("--comparison-label",
                     default = "BWM vs Control",
                     help = "Label describing the comparison (used in titles)")
@@ -117,8 +122,13 @@ if (!args$effect_col %in% colnames(data)) {
 }
 
 group_col <- args$group_col
-cat("  Rows:", nrow(data), "| Groups:", paste(unique(data[[group_col]]), collapse = ", "),
-    "| Sites:", paste(unique(data$site), collapse = ", "), "\n")
+if (args$flat_design) {
+  cat("  Rows:", nrow(data), "| Flat design (single comparison, no group axis)",
+      "| Sites:", paste(unique(data$site), collapse = ", "), "\n")
+} else {
+  cat("  Rows:", nrow(data), "| Groups:", paste(unique(data[[group_col]]), collapse = ", "),
+      "| Sites:", paste(unique(data$site), collapse = ", "), "\n")
+}
 cat("  Effect column:", args$effect_col,
     if (args$effect_is_log2) "(already log2)" else "(linear -> log2)", "\n")
 
@@ -301,31 +311,26 @@ dir.create(file.path(args$outdir, "composite"),
 
 # ============================================================
 # Generate Individual Plots
+#   Layout depends on the input design:
+#     - flat (--flat-design): a single between-group comparison with no grouping
+#       column — one plot per E/P/A site.
+#     - default: faceted by --group-col (e.g. timepoint or condition) × site.
 # ============================================================
 
 cat("\nGenerating individual plots...\n")
 
-group_values <- unique(data[[group_col]])
-# Order numerically when group values look like day_0, day_5, day_10;
-# fall back to alphabetical for non-numeric labels (e.g. condition names).
-num_keys <- suppressWarnings(as.numeric(gsub("[^0-9]", "", group_values)))
-if (all(!is.na(num_keys)) && any(num_keys != 0)) {
-  group_values <- group_values[order(num_keys)]
-} else {
-  group_values <- sort(group_values)
-}
 sites <- c("A", "P", "E")
 plot_count <- 0
 
-# For each group value × site
-for (gv in group_values) {
-  for (st in sites) {
-    plot_data <- data |> filter(.data[[group_col]] == gv, site == st)
+if (args$flat_design) {
 
-    group_label <- gsub("_", " ", gv)
-    group_label <- gsub("day ", "Day ", group_label)
-    title <- paste0(SITE_LABELS[st], " | ", level_label, " | ",
-                    group_label, " (", args$comparison_label, ")")
+  # Flat: the CSV carries no grouping column, only `site`. One plot per site for
+  # the single comparison; the title carries only the comparison label.
+  for (st in sites) {
+    plot_data <- data |> filter(site == st)
+
+    title <- paste0(SITE_LABELS[st], " | ", level_label,
+                    " | (", args$comparison_label, ")")
 
     p <- make_volcano(
       plot_data,
@@ -337,10 +342,49 @@ for (gv in group_values) {
     )
 
     filepath <- file.path(args$outdir, "individual",
-                          paste0(gv, "_", st, "_volcano"))
+                          paste0(st, "_volcano"))
     save_plot(p, filepath, width = 7, height = 6,
               format = args$format, dpi = args$dpi)
     plot_count <- plot_count + 1
+  }
+
+} else {
+
+  group_values <- unique(data[[group_col]])
+  # Order numerically when group values look like day_0, day_5, day_10;
+  # fall back to alphabetical for non-numeric labels (e.g. condition names).
+  num_keys <- suppressWarnings(as.numeric(gsub("[^0-9]", "", group_values)))
+  if (all(!is.na(num_keys)) && any(num_keys != 0)) {
+    group_values <- group_values[order(num_keys)]
+  } else {
+    group_values <- sort(group_values)
+  }
+
+  # For each group value × site
+  for (gv in group_values) {
+    for (st in sites) {
+      plot_data <- data |> filter(.data[[group_col]] == gv, site == st)
+
+      group_label <- gsub("_", " ", gv)
+      group_label <- gsub("day ", "Day ", group_label)
+      title <- paste0(SITE_LABELS[st], " | ", level_label, " | ",
+                      group_label, " (", args$comparison_label, ")")
+
+      p <- make_volcano(
+        plot_data,
+        x_lim = x_lim,
+        y_max = y_max,
+        title = title,
+        show_legend = TRUE,
+        x_label = x_axis_label
+      )
+
+      filepath <- file.path(args$outdir, "individual",
+                            paste0(gv, "_", st, "_volcano"))
+      save_plot(p, filepath, width = 7, height = 6,
+                format = args$format, dpi = args$dpi)
+      plot_count <- plot_count + 1
+    }
   }
 }
 
@@ -348,20 +392,19 @@ cat("  Saved", plot_count, "individual plots\n")
 
 # ============================================================
 # Composite Plot: Grid (rows = group_values, cols = sites)
+#   Flat design (--flat-design): a single row of E/P/A site panels.
 # ============================================================
 
 cat("Generating composite plot...\n")
 
 plot_list <- list()
 
-# Row-major: group_value outer, site inner → cols = sites
-for (gv in group_values) {
-  group_label <- gsub("_", " ", gv)
-  group_label <- gsub("day ", "Day ", group_label)
+if (args$flat_design) {
 
+  # Single comparison: one row of site panels (cols = sites, no group axis).
   for (st in sites) {
-    plot_data <- data |> filter(.data[[group_col]] == gv, site == st)
-    subtitle <- paste0(SITE_LABELS[st], " | ", group_label)
+    plot_data <- data |> filter(site == st)
+    subtitle <- SITE_LABELS[[st]]
 
     p <- make_volcano(
       plot_data,
@@ -374,9 +417,34 @@ for (gv in group_values) {
 
     plot_list[[length(plot_list) + 1]] <- p
   }
+  n_groups <- 1
+
+} else {
+
+  # Row-major: group_value outer, site inner → cols = sites
+  for (gv in group_values) {
+    group_label <- gsub("_", " ", gv)
+    group_label <- gsub("day ", "Day ", group_label)
+
+    for (st in sites) {
+      plot_data <- data |> filter(.data[[group_col]] == gv, site == st)
+      subtitle <- paste0(SITE_LABELS[st], " | ", group_label)
+
+      p <- make_volcano(
+        plot_data,
+        x_lim = x_lim,
+        y_max = y_max,
+        title = subtitle,
+        show_legend = FALSE,
+        x_label = x_axis_label
+      )
+
+      plot_list[[length(plot_list) + 1]] <- p
+    }
+  }
+  n_groups <- length(group_values)
 }
 
-n_groups <- length(group_values)
 n_sites  <- length(sites)
 composite <- wrap_plots(plot_list, ncol = n_sites, nrow = n_groups) +
   plot_layout(guides = "collect") +

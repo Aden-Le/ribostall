@@ -35,9 +35,9 @@ LEVELS=(codon aa)
 # true (or unset) runs it. A skipped analysis writes no per-site CSV and is
 # therefore absent from the merged analysis/ tree.
 RUN_WITHIN_CONDITION=true                   # A1: within-condition binomial
-RUN_BETWEEN_CONDITION_WILCOXON=true         # A2: between-condition Wilcoxon
+RUN_BETWEEN_CONDITION_WILCOXON=false         # A2: between-condition Wilcoxon
 RUN_BETWEEN_CONDITION_FISHER=true           # A3: between-condition Fisher (flat) or per-tp (with --timepoints)
-RUN_BETWEEN_TIMEPOINT_WILCOXON=true         # A5: between-timepoint Wilcoxon (pooled, tp only)
+RUN_BETWEEN_TIMEPOINT_WILCOXON=false         # A5: between-timepoint Wilcoxon (pooled, tp only)
 RUN_BETWEEN_TIMEPOINT_FISHER=true           # A6: between-timepoint Fisher within condition (tp only)
 
 # Headline condition for the between-condition tests (Wilcoxon A2,

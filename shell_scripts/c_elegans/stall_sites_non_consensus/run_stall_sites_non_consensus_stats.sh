@@ -36,8 +36,8 @@ OUT_DIR="./results/c_elegans/stall_sites_non_consensus/analysis"
 # --- Which analyses to run -------------------------------------------------
 # Each analysis defaults to true (runs). Set one to false to skip it; leaving it
 # true (or unset) runs it. A skipped analysis writes no output CSV.
-RUN_BETWEEN_CONDITION_WILCOXON=true     # A2: between-condition Wilcoxon
-RUN_BETWEEN_TIMEPOINT_WILCOXON=true     # A5: between-timepoint Wilcoxon (pooled across conditions)
+RUN_BETWEEN_CONDITION_WILCOXON=false     # A2: between-condition Wilcoxon
+RUN_BETWEEN_TIMEPOINT_WILCOXON=false     # A5: between-timepoint Wilcoxon (pooled across conditions)
 
 # Headline condition for the between-condition Wilcoxon (A2) lives in the shared
 # _headline_config.sh, which the plot launchers also source — so the stats

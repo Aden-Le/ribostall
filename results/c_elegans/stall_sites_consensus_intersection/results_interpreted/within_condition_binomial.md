@@ -4,7 +4,31 @@
 **Test:** Two-sided binomial test (`scipy.stats.binomtest`) of the observed codon/amino-acid frequency at each E/P/A stall site against that group's background frequency, pooled within the group (`ribostall.stats_core.binom_row`, wrapped by `ribostall.enrichment.within_condition_enrichment`). Null hypothesis: the stall-site frequency of the feature equals genome background. Positive `log2_enrichment` means enriched relative to background; negative means depleted.
 **Source data:** `analysis/within_condition_binomial_aa.csv`, `analysis/within_condition_binomial_codon.csv`
 
-## Key Data — Amino Acid level
+## Amino Acid level
+
+### Plots
+
+_Unweighted_
+
+![BWM_volcano_grid](../plots/within_condition/composite/unweighted/BWM_volcano_grid.png)
+![all_groups_volcano_grid](../plots/within_condition/composite/unweighted/all_groups_volcano_grid.png)
+![control_volcano_grid](../plots/within_condition/composite/unweighted/control_volcano_grid.png)
+![day_0_volcano_grid](../plots/within_condition/composite/unweighted/day_0_volcano_grid.png)
+![day_10_volcano_grid](../plots/within_condition/composite/unweighted/day_10_volcano_grid.png)
+![day_5_volcano_grid](../plots/within_condition/composite/unweighted/day_5_volcano_grid.png)
+
+_Weighted_
+
+![BWM_volcano_grid](../plots/within_condition/composite/weighted/BWM_volcano_grid.png)
+![all_groups_volcano_grid](../plots/within_condition/composite/weighted/all_groups_volcano_grid.png)
+![control_volcano_grid](../plots/within_condition/composite/weighted/control_volcano_grid.png)
+![day_0_volcano_grid](../plots/within_condition/composite/weighted/day_0_volcano_grid.png)
+![day_10_volcano_grid](../plots/within_condition/composite/weighted/day_10_volcano_grid.png)
+![day_5_volcano_grid](../plots/within_condition/composite/weighted/day_5_volcano_grid.png)
+
+Individual amino acid plots (36 files, not embedded): [`../plots/within_condition/individual`](../plots/within_condition/individual)
+
+### Data
 
 - Tests run: **360** · Significant (p_adj < 0.05): **122** (33.9%)
 - Direction split (significant only): **55** favor **enriched**, **67** favor **depleted**
@@ -39,7 +63,43 @@
 | P | BWM_day_5 | A | -1.804 | 16/671 | 0.0238 | 0.0833 | 1.82e-10 | 3.64e-09 | low-count |
 | A | BWM_day_10 | A | -1.794 | 20/833 | 0.0240 | 0.0833 | 1.1e-12 | 2.2e-11 | low-count |
 
-## Key Data — Codon level
+### Interpretation
+
+<!-- INTERP_AA_START -->
+- **Lysine (K) is enriched at the E-site across all six condition×timepoint groups** (BWM/control × day_0/5/10) — log2_enrichment 0.84–1.18, p_adj as low as 1.42e-24. The single most consistent, best-powered signal at this resolution.
+
+- **Aspartate (D) is enriched at the P-site**, strongest at day_10 in both conditions (control_day_10 log2=1.29, BWM_day_10 log2=1.23).
+
+- **Alanine is recurrently depleted across all three sites (A, E, P), mostly at day_5/day_10, in both conditions** (e.g. BWM_day_10 A-site log2=−1.79 at obs 20/833; BWM_day_5 shows depletion at both A- and P-sites simultaneously, log2=−1.80 each). Every one of these rows is `low-count` (raw counts in the teens–20s), so the recurring direction across independent site/group combinations is more trustworthy than any single row's exact magnitude.
+
+- **Cysteine is depleted at the E-site specifically at day_0 and day_5** (both conditions; log2 −2.30 to −3.23) but is absent from the day_10 top-10 — the depletion may ease by day_10, though that can't be confirmed since neither top-10 table shows a day_10 Cys row. All four rows here are `low-count` (1–2 observed counts out of 600–800).
+<!-- INTERP_AA_END -->
+
+## Codon level
+
+### Plots
+
+_Unweighted_
+
+![BWM_volcano_grid](../plots/within_condition/codon/composite/unweighted/BWM_volcano_grid.png)
+![all_groups_volcano_grid](../plots/within_condition/codon/composite/unweighted/all_groups_volcano_grid.png)
+![control_volcano_grid](../plots/within_condition/codon/composite/unweighted/control_volcano_grid.png)
+![day_0_volcano_grid](../plots/within_condition/codon/composite/unweighted/day_0_volcano_grid.png)
+![day_10_volcano_grid](../plots/within_condition/codon/composite/unweighted/day_10_volcano_grid.png)
+![day_5_volcano_grid](../plots/within_condition/codon/composite/unweighted/day_5_volcano_grid.png)
+
+_Weighted_
+
+![BWM_volcano_grid](../plots/within_condition/codon/composite/weighted/BWM_volcano_grid.png)
+![all_groups_volcano_grid](../plots/within_condition/codon/composite/weighted/all_groups_volcano_grid.png)
+![control_volcano_grid](../plots/within_condition/codon/composite/weighted/control_volcano_grid.png)
+![day_0_volcano_grid](../plots/within_condition/codon/composite/weighted/day_0_volcano_grid.png)
+![day_10_volcano_grid](../plots/within_condition/codon/composite/weighted/day_10_volcano_grid.png)
+![day_5_volcano_grid](../plots/within_condition/codon/composite/weighted/day_5_volcano_grid.png)
+
+Individual codon plots (36 files, not embedded): [`../plots/within_condition/codon/individual`](../plots/within_condition/codon/individual)
+
+### Data
 
 - Tests run: **1098** · Significant (p_adj < 0.05): **163** (14.8%)
 - Direction split (significant only): **79** favor **enriched**, **82** favor **depleted**
@@ -74,66 +134,28 @@
 | E | control_day_5 | TGC | -2.963 | 1/745 | 0.0013 | 0.0105 | 0.00624 | 0.0346 | low-count |
 | A | control_day_0 | AGG | 2.815 | 2/605 | 0.0033 | 0.0005 | 0.0334 | 0.179 | low-count |
 
-## Plots
+### Interpretation
 
-**Amino Acid composites**
+<!-- INTERP_CODON_START -->
+- **AAG is the specific codon driving the E-site Lys enrichment** — it appears in all six groups' top-10 (log2 0.81–1.13, p_adj down to 5.95e-20), while the other Lys codon (AAA) never appears in either top-10. This rules out "just overall Lys usage" and points specifically at AAG.
 
-_Unweighted_
+- **GAT drives the P-site Asp enrichment and recurs in 4 of the 6 groups** (control_day_10, BWM_day_10, control_day_5, BWM_day_0) — broader than the amino-acid table's day_10-only top hits suggest, so this P-site preference isn't day_10-exclusive.
 
-![BWM_volcano_grid](../plots/within_condition/composite/unweighted/BWM_volcano_grid.png)
-![all_groups_volcano_grid](../plots/within_condition/composite/unweighted/all_groups_volcano_grid.png)
-![control_volcano_grid](../plots/within_condition/composite/unweighted/control_volcano_grid.png)
-![day_0_volcano_grid](../plots/within_condition/composite/unweighted/day_0_volcano_grid.png)
-![day_10_volcano_grid](../plots/within_condition/composite/unweighted/day_10_volcano_grid.png)
-![day_5_volcano_grid](../plots/within_condition/composite/unweighted/day_5_volcano_grid.png)
+- **TGC (one of Cys's two codons) is what clears significance for the E-site Cys depletion** — only the BWM_day_0 and control_day_5 TGC rows reach p_adj < 0.05, consistent with the amino-acid-level day_0/day_5-only pattern.
 
-_Weighted_
+- **The two most extreme depletions in this CSV aren't in the "largest effect" table at all**: TGC (E-site) and TCC (P-site), both in control_day_0, go to *zero* observed count against non-trivial backgrounds (1.05% and 2.46%) — genuinely significant (p_adj = 0.040 and 1.6e-05) but reported as `log2_enrichment = 0.0` by the upstream pipeline (guarded against log2(0) rather than returning −∞), so they don't surface in a magnitude-ranked table.
 
-![BWM_volcano_grid](../plots/within_condition/composite/weighted/BWM_volcano_grid.png)
-![all_groups_volcano_grid](../plots/within_condition/composite/weighted/all_groups_volcano_grid.png)
-![control_volcano_grid](../plots/within_condition/composite/weighted/control_volcano_grid.png)
-![day_0_volcano_grid](../plots/within_condition/composite/weighted/day_0_volcano_grid.png)
-![day_10_volcano_grid](../plots/within_condition/composite/weighted/day_10_volcano_grid.png)
-![day_5_volcano_grid](../plots/within_condition/composite/weighted/day_5_volcano_grid.png)
-
-Individual amino acid plots (36 files, not embedded): [`../plots/within_condition/individual`](../plots/within_condition/individual)
-
-**Codon composites**
-
-_Unweighted_
-
-![BWM_volcano_grid](../plots/within_condition/codon/composite/unweighted/BWM_volcano_grid.png)
-![all_groups_volcano_grid](../plots/within_condition/codon/composite/unweighted/all_groups_volcano_grid.png)
-![control_volcano_grid](../plots/within_condition/codon/composite/unweighted/control_volcano_grid.png)
-![day_0_volcano_grid](../plots/within_condition/codon/composite/unweighted/day_0_volcano_grid.png)
-![day_10_volcano_grid](../plots/within_condition/codon/composite/unweighted/day_10_volcano_grid.png)
-![day_5_volcano_grid](../plots/within_condition/codon/composite/unweighted/day_5_volcano_grid.png)
-
-_Weighted_
-
-![BWM_volcano_grid](../plots/within_condition/codon/composite/weighted/BWM_volcano_grid.png)
-![all_groups_volcano_grid](../plots/within_condition/codon/composite/weighted/all_groups_volcano_grid.png)
-![control_volcano_grid](../plots/within_condition/codon/composite/weighted/control_volcano_grid.png)
-![day_0_volcano_grid](../plots/within_condition/codon/composite/weighted/day_0_volcano_grid.png)
-![day_10_volcano_grid](../plots/within_condition/codon/composite/weighted/day_10_volcano_grid.png)
-![day_5_volcano_grid](../plots/within_condition/codon/composite/weighted/day_5_volcano_grid.png)
-
-Individual codon plots (36 files, not embedded): [`../plots/within_condition/codon/individual`](../plots/within_condition/codon/individual)
+- **ATA (Ile) at the P-site is nominally the single largest codon-level effect** (log2 up to 3.62, recurring in 5 of 6 groups) but none of those five rows clears p_adj < 0.05 (0.060–0.094) — a rare background codon (0.03%) means even 2 observed counts produces a huge log2 ratio without enough power to be significant. Read as "possibly real, not yet proven."
+<!-- INTERP_CODON_END -->
 
 ## Key Points
 
 <!-- KEY_POINTS_START -->
-- **Lysine, driven specifically by codon AAG, is enriched at the E-site in all six condition×timepoint groups** (BWM/control × day_0/5/10) — every one of the six group combinations appears in both the amino-acid and the codon "most significant" top-10 tables (AA log2_enrichment 0.84–1.18, codon log2 0.81–1.13; p_adj as low as 1.42e-24 for K, 5.95e-20 for AAG). This is the single most consistent, best-powered signal in the family, and it's specifically attributable to AAG — the other Lys codon (AAA) never appears in either top-10.
+- **The clearest, best-replicated finding in this family is E-site Lysine enrichment, and it holds at both resolutions**: amino-acid K and its specific codon AAG both show up in all six condition×timepoint groups (p_adj as low as 1.42e-24 for K, 5.95e-20 for AAG), while AAA (the other Lys codon) never appears — the codon view rules out "this is just overall Lys usage drift" and points specifically at AAG.
 
-- **Aspartate / its codon GAT is enriched at the P-site.** The amino-acid table's top hits are strongest at day_10 in both conditions (control_day_10 log2=1.29, BWM_day_10 log2=1.23), but the codon-level table shows GAT recurring in 4 of the 6 groups (also control_day_5 and BWM_day_0) — so the P-site preference for Asp/GAT is not exclusive to day_10, it's just currently most significant there.
+- **P-site Aspartate/GAT enrichment tells a similar but partial story**: strongest and most significant at day_10 in the amino-acid view, but the codon view shows GAT recurring in 4 of 6 groups — the preference likely isn't day_10-specific, day_10 just currently has the most power/signal.
 
-- **Alanine is recurrently depleted across all three sites (A, E, P), mostly at day_5/day_10, in both conditions** (e.g. BWM_day_10 A-site log2=−1.79 at obs 20/833; BWM_day_5 shows depletion at both A- and P-sites simultaneously, log2=−1.80 each). Every one of these rows is `low-count` (raw counts in the teens–20s), so the recurring direction across independent site/group combinations is more trustworthy than any single row's exact magnitude.
-
-- **Cysteine is depleted at the E-site specifically at day_0 and day_5** (both conditions; log2 −2.30 to −3.23) but is absent from the day_10 top-10 — the depletion may ease by day_10, though that can't be confirmed without checking day_10's Cys rows directly (they don't clear either top-10 table). All four rows here are `low-count` (1–2 observed counts out of 600–800); at codon resolution the signal is driven by TGC specifically, and only the BWM_day_0 / control_day_5 TGC rows actually clear p_adj < 0.05.
-
-- **The two most extreme depletions in the entire family aren't in the "largest effect" table at all**: codon TGC at the E-site and TCC at the P-site (both control_day_0) go to *zero* observed count against non-trivial backgrounds (1.05% and 2.46%), which is significant (p_adj = 0.040 and 1.6e-05) — but the upstream pipeline reports `log2_enrichment = 0.0` for any row where either the observed or background frequency is exactly 0, rather than −∞. Worth knowing about even though the magnitude ranking can't surface them.
-
-- **ATA (Ile) at the P-site is nominally the single largest codon-level effect** (log2 up to 3.62, recurring in 5 of 6 groups) but none of those five rows clears p_adj < 0.05 (0.060–0.094) — a rare background codon (0.03%) means even 2 observed counts produces a huge log2 ratio without enough power to be significant. Read this as "possibly a real enrichment, not yet proven" rather than a confirmed hit.
+- **Two of the largest-magnitude effects in this family turn out to be the least trustworthy or least visible.** ATA's huge log2 ratios (up to 3.62) are all non-significant — a rare-codon, low-count artifact. Meanwhile TGC/TCC's complete (zero-count) depletions are genuinely significant but invisible to the "largest effect" ranking, because the upstream pipeline reports `log2_enrichment = 0.0` (not −∞) whenever either frequency is exactly 0. Both are worth remembering as limits of a magnitude-only view — check significance and the underlying counts before trusting a "largest effect" row.
 
 - Roughly a third of amino-acid tests are significant (122/360, 33.9%) versus only 14.8% of codon tests (163/1098) — expected, since spreading the same stall-site counts across 61 codons instead of 20 amino acids shrinks per-feature counts and drives more rows into the `low-count` flag.
 <!-- KEY_POINTS_END -->
@@ -144,6 +166,6 @@ Individual codon plots (36 files, not embedded): [`../plots/within_condition/cod
 - **Low-count threshold:** rows flagged `low-count` have a raw feature count below 50; treat their effect sizes as less reliable.
 
 ---
-_Key Data, Plots, and Caveats are auto-generated by `result_interpretation_scripts/extract_key_data.py`
-from `analysis/*.csv` and will be overwritten on the next run. Only the Key Points section (between
-the KEY_POINTS markers above) is hand-authored and preserved across regenerations._
+_Plots, Data, and Caveats are auto-generated by `result_interpretation_scripts/extract_key_data.py`
+from `analysis/*.csv` and will be overwritten on the next run. The Interpretation (per level) and
+Key Points (overall, at the bottom) sections are hand-authored and preserved across regenerations._
